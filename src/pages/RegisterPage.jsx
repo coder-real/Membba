@@ -37,7 +37,7 @@ export default function RegisterPage() {
       <nav className="relative z-10 flex items-center justify-between px-6 py-4 border-b border-[#1a1a1a]">
         <Link to="/" className="flex items-center gap-2">
           {/* LOGO PLACEHOLDER — replace with <img src="/logo.svg" alt="Membba" className="h-7" /> */}
-          <img src="/public/green.svg" alt="Membba" className="h-7" />
+          <img src="/green.svg" alt="Membba" className="h-7" />
           <span className="font-bold tracking-tight">Membba</span>
         </Link>
         <p className="text-sm text-gray-500">

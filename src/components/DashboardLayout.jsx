@@ -41,15 +41,8 @@ export default function DashboardLayout({ children }) {
 
         {/* Logo */}
         <div className="px-6 py-6 border-b border-white/[0.06]">
-          <Link to="/" className="flex items-center gap-3">
-            {/* LOGO PLACEHOLDER — replace with <img src="/logo.svg" alt="Membba" className="h-8" /> */}
-            <div className="w-8 h-8 rounded-lg bg-[#9FFF57] flex items-center justify-center text-black font-black text-sm flex-shrink-0">
-              M
-            </div>
-            <div>
-              <span className="font-black text-[15px] tracking-tight text-white">Membba</span>
-              <p className="text-[10px] text-white/30 uppercase tracking-widest leading-tight">Creator Hub</p>
-            </div>
+          <Link to="/" className="flex items-center gap-2.5">
+            <img src="/green.svg" alt="Membba" className="h-8" />
           </Link>
         </div>
 

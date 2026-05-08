@@ -148,7 +148,7 @@ export default function LandingPage() {
             LOGO PLACEHOLDER — Replace with:
             <img src="/logo.svg" alt="Membba" className="h-8" />
           */}
-          <img src="/public/green.svg" alt="Membba" className="h-8" />
+          <img src="/green.svg" alt="Membba" className="h-8" />
 
           <span className="text-white font-bold text-lg tracking-tight">
             Membba
@@ -492,7 +492,7 @@ export default function LandingPage() {
                 FOOTER LOGO PLACEHOLDER
                 Replace with: <img src="/logo.svg" alt="Membba" className="h-7" />
               */}
-              <img src="/public/green.svg" alt="Membba" className="h-7" />
+              <img src="/green.svg" alt="Membba" className="h-7" />
 
               <span className="font-bold tracking-tight">Membba</span>
             </div>
