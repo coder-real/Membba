@@ -30,9 +30,9 @@ export default function PaymentsPage() {
 
     const { data, error } = await supabase
       .from('payments')
-      .select('*, communities(name)')
+      .select('*, communities(name), plans(name)')
       .in('community_id', communityIds)
-      .order('paid_at', { ascending: false })
+      .order('created_at', { ascending: false })
 
     if (error) toast.error(error.message)
     else {
@@ -76,11 +76,14 @@ export default function PaymentsPage() {
             <tbody className="divide-y divide-gray-100">
               {payments.map(p => (
                 <tr key={p.id}>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-500">{p.payment_reference}</td>
-                  <td className="px-4 py-3">{p.subscriber_email}</td>
-                  <td className="px-4 py-3">{p.communities?.name}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-500">{p.paystack_reference}</td>
+                  <td className="px-4 py-3">{p.email}</td>
+                  <td className="px-4 py-3">
+                    <span>{p.communities?.name}</span>
+                    {p.plans?.name && <span className="text-gray-400 ml-1 text-xs">· {p.plans.name}</span>}
+                  </td>
                   <td className="px-4 py-3 font-medium">₦{p.amount?.toLocaleString()}</td>
-                  <td className="px-4 py-3">{new Date(p.paid_at).toLocaleDateString()}</td>
+                  <td className="px-4 py-3">{new Date(p.created_at).toLocaleDateString()}</td>
                   <td className="px-4 py-3">
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
                       p.status === 'success' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'

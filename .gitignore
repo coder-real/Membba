@@ -3,3 +3,7 @@ dist
 .env
 .env.local
 .DS_Store
+
+# WhatsApp session — local only, never commit
+.wwebjs_auth/
+.wwebjs_cache/

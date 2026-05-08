@@ -69,9 +69,9 @@ export default function DashboardPage() {
       // Recent payments
       const { data: recent } = await supabase
         .from('payments')
-        .select('*, communities(name)')
+        .select('*, communities(name), plans(name)')
         .in('community_id', communityIds)
-        .order('paid_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(5)
 
       setRecentPayments(recent || [])
@@ -149,12 +149,19 @@ export default function DashboardPage() {
             <tbody className="divide-y divide-gray-100">
               {recentPayments.map(p => (
                 <tr key={p.id}>
-                  <td className="px-4 py-3">{p.subscriber_email}</td>
-                  <td className="px-4 py-3">{p.communities?.name}</td>
-                  <td className="px-4 py-3">₦{p.amount?.toLocaleString()}</td>
-                  <td className="px-4 py-3">{new Date(p.paid_at).toLocaleDateString()}</td>
+                  <td className="px-4 py-3">{p.email}</td>
                   <td className="px-4 py-3">
-                    <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">
+                    <span>{p.communities?.name}</span>
+                    {p.plans?.name && <span className="text-gray-400 ml-1 text-xs">· {p.plans.name}</span>}
+                  </td>
+                  <td className="px-4 py-3">₦{p.amount?.toLocaleString()}</td>
+                  <td className="px-4 py-3">{new Date(p.created_at).toLocaleDateString()}</td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      p.status === 'success' ? 'bg-green-100 text-green-700'
+                      : p.status === 'failed' ? 'bg-red-100 text-red-600'
+                      : 'bg-yellow-100 text-yellow-700'
+                    }`}>
                       {p.status}
                     </span>
                   </td>

@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: membba-server
+    runtime: node
+    rootDir: server
+    plan: standard          # Standard ($25/mo, 2GB RAM) required for whatsapp-web.js + Chromium
+                            # Use 'starter' ($7/mo, 512MB) for Telegram-only mode (ENABLE_WHATSAPP=false)
+    buildCommand: npm install
+    startCommand: node index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: CLIENT_URL
+        sync: false         # Set in Render dashboard — your Vercel frontend URL
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: ENABLE_WHATSAPP
+        value: "false"      # Set to "true" only on Standard plan (needs Chromium)
