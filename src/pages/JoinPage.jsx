@@ -1,26 +1,52 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import toast from 'react-hot-toast'
 import { FaTelegram, FaWhatsapp } from 'react-icons/fa'
 
 const formatDuration = (minutes) => {
   if (!minutes) return ''
-  if (minutes < 60) return `${minutes} min`
-  if (minutes < 1440) return `${Math.round(minutes / 60)} hr`
-  if (minutes < 10080) return `${Math.round(minutes / 1440)} day${Math.round(minutes / 1440) !== 1 ? 's' : ''}`
-  if (minutes < 43200) return `${Math.round(minutes / 10080)} week${Math.round(minutes / 10080) !== 1 ? 's' : ''}`
-  return `${Math.round(minutes / 43200)} month${Math.round(minutes / 43200) !== 1 ? 's' : ''}`
+  if (minutes < 60)    return `${minutes} min`
+  if (minutes < 1440)  return `${Math.round(minutes / 60)} hr`
+  if (minutes < 10080) return `${Math.round(minutes / 1440)}d`
+  if (minutes < 43200) return `${Math.round(minutes / 10080)}w`
+  return `${Math.round(minutes / 43200)} mo`
 }
+
+/* ─── Small, reusable sub-components ──────────────────── */
+
+function Spinner() {
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+      <div className="w-7 h-7 rounded-full border-2 border-white/10 border-t-[#9FFF57] animate-spin" />
+    </div>
+  )
+}
+
+function NotFound() {
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-6">
+      <div className="text-center max-w-sm">
+        <p className="text-[11px] font-bold tracking-[0.15em] text-white/25 uppercase mb-4">404 — Not Found</p>
+        <h1 className="text-2xl font-black text-white mb-3">This community doesn't exist</h1>
+        <p className="text-[14px] text-white/40 leading-relaxed">
+          The link may be invalid or this community is no longer accepting members.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+/* ─── Main page ─────────────────────────────────────────── */
 
 export default function JoinPage() {
   const { slug } = useParams()
-  const [community, setCommunity] = useState(null)
-  const [plans, setPlans] = useState([])
+  const [community, setCommunity]   = useState(null)
+  const [plans, setPlans]           = useState([])
   const [selectedPlan, setSelectedPlan] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [paying, setPaying] = useState(false)
-  const [form, setForm] = useState({ email: '', telegram_user_id: '', whatsapp_phone: '' })
+  const [loading, setLoading]       = useState(true)
+  const [paying, setPaying]         = useState(false)
+  const [form, setForm]             = useState({ email: '', telegram_user_id: '', whatsapp_phone: '' })
 
   useEffect(() => { fetchCommunity() }, [slug])
 
@@ -28,20 +54,12 @@ export default function JoinPage() {
     const { data: comm, error } = await supabase
       .from('communities')
       .select('id, name, description, slug, platform')
-      .eq('slug', slug)
-      .eq('is_active', true)
-      .single()
-
+      .eq('slug', slug).eq('is_active', true).single()
     if (error || !comm) { setCommunity(null); setLoading(false); return }
     setCommunity(comm)
-
     const { data: planData } = await supabase
-      .from('plans')
-      .select('id, name, price, duration_minutes, description')
-      .eq('community_id', comm.id)
-      .eq('is_active', true)
-      .order('price', { ascending: true })
-
+      .from('plans').select('id, name, price, duration_minutes, description')
+      .eq('community_id', comm.id).eq('is_active', true).order('price', { ascending: true })
     setPlans(planData || [])
     if (planData?.length === 1) setSelectedPlan(planData[0])
     setLoading(false)
@@ -53,20 +71,13 @@ export default function JoinPage() {
 
   const validate = () => {
     if (!selectedPlan) { toast.error('Please select a plan'); return false }
-
     if (isWhatsApp) {
-      const phone = form.whatsapp_phone.trim()
-      if (!phone) { toast.error('WhatsApp phone number is required'); return false }
-      if (!/^\d{10,15}$/.test(phone)) {
-        toast.error('Enter number with country code, no + or spaces (e.g. 2348012345678)')
-        return false
-      }
+      const p = form.whatsapp_phone.trim()
+      if (!p) { toast.error('WhatsApp phone number is required'); return false }
+      if (!/^\d{10,15}$/.test(p)) { toast.error('Include country code, no + or spaces. e.g. 2348012345678'); return false }
     } else {
       if (!form.telegram_user_id.trim()) { toast.error('Telegram User ID is required'); return false }
-      if (!/^\d+$/.test(form.telegram_user_id.trim())) {
-        toast.error('Telegram User ID must be a number (not a username)')
-        return false
-      }
+      if (!/^\d+$/.test(form.telegram_user_id.trim())) { toast.error('Telegram User ID must be a number (not a @username)'); return false }
     }
     return true
   }
@@ -74,211 +85,216 @@ export default function JoinPage() {
   const handlePay = async e => {
     e.preventDefault()
     if (!validate()) return
-
     setPaying(true)
     try {
-      const body = {
-        plan_id: selectedPlan.id,
-        email: form.email,
-      }
-
-      if (isWhatsApp) {
-        body.whatsapp_phone = form.whatsapp_phone.trim()
-      } else {
-        body.telegram_user_id = form.telegram_user_id.trim()
-      }
-
-      const res = await fetch('/api/payments/initialize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+      const body = { plan_id: selectedPlan.id, email: form.email }
+      if (isWhatsApp) body.whatsapp_phone = form.whatsapp_phone.trim()
+      else body.telegram_user_id = form.telegram_user_id.trim()
+      const res  = await fetch('/api/payments/initialize', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
       })
-
       const data = await res.json()
-      if (data.authorization_url) {
-        window.location.href = data.authorization_url
-      } else {
-        toast.error(data.message || 'Payment initialization failed')
-        setPaying(false)
-      }
-    } catch {
-      toast.error('Could not connect to payment server')
-      setPaying(false)
-    }
+      if (data.authorization_url) { window.location.href = data.authorization_url }
+      else { toast.error(data.message || 'Payment failed to initialize'); setPaying(false) }
+    } catch { toast.error('Could not connect to the payment server'); setPaying(false) }
   }
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <p className="text-gray-400 text-sm">Loading...</p>
-    </div>
-  )
+  if (loading)     return <Spinner />
+  if (!community)  return <NotFound />
 
-  if (!community) return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="text-center">
-        <div className="text-5xl mb-4">🔍</div>
-        <h1 className="text-2xl font-bold mb-2">Community not found</h1>
-        <p className="text-gray-500 text-sm">This link may be invalid or the community is no longer active.</p>
-      </div>
-    </div>
-  )
+  const isWA       = isWhatsApp
+  const plColor    = isWA ? '#25D366' : '#229ED9'
+  const plBg       = isWA ? 'bg-[#25D366]/8 border-[#25D366]/20' : 'bg-[#229ED9]/8 border-[#229ED9]/20'
+  const plText     = isWA ? 'text-[#25D366]' : 'text-[#229ED9]'
+  const PlatIcon   = isWA ? FaWhatsapp : FaTelegram
+  const platLabel  = isWA ? 'WhatsApp' : 'Telegram'
 
-  const PlatformIcon = isWhatsApp ? FaWhatsapp : FaTelegram
-  const platformColor = isWhatsApp ? 'text-green-500' : 'text-blue-500'
-  const platformName = isWhatsApp ? 'WhatsApp' : 'Telegram'
+  const inputCls = [
+    'w-full bg-[#0d0d0d] border rounded-xl px-4 py-3 text-[14px] text-white',
+    'placeholder-white/20 focus:outline-none transition-all duration-200',
+    'border-white/[0.08] focus:border-[#9FFF57]/40 focus:ring-2 focus:ring-[#9FFF57]/10',
+  ].join(' ')
+
+  const labelCls = 'block text-[11.5px] font-bold tracking-widest uppercase text-white/40 mb-2'
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md space-y-4">
+    <div className="min-h-screen bg-[#0a0a0a]" style={{ fontFamily: "'Inter', sans-serif" }}>
 
-        {/* Community header */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <div className="flex items-center gap-2 mb-1">
-            <p className="text-xs text-gray-400 uppercase tracking-widest">Join Community</p>
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-              isWhatsApp ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
-            }`}>
-              <PlatformIcon size={11} /> {platformName}
-            </span>
+      {/* Top bar */}
+      <div className="border-b border-white/[0.05] px-6 py-4 flex items-center justify-between max-w-xl mx-auto">
+        <span className="text-[13px] font-black tracking-wider text-white/30 uppercase">Membba</span>
+        <div className="flex items-center gap-1.5 text-white/25">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
+          </svg>
+          <span className="text-[11.5px] font-semibold">Secured by Paystack</span>
+        </div>
+      </div>
+
+      <div className="max-w-xl mx-auto px-6 py-10">
+
+        {/* Community identity */}
+        <div className="mb-8">
+          <div className={`inline-flex items-center gap-1.5 text-[11px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full border mb-4 ${plBg} ${plText}`}>
+            <PlatIcon size={10} />
+            {platLabel} Community
           </div>
-          <h1 className="text-2xl font-bold mb-1">{community.name}</h1>
+          <h1 className="text-[28px] font-black text-white leading-tight mb-2">{community.name}</h1>
           {community.description && (
-            <p className="text-gray-500 text-sm">{community.description}</p>
+            <p className="text-[14px] text-white/50 leading-relaxed">{community.description}</p>
           )}
         </div>
 
-        {/* Plan selection */}
-        {plans.length > 0 ? (
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h2 className="font-semibold mb-3">Choose a Plan</h2>
-            <div className="space-y-2">
-              {plans.map(plan => (
-                <button
-                  key={plan.id} type="button" onClick={() => setSelectedPlan(plan)}
-                  className={`w-full text-left rounded-lg border-2 px-4 py-3 transition-all ${
-                    selectedPlan?.id === plan.id
-                      ? 'border-black bg-black text-white'
-                      : 'border-gray-200 hover:border-gray-400 text-gray-800'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-sm">{plan.name}</p>
-                      {plan.description && (
-                        <p className={`text-xs mt-0.5 ${selectedPlan?.id === plan.id ? 'text-gray-300' : 'text-gray-400'}`}>
-                          {plan.description}
-                        </p>
-                      )}
-                    </div>
-                    <div className="text-right flex-shrink-0 ml-4">
-                      <p className="font-bold">₦{plan.price.toLocaleString()}</p>
-                      <p className={`text-xs ${selectedPlan?.id === plan.id ? 'text-gray-300' : 'text-gray-400'}`}>
-                        {formatDuration(plan.duration_minutes)}
-                      </p>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
+        {/* Divider */}
+        <div className="border-t border-white/[0.05] mb-8" />
+
+        {/* Plans */}
+        {plans.length === 0 ? (
+          <div className="border border-yellow-400/20 bg-yellow-400/5 rounded-xl px-5 py-4 text-[13.5px] text-yellow-400 mb-8">
+            No active plans available at the moment — check back soon.
           </div>
         ) : (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm text-yellow-800">
-            No active plans available yet. Check back soon.
+          <div className="mb-8">
+            <p className={labelCls}>Select a subscription plan</p>
+            <div className="space-y-2.5">
+              {plans.map(plan => {
+                const active = selectedPlan?.id === plan.id
+                return (
+                  <button
+                    key={plan.id}
+                    type="button"
+                    onClick={() => setSelectedPlan(plan)}
+                    className={[
+                      'w-full text-left rounded-xl border px-5 py-4 transition-all duration-200 group',
+                      active
+                        ? 'border-[#9FFF57]/35 bg-[#9FFF57]/[0.04]'
+                        : 'border-white/[0.07] hover:border-white/[0.13] bg-[#111]',
+                    ].join(' ')}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      {/* Radio indicator */}
+                      <div className={`mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
+                        active ? 'border-[#9FFF57]' : 'border-white/20 group-hover:border-white/35'
+                      }`}>
+                        {active && <div className="w-1.5 h-1.5 rounded-full bg-[#9FFF57]" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`font-bold text-[14.5px] leading-tight ${active ? 'text-white' : 'text-white/80'}`}>
+                          {plan.name}
+                        </p>
+                        {plan.description && (
+                          <p className="text-[12.5px] text-white/35 mt-0.5 truncate">{plan.description}</p>
+                        )}
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className={`font-black text-[17px] leading-tight ${active ? 'text-[#9FFF57]' : 'text-white'}`}>
+                          ₦{plan.price.toLocaleString()}
+                        </p>
+                        <p className="text-[11.5px] text-white/30 font-medium mt-0.5">
+                          {formatDuration(plan.duration_minutes)}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
           </div>
         )}
 
-        {/* Payment form */}
+        {/* Form */}
         {plans.length > 0 && (
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h2 className="font-semibold mb-4">Your Details</h2>
-            <form onSubmit={handlePay} className="space-y-4">
+          <form onSubmit={handlePay} className="space-y-5">
 
+            <div>
+              <label className={labelCls}>Email address</label>
+              <input type="email" name="email" required value={form.email}
+                onChange={handleChange} className={inputCls}
+                placeholder="you@example.com" />
+            </div>
+
+            {isWA ? (
               <div>
-                <label className="block text-sm font-medium mb-1">Email *</label>
-                <input
-                  type="email" name="email" required value={form.email} onChange={handleChange}
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                  placeholder="you@example.com"
-                />
-              </div>
-
-              {/* Platform-specific identity field */}
-              {isWhatsApp ? (
-                <div>
-                  <label className="block text-sm font-medium mb-1 flex items-center gap-1.5">
-                    <FaWhatsapp className="text-green-500" size={14} /> WhatsApp Number *
-                  </label>
-                  <input
-                    type="tel" name="whatsapp_phone" value={form.whatsapp_phone} onChange={handleChange}
-                    required
-                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                    placeholder="e.g. 2348012345678"
-                  />
-                  <div className="mt-2 bg-green-50 border border-green-100 rounded p-2.5 text-xs text-green-700">
-                    <span className="font-semibold">Format:</span> Country code + number, no spaces or +<br />
-                    <span className="font-mono">Nigeria: 2348012345678 · UK: 447911123456</span>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-sm font-medium mb-1 flex items-center gap-1.5">
-                    <FaTelegram className="text-blue-500" size={14} /> Telegram User ID *
-                  </label>
-                  <input
-                    type="text" name="telegram_user_id" value={form.telegram_user_id} onChange={handleChange}
-                    required
-                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                    placeholder="e.g. 123456789"
-                  />
-                  <div className="mt-2 bg-blue-50 border border-blue-100 rounded p-2.5 text-xs text-blue-700">
-                    <span className="font-semibold">How to get your ID:</span>{' '}
-                    <a href="https://t.me/membba_bot" target="_blank" rel="noreferrer" className="underline font-semibold font-mono">
-                      Open @membba_bot
-                    </a>{' '}
-                    on Telegram and tap <span className="font-mono font-bold">Start</span> — it replies instantly with your numeric ID.
-                  </div>
-                </div>
-              )}
-
-              {/* Pre-payment notice */}
-              <div className={`rounded-lg p-3 text-xs space-y-1.5 ${
-                isWhatsApp
-                  ? 'bg-green-50 border border-green-200 text-green-800'
-                  : 'bg-amber-50 border border-amber-200 text-amber-800'
-              }`}>
-                <p className="font-semibold">
-                  {isWhatsApp ? '💬 After payment:' : '⚠️ Before you pay — do this first:'}
+                <label className={labelCls}>
+                  <span className="inline-flex items-center gap-1.5">
+                    <FaWhatsapp size={10} style={{ color: plColor }} />
+                    WhatsApp Phone Number
+                  </span>
+                </label>
+                <input type="tel" name="whatsapp_phone" required value={form.whatsapp_phone}
+                  onChange={handleChange} className={inputCls}
+                  placeholder="2348012345678" />
+                <p className="text-[12px] text-white/30 mt-2">
+                  Country code + number, no spaces or + sign
+                  <span className="font-mono text-white/45 ml-1">(e.g. 2348012345678)</span>
                 </p>
-                {isWhatsApp ? (
-                  <p>You'll receive a WhatsApp message with your group invite link at the number above.</p>
-                ) : (
-                  <>
-                    <p>1.{' '}
-                      <a href="https://t.me/membba_bot" target="_blank" rel="noreferrer" className="underline font-semibold">
-                        Open @membba_bot on Telegram
-                      </a>{' '}
-                      and tap <span className="font-mono font-bold">Start</span>
-                    </p>
-                    <p>2. Come back here and complete your payment</p>
-                    <p className="text-amber-600">Without this step, the bot cannot DM your invite link.</p>
-                  </>
-                )}
               </div>
+            ) : (
+              <div>
+                <label className={labelCls}>
+                  <span className="inline-flex items-center gap-1.5">
+                    <FaTelegram size={10} style={{ color: plColor }} />
+                    Telegram User ID
+                  </span>
+                </label>
+                <input type="text" name="telegram_user_id" required value={form.telegram_user_id}
+                  onChange={handleChange} className={inputCls}
+                  placeholder="123456789" />
+                <p className="text-[12px] text-white/30 mt-2">
+                  Must be your numeric ID, not @username.{' '}
+                  <a href="https://t.me/membba_bot" target="_blank" rel="noreferrer"
+                    className="text-[#229ED9] underline underline-offset-2 hover:text-[#229ED9]/80 transition-colors">
+                    Get it from @membba_bot →
+                  </a>
+                </p>
+              </div>
+            )}
 
-              <button
-                type="submit" disabled={paying || !selectedPlan}
-                className="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800 disabled:opacity-50 transition-colors"
-              >
-                {paying ? 'Redirecting to payment...' : selectedPlan ? `Pay ₦${selectedPlan.price.toLocaleString()} →` : 'Select a plan above'}
-              </button>
-            </form>
+            {/* Notice */}
+            {!isWA && (
+              <div className="border border-yellow-400/15 bg-yellow-400/[0.04] rounded-xl px-5 py-4 text-[13px]">
+                <p className="font-bold text-yellow-400 mb-1.5">Before you pay</p>
+                <div className="space-y-1 text-white/45 leading-relaxed">
+                  <p>1. Open <a href="https://t.me/membba_bot" target="_blank" rel="noreferrer"
+                    className="text-[#229ED9] underline underline-offset-2">@membba_bot</a> on Telegram and tap <span className="font-mono text-white/60">Start</span></p>
+                  <p>2. Come back here and complete payment</p>
+                  <p className="text-[11.5px] text-yellow-400/60">Without this step, the bot cannot send your invite link.</p>
+                </div>
+              </div>
+            )}
+            {isWA && (
+              <div className="border border-[#25D366]/15 bg-[#25D366]/[0.04] rounded-xl px-5 py-4 text-[13px] text-white/45">
+                <p className="font-bold text-[#25D366] mb-1">After payment</p>
+                <p>You'll receive a WhatsApp message with your group invite link at the number you entered above.</p>
+              </div>
+            )}
 
-            <p className="text-xs text-center text-gray-400 mt-4">
-              Secured by Paystack · Powered by Membba
+            {/* CTA */}
+            <button
+              type="submit"
+              disabled={paying || !selectedPlan}
+              className={[
+                'w-full py-4 rounded-xl font-black text-[15px] tracking-wide transition-all duration-200',
+                paying || !selectedPlan
+                  ? 'bg-white/[0.06] text-white/25 cursor-not-allowed'
+                  : 'bg-[#9FFF57] text-[#0a0a0a] hover:bg-[#aaff62] active:scale-[0.99]',
+              ].join(' ')}
+            >
+              {paying
+                ? <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 border-2 border-black/20 border-t-black/60 rounded-full animate-spin inline-block" />
+                    Redirecting to Paystack...
+                  </span>
+                : selectedPlan
+                  ? `Pay ₦${selectedPlan.price.toLocaleString()} · ${formatDuration(selectedPlan.duration_minutes)}`
+                  : 'Select a plan to continue'}
+            </button>
+
+            <p className="text-center text-[11.5px] text-white/20 leading-relaxed">
+              By continuing you agree to Membba's terms. Payments processed securely by Paystack.
             </p>
-          </div>
+          </form>
         )}
-
       </div>
     </div>
   )

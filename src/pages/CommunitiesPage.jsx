@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import DashboardLayout from '../components/DashboardLayout'
 import toast from 'react-hot-toast'
 import { FaTelegram, FaWhatsapp } from 'react-icons/fa'
+import { HiOutlineLink, HiOutlinePencilSquare, HiOutlineTrash } from 'react-icons/hi2'
 
 const formatDuration = (minutes) => {
   if (!minutes) return '—'
@@ -20,9 +21,7 @@ export default function CommunitiesPage() {
   const [communities, setCommunities] = useState([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchCommunities()
-  }, [user])
+  useEffect(() => { fetchCommunities() }, [user])
 
   const fetchCommunities = async () => {
     const { data, error } = await supabase
@@ -30,7 +29,6 @@ export default function CommunitiesPage() {
       .select('*, plans(id, name, price, duration_minutes, is_active), subscriptions(count)')
       .eq('creator_id', user.id)
       .order('created_at', { ascending: false })
-
     if (error) toast.error(error.message)
     else setCommunities(data || [])
     setLoading(false)
@@ -40,14 +38,10 @@ export default function CommunitiesPage() {
     if (!confirm('Delete this community? This cannot be undone.')) return
     const { error } = await supabase.from('communities').delete().eq('id', id)
     if (error) toast.error(error.message)
-    else {
-      toast.success('Community deleted')
-      fetchCommunities()
-    }
+    else { toast.success('Community deleted'); fetchCommunities() }
   }
 
   const joinLink = (slug) => `${window.location.origin}/join/${slug}`
-
   const copyLink = (slug) => {
     navigator.clipboard.writeText(joinLink(slug))
     toast.success('Join link copied!')
@@ -55,26 +49,30 @@ export default function CommunitiesPage() {
 
   return (
     <DashboardLayout>
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Communities</h1>
+      {/* Header */}
+      <div className="flex items-start justify-between gap-6 mb-10">
+        <div>
+          <h1 className="text-3xl font-black text-white tracking-tight">Communities</h1>
+          <p className="text-[14px] text-white/50 mt-1.5">Manage your paid community groups</p>
+        </div>
         <Link
           to="/dashboard/communities/new"
-          className="bg-black text-white px-4 py-2 rounded text-sm font-medium hover:bg-gray-800"
+          className="flex-shrink-0 inline-flex items-center gap-2 border border-[#9FFF57]/40 text-[#9FFF57] px-5 py-2.5 rounded-lg text-[13px] font-bold hover:bg-[#9FFF57]/5 transition-colors"
         >
-          + New Community
+          ⊕ New Community
         </Link>
       </div>
 
       {loading ? (
-        <p className="text-gray-400 text-sm">Loading...</p>
+        <div className="py-12 text-center text-[13px] text-white/30">Loading...</div>
       ) : communities.length === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-lg p-10 text-center">
-          <p className="text-gray-500 mb-4">You haven't created any communities yet.</p>
+        <div className="bg-[#111] border border-white/[0.07] rounded-xl py-20 text-center">
+          <p className="text-[15px] text-white/50 mb-6">You haven't created any communities yet.</p>
           <Link
             to="/dashboard/communities/new"
-            className="bg-black text-white px-4 py-2 rounded text-sm font-medium hover:bg-gray-800"
+            className="inline-flex items-center gap-2 bg-[#9FFF57] text-black px-6 py-3 rounded-lg text-[14px] font-bold hover:bg-[#b0ff6e] transition-colors"
           >
-            Create Your First Community
+            Create Your First Community →
           </Link>
         </div>
       ) : (
@@ -87,69 +85,90 @@ export default function CommunitiesPage() {
             const hasBot = isTelegram ? Boolean(c.telegram_chat_id) : Boolean(c.whatsapp_group_id)
 
             return (
-              <div key={c.id} className="bg-white border border-gray-200 rounded-lg p-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h2 className="font-semibold text-base">{c.name}</h2>
-                      {/* Platform badge */}
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                        isWhatsApp ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+              <div key={c.id} className="bg-[#111] border border-white/[0.07] rounded-xl p-6 hover:border-white/[0.12] transition-all">
+                <div className="flex items-start justify-between gap-6">
+                  <div className="min-w-0 flex-1">
+
+                    {/* Title + badges */}
+                    <div className="flex items-center gap-2.5 flex-wrap mb-2">
+                      <h2 className="text-[16px] font-bold text-white">{c.name}</h2>
+
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
+                        isWhatsApp
+                          ? 'bg-[#25D366]/10 text-[#25D366] border-[#25D366]/25'
+                          : 'bg-[#229ED9]/10 text-[#229ED9] border-[#229ED9]/25'
                       }`}>
-                        {isWhatsApp
-                          ? <><FaWhatsapp size={12} /> WhatsApp</>
-                          : <><FaTelegram size={12} /> Telegram</>}
+                        {isWhatsApp ? <FaWhatsapp size={11} /> : <FaTelegram size={11} />}
+                        {isWhatsApp ? 'WhatsApp' : 'Telegram'}
                       </span>
-                      <span className={`px-2 py-0.5 rounded-full text-xs ${c.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                        {c.is_active ? 'Active' : 'Inactive'}
+
+                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
+                        c.is_active
+                          ? 'bg-[#9FFF57]/10 text-[#9FFF57] border-[#9FFF57]/20'
+                          : 'bg-white/5 text-white/30 border-white/10'
+                      }`}>
+                        {c.is_active ? '● Active' : '○ Inactive'}
                       </span>
+
                       {!hasBot && (
-                        <span className="px-2 py-0.5 rounded-full text-xs bg-yellow-100 text-yellow-700">
-                          {isWhatsApp ? '⚠ Group not registered' : '⚠ Bot not configured'}
+                        <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold border bg-yellow-400/10 text-yellow-400 border-yellow-400/20">
+                          ⚠ {isWhatsApp ? 'Group not registered' : 'Bot not configured'}
                         </span>
                       )}
                     </div>
+
                     {c.description && (
-                      <p className="text-sm text-gray-500 mt-0.5 truncate">{c.description}</p>
+                      <p className="text-[13.5px] text-white/50 mb-3 leading-relaxed">{c.description}</p>
                     )}
 
                     {/* Plans */}
-                    <div className="flex flex-wrap gap-1.5 mt-2">
+                    <div className="flex flex-wrap gap-2 mb-4">
                       {activePlans.length > 0 ? activePlans.map(p => (
-                        <span key={p.id} className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 rounded px-2 py-0.5 text-xs">
-                          {p.name} · ₦{p.price.toLocaleString()} · {formatDuration(p.duration_minutes)}
+                        <span key={p.id} className="inline-flex items-center gap-1.5 bg-white/[0.04] text-white/60 border border-white/[0.08] rounded-lg px-3 py-1 text-[12px] font-medium">
+                          {p.name}
+                          <span className="text-[#9FFF57] font-bold">₦{p.price.toLocaleString()}</span>
+                          <span className="text-white/30">· {formatDuration(p.duration_minutes)}</span>
                         </span>
                       )) : (
-                        <span className="text-xs text-red-500">No active plans — add one to accept payments</span>
+                        <span className="text-[12.5px] text-red-400">No active plans — add one to accept payments</span>
                       )}
                     </div>
 
-                    <div className="mt-2 text-xs text-gray-400 font-mono truncate">
-                      {joinLink(c.slug)}
+                    {/* Subscriber link */}
+                    <div className="inline-flex items-center gap-2 bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2">
+                      <HiOutlineLink size={13} className="text-white/30 flex-shrink-0" />
+                      <span className="text-[12px] text-white/40 font-mono truncate max-w-xs">{joinLink(c.slug)}</span>
                     </div>
                   </div>
 
                   {/* Actions */}
-                  <div className="flex gap-2 flex-shrink-0 flex-wrap justify-end">
-                    <span className="text-xs text-gray-500 self-center">{memberCount} member{memberCount !== 1 ? 's' : ''}</span>
-                    <button
-                      onClick={() => copyLink(c.slug)}
-                      className="text-xs border border-gray-300 px-3 py-1.5 rounded hover:bg-gray-50"
-                    >
-                      Copy Link
-                    </button>
-                    <Link
-                      to={`/dashboard/communities/${c.id}/edit`}
-                      className="text-xs border border-gray-300 px-3 py-1.5 rounded hover:bg-gray-50"
-                    >
-                      Edit
-                    </Link>
-                    <button
-                      onClick={() => handleDelete(c.id)}
-                      className="text-xs border border-red-200 text-red-600 px-3 py-1.5 rounded hover:bg-red-50"
-                    >
-                      Delete
-                    </button>
+                  <div className="flex flex-col items-end gap-3 flex-shrink-0">
+                    <span className="text-[12px] text-white/35 font-medium">
+                      {memberCount} member{memberCount !== 1 ? 's' : ''}
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => copyLink(c.slug)}
+                        className="inline-flex items-center gap-1.5 text-[12.5px] border border-[#9FFF57]/25 text-[#9FFF57]/80 px-3.5 py-2 rounded-lg hover:bg-[#9FFF57]/5 hover:text-[#9FFF57] transition-all font-medium"
+                      >
+                        <HiOutlineLink size={13} />
+                        Copy Link
+                      </button>
+                      <Link
+                        to={`/dashboard/communities/${c.id}/edit`}
+                        className="inline-flex items-center gap-1.5 text-[12.5px] border border-white/[0.1] text-white/50 px-3.5 py-2 rounded-lg hover:border-white/20 hover:text-white transition-all font-medium"
+                      >
+                        <HiOutlinePencilSquare size={13} />
+                        Edit
+                      </Link>
+                      <button
+                        onClick={() => handleDelete(c.id)}
+                        className="inline-flex items-center gap-1.5 text-[12.5px] border border-red-500/15 text-red-400/70 px-3.5 py-2 rounded-lg hover:bg-red-500/5 hover:text-red-400 hover:border-red-500/30 transition-all font-medium"
+                      >
+                        <HiOutlineTrash size={13} />
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

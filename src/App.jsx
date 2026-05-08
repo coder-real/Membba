@@ -19,7 +19,21 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Toaster position="top-right" />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            style: {
+              background: '#1a1a1a',
+              color: '#fff',
+              border: '1px solid #2a2a2a',
+              borderRadius: '12px',
+              fontSize: '13px',
+              padding: '10px 14px',
+            },
+            success: { iconTheme: { primary: '#9FFF57', secondary: '#0a0a0a' } },
+            error: { iconTheme: { primary: '#f87171', secondary: '#0a0a0a' } },
+          }}
+        />
         <Routes>
           {/* Public */}
           <Route path="/" element={<LandingPage />} />
