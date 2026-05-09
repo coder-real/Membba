@@ -7,6 +7,7 @@ import membersRouter from './routes/members.js'
 import whatsappRouter from './routes/whatsapp.js'
 import { processExpiredSubscriptions } from './services/subscription.js'
 import { startPolling } from './services/botPoller.js'
+import { registerWebhook } from './services/botWebhook.js'
 import { initWhatsApp } from './services/whatsapp.js'
 
 // .env is loaded via --env-file flag in the npm scripts (see package.json)
@@ -48,8 +49,14 @@ cron.schedule('* * * * *', async () => {
 app.listen(PORT, () => {
   console.log(`Membba server running on http://localhost:${PORT}`)
 
-  // Telegram bot long-polling
-  startPolling()
+  // Telegram bot: use webhook in production, long-polling in local dev
+  if (process.env.SERVER_URL) {
+    registerWebhook(process.env.SERVER_URL).catch(err =>
+      console.error('[bot] webhook registration failed:', err.message)
+    )
+  } else {
+    startPolling()
+  }
 
   // WhatsApp client (only starts if ENABLE_WHATSAPP=true in .env)
   // Chromium takes ~10s to start — this is intentionally non-blocking

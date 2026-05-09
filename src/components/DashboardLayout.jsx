@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import toast from 'react-hot-toast'
 import {
   HiOutlineSquares2X2,
@@ -12,6 +13,8 @@ import {
   HiOutlinePlusCircle,
   HiOutlineBars3,
   HiOutlineXMark,
+  HiOutlineSun,
+  HiOutlineMoon,
 } from 'react-icons/hi2'
 
 const navLinks = [
@@ -24,6 +27,7 @@ const navLinks = [
 
 export default function DashboardLayout({ children }) {
   const { user, signOut } = useAuth()
+  const { dark, toggleTheme } = useTheme()
   const location  = useLocation()
   const navigate  = useNavigate()
   const [open, setOpen] = useState(false)
@@ -46,11 +50,26 @@ export default function DashboardLayout({ children }) {
   const displayName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Creator'
   const initial     = displayName[0]?.toUpperCase()
 
+  // Theme-aware classes
+  const sideBg      = dark ? 'bg-[#0a0a0a] border-white/[0.06]' : 'bg-white border-gray-200'
+  const mainBg      = dark ? 'bg-[#0d0d0d] text-white' : 'bg-gray-50 text-gray-900'
+  const headerBg    = dark ? 'bg-[#0a0a0a] border-white/[0.06]' : 'bg-white border-gray-200'
+  const navActive   = dark ? 'bg-[#9FFF57]/10 text-white' : 'bg-[#9FFF57]/15 text-gray-900'
+  const navInactive = dark ? 'text-white/40 hover:text-white/80 hover:bg-white/[0.04]' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+  const iconActive  = dark ? 'text-[#9FFF57]' : 'text-[#5ab020]'
+  const iconInact   = dark ? 'text-white/30 group-hover:text-white/60' : 'text-gray-400 group-hover:text-gray-600'
+  const userNameCls = dark ? 'text-white' : 'text-gray-900'
+  const userEmailCls = dark ? 'text-white/30' : 'text-gray-400'
+  const signOutCls  = dark ? 'text-white/35 hover:text-red-400 hover:bg-white/[0.04]' : 'text-gray-400 hover:text-red-500 hover:bg-gray-100'
+  const toggleBtnCls = dark
+    ? 'bg-white/[0.07] hover:bg-white/[0.12] text-white/60'
+    : 'bg-gray-100 hover:bg-gray-200 text-gray-500'
+
   /* ── Shared sidebar content ─────────────────────────── */
   const SidebarContent = () => (
     <>
       {/* Logo */}
-      <div className="px-6 py-6 border-b border-white/[0.06]">
+      <div className={`px-6 py-6 border-b ${dark ? 'border-white/[0.06]' : 'border-gray-200'}`}>
         <Link to="/" className="flex items-center gap-2.5">
           <img src="/green.svg" alt="Membba" className="h-8" />
         </Link>
@@ -66,14 +85,12 @@ export default function DashboardLayout({ children }) {
               key={path}
               to={path}
               className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] font-medium transition-all ${
-                active
-                  ? 'bg-[#9FFF57]/10 text-white'
-                  : 'text-white/40 hover:text-white/80 hover:bg-white/[0.04]'
+                active ? navActive : navInactive
               }`}
             >
               <Icon
                 size={18}
-                className={`flex-shrink-0 transition-colors ${active ? 'text-[#9FFF57]' : 'text-white/30 group-hover:text-white/60'}`}
+                className={`flex-shrink-0 transition-colors ${active ? iconActive : iconInact}`}
               />
               {label}
               {active && (
@@ -95,20 +112,28 @@ export default function DashboardLayout({ children }) {
         </Link>
       </div>
 
-      {/* User footer */}
-      <div className="px-4 py-4 border-t border-white/[0.06]">
+      {/* Theme toggle + User footer */}
+      <div className={`px-4 py-4 border-t ${dark ? 'border-white/[0.06]' : 'border-gray-200'}`}>
         <div className="flex items-center gap-3 mb-3">
           <div className="w-8 h-8 rounded-full bg-[#9FFF57]/10 border border-[#9FFF57]/20 flex items-center justify-center text-sm font-bold text-[#9FFF57] flex-shrink-0">
             {initial}
           </div>
-          <div className="min-w-0">
-            <p className="text-[13px] font-semibold text-white truncate leading-tight">{displayName}</p>
-            <p className="text-[11px] text-white/30 truncate leading-tight">{user?.email}</p>
+          <div className="min-w-0 flex-1">
+            <p className={`text-[13px] font-semibold truncate leading-tight ${userNameCls}`}>{displayName}</p>
+            <p className={`text-[11px] truncate leading-tight ${userEmailCls}`}>{user?.email}</p>
           </div>
+          {/* Theme toggle in sidebar */}
+          <button
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+            className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${toggleBtnCls}`}
+          >
+            {dark ? <HiOutlineSun size={14} /> : <HiOutlineMoon size={14} />}
+          </button>
         </div>
         <button
           onClick={handleSignOut}
-          className="w-full flex items-center gap-2 px-3 py-2 text-[12.5px] text-white/35 hover:text-red-400 hover:bg-white/[0.04] rounded-lg transition-all"
+          className={`w-full flex items-center gap-2 px-3 py-2 text-[12.5px] rounded-lg transition-all ${signOutCls}`}
         >
           <HiOutlineArrowRightOnRectangle size={15} />
           Sign out
@@ -118,10 +143,10 @@ export default function DashboardLayout({ children }) {
   )
 
   return (
-    <div className="flex min-h-screen bg-[#0d0d0d] text-white" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className={`flex min-h-screen ${mainBg} transition-colors duration-300`} style={{ fontFamily: "'Inter', sans-serif" }}>
 
       {/* ── Desktop Sidebar (hidden on mobile) ─────────── */}
-      <aside className="hidden lg:flex w-60 bg-[#0a0a0a] border-r border-white/[0.06] flex-col flex-shrink-0">
+      <aside className={`hidden lg:flex w-60 border-r flex-col flex-shrink-0 ${sideBg}`}>
         <SidebarContent />
       </aside>
 
@@ -135,15 +160,17 @@ export default function DashboardLayout({ children }) {
 
       {/* ── Mobile Drawer Sidebar ───────────────────────── */}
       <aside className={`
-        fixed inset-y-0 left-0 z-50 w-72 bg-[#0a0a0a] border-r border-white/[0.06]
+        fixed inset-y-0 left-0 z-50 w-72 border-r
         flex flex-col flex-shrink-0 transition-transform duration-300 ease-in-out
         lg:hidden
         ${open ? 'translate-x-0' : '-translate-x-full'}
+        ${sideBg}
       `}>
-        {/* Close button inside drawer */}
         <button
           onClick={() => setOpen(false)}
-          className="absolute top-4 right-4 p-1.5 rounded-lg text-white/40 hover:text-white hover:bg-white/[0.06] transition-colors"
+          className={`absolute top-4 right-4 p-1.5 rounded-lg transition-colors ${
+            dark ? 'text-white/40 hover:text-white hover:bg-white/[0.06]' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
+          }`}
         >
           <HiOutlineXMark size={20} />
         </button>
@@ -154,22 +181,38 @@ export default function DashboardLayout({ children }) {
       <div className="flex-1 flex flex-col min-w-0 min-h-screen">
 
         {/* Mobile Top Bar */}
-        <header className="lg:hidden flex items-center justify-between px-5 py-4 border-b border-white/[0.06] bg-[#0a0a0a] sticky top-0 z-30">
+        <header className={`lg:hidden flex items-center justify-between px-5 py-4 border-b sticky top-0 z-30 ${headerBg}`}>
           <button
             onClick={() => setOpen(true)}
-            className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/[0.06] transition-colors"
+            className={`p-1.5 rounded-lg transition-colors ${
+              dark ? 'text-white/50 hover:text-white hover:bg-white/[0.06]' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+            }`}
           >
             <HiOutlineBars3 size={22} />
           </button>
 
           <img src="/green.svg" alt="Membba" className="h-7" />
 
-          <Link
-            to="/dashboard/communities/new"
-            className="p-1.5 rounded-lg text-[#9FFF57]/80 hover:text-[#9FFF57] hover:bg-[#9FFF57]/10 transition-colors"
-          >
-            <HiOutlinePlusCircle size={22} />
-          </Link>
+          <div className="flex items-center gap-1">
+            {/* Theme toggle in mobile header */}
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle theme"
+              className={`p-1.5 rounded-lg transition-colors ${
+                dark ? 'text-white/50 hover:text-white hover:bg-white/[0.06]' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+              }`}
+            >
+              {dark ? <HiOutlineSun size={18} /> : <HiOutlineMoon size={18} />}
+            </button>
+            <Link
+              to="/dashboard/communities/new"
+              className={`p-1.5 rounded-lg transition-colors ${
+                dark ? 'text-[#9FFF57]/80 hover:text-[#9FFF57] hover:bg-[#9FFF57]/10' : 'text-[#5ab020] hover:text-[#3d8015] hover:bg-[#9FFF57]/10'
+              }`}
+            >
+              <HiOutlinePlusCircle size={22} />
+            </Link>
+          </div>
         </header>
 
         {/* Page content */}

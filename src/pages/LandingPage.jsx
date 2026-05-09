@@ -1,9 +1,19 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { FaTelegram, FaWhatsapp, FaTwitter, FaInstagram } from "react-icons/fa";
+import { useTheme } from "../context/ThemeContext";
+import { FaTelegram, FaWhatsapp, FaInstagram } from "react-icons/fa";
+import { FaXTwitter } from "react-icons/fa6";
+
+const SunIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+)
+const MoonIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+)
 
 export default function LandingPage() {
   const { user } = useAuth();
+  const { dark, toggleTheme } = useTheme();
 
   /* ─── Feature card mockups (built inside component so JSX is compiled correctly) */
 
@@ -136,13 +146,25 @@ export default function LandingPage() {
     },
   ];
 
+  const bg        = dark ? "bg-[#0a0a0a]" : "bg-gray-50";
+  const text       = dark ? "text-white" : "text-gray-900";
+  const textMuted  = dark ? "text-gray-500" : "text-gray-500";
+  const navBg      = dark ? "bg-[#0a0a0a]/95" : "bg-gray-50/95";
+  const navBorder  = dark ? "border-[#1a1a1a]" : "border-gray-200";
+  const cardBg     = dark ? "bg-[#111] border-[#1e1e1e]" : "bg-white border-gray-200";
+  const sectionBg  = dark ? "bg-[#0d0d0d]" : "bg-gray-100";
+  const footerBorder = dark ? "border-[#1a1a1a]" : "border-gray-200";
+  const toggleBtn  = dark
+    ? "bg-white/[0.07] hover:bg-white/[0.12] text-white/60"
+    : "bg-gray-100 hover:bg-gray-200 text-gray-500";
+
   return (
     <div
-      className="min-h-screen bg-[#0a0a0a] text-white"
+      className={`min-h-screen ${bg} ${text} transition-colors duration-300`}
       style={{ fontFamily: "'Inter', sans-serif" }}
     >
       {/* ── Navbar ──────────────────────────────────────── */}
-      <nav className="sticky top-0 z-50 flex items-center justify-between px-6 md:px-12 py-4 bg-[#0a0a0a]/95 backdrop-blur border-b border-[#1a1a1a]">
+      <nav className={`sticky top-0 z-50 flex items-center justify-between px-6 md:px-12 py-4 ${navBg} backdrop-blur border-b ${navBorder}`}>
         <div className="flex items-center gap-2">
           {/*
             LOGO PLACEHOLDER — Replace with:
@@ -156,40 +178,28 @@ export default function LandingPage() {
         </div>
 
         <div className="hidden md:flex items-center gap-8 text-sm text-gray-500">
-          <a href="#features" className="hover:text-white transition-colors">
-            Features
-          </a>
-          <a href="#pricing" className="hover:text-white transition-colors">
-            Pricing
-          </a>
-          <a
-            href="#how-it-works"
-            className="hover:text-white transition-colors"
-          >
-            Learn More
-          </a>
+          <a href="#features" className={`hover:${text} transition-colors`}>Features</a>
+          <a href="#pricing" className={`hover:${text} transition-colors`}>Pricing</a>
+          <a href="#how-it-works" className={`hover:${text} transition-colors`}>Learn More</a>
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Theme toggle */}
+          <button
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+            className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${toggleBtn}`}
+          >
+            {dark ? <SunIcon /> : <MoonIcon />}
+          </button>
           {user ? (
-            <Link
-              to="/dashboard"
-              className="text-sm bg-[#9FFF57] text-black px-4 py-2 rounded-lg font-bold hover:bg-[#8aed47] transition-colors"
-            >
+            <Link to="/dashboard" className="text-sm bg-[#9FFF57] text-black px-4 py-2 rounded-lg font-bold hover:bg-[#8aed47] transition-colors">
               Dashboard
             </Link>
           ) : (
             <>
-              <Link
-                to="/login"
-                className="text-sm text-gray-500 hover:text-white transition-colors"
-              >
-                Login
-              </Link>
-              <Link
-                to="/register"
-                className="text-sm bg-[#9FFF57] text-black px-4 py-2 rounded-lg font-bold hover:bg-[#8aed47] transition-colors"
-              >
+              <Link to="/login" className={`text-sm ${textMuted} hover:${text} transition-colors`}>Login</Link>
+              <Link to="/register" className="text-sm bg-[#9FFF57] text-black px-4 py-2 rounded-lg font-bold hover:bg-[#8aed47] transition-colors">
                 Get Started
               </Link>
             </>
@@ -203,10 +213,6 @@ export default function LandingPage() {
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-[#9FFF57]/5 rounded-full blur-[140px]" />
         </div>
 
-        <div className="inline-flex items-center gap-2 text-xs text-[#9FFF57] border border-[#9FFF57]/30 bg-[#9FFF57]/5 rounded-full px-3 py-1.5 mb-8 tracking-widest uppercase">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#9FFF57] animate-pulse inline-block" />
-          Now supporting Telegram &amp; WhatsApp
-        </div>
 
         <h1 className="text-4xl md:text-6xl font-black max-w-3xl mx-auto leading-tight mb-6">
           Monetize and Automate Your{" "}
@@ -292,7 +298,7 @@ export default function LandingPage() {
 
       {/* ── Engineered for Scale ─────────────────────────── */}
       <section id="features" className="py-28 px-6 md:px-12">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-5xl mx-auto"> 
           <p className="text-xs text-[#9FFF57] tracking-widest uppercase mb-3">
             Built to scale
           </p>
@@ -307,7 +313,7 @@ export default function LandingPage() {
             {engineeredFeatures.map((f) => (
               <div
                 key={f.id}
-                className="bg-[#111] border border-[#1e1e1e] rounded-2xl p-5 hover:border-[#9FFF57]/25 transition-all duration-300"
+                className={`border rounded-2xl p-5 hover:border-[#9FFF57]/25 transition-all duration-300 ${cardBg}`}
               >
                 <div className="w-9 h-9 rounded-lg bg-[#9FFF57]/10 border border-[#9FFF57]/15 flex items-center justify-center mb-4 text-base">
                   {f.emoji}
@@ -324,7 +330,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Frictionless Execution ───────────────────────── */}
-      <section id="how-it-works" className="py-24 px-6 md:px-12 bg-[#0d0d0d]">
+      <section id="how-it-works" className={`py-24 px-6 md:px-12 ${sectionBg}`}>
         <div className="max-w-5xl mx-auto text-center mb-14">
           <p className="text-xs text-[#9FFF57] tracking-widest uppercase mb-3">
             Zero friction
@@ -384,7 +390,7 @@ export default function LandingPage() {
       {/* ── Enhancement, Not Migration ───────────────────── */}
       <section className="py-24 px-6 md:px-12">
         <div className="max-w-5xl mx-auto">
-          <div className="bg-[#111] border border-[#1e1e1e] rounded-3xl p-10 md:p-14 grid grid-cols-1 md:grid-cols-2 gap-12 items-center relative overflow-hidden">
+          <div className={`border rounded-3xl p-10 md:p-14 grid grid-cols-1 md:grid-cols-2 gap-12 items-center relative overflow-hidden ${cardBg}`}>
             <div className="absolute bottom-0 right-0 w-80 h-80 bg-[#9FFF57]/4 rounded-full blur-[100px] pointer-events-none" />
 
             <div className="relative z-10">
@@ -484,7 +490,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Footer ──────────────────────────────────────── */}
-      <footer className="border-t border-[#1a1a1a] py-12 px-6 md:px-12">
+      <footer className={`border-t ${footerBorder} py-12 px-6 md:px-12`}>
         <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10 mb-10">
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 mb-4">
@@ -501,32 +507,16 @@ export default function LandingPage() {
               friction.
             </p>
             <div className="flex gap-4">
-              <a
-                href="#"
-                aria-label="Twitter"
-                className="text-gray-700 hover:text-[#9FFF57] transition-colors"
-              >
-                <FaTwitter size={16} />
+              <a href="#" aria-label="X (Twitter)" className="text-gray-500 hover:text-[#9FFF57] transition-colors">
+                <FaXTwitter size={16} />
               </a>
-              <a
-                href="#"
-                aria-label="Instagram"
-                className="text-gray-700 hover:text-[#9FFF57] transition-colors"
-              >
+              <a href="#" aria-label="Instagram" className="text-gray-500 hover:text-[#9FFF57] transition-colors">
                 <FaInstagram size={16} />
               </a>
-              <a
-                href="#"
-                aria-label="WhatsApp"
-                className="text-gray-700 hover:text-[#25D366] transition-colors"
-              >
+              <a href="#" aria-label="WhatsApp" className="text-gray-500 hover:text-[#25D366] transition-colors">
                 <FaWhatsapp size={16} />
               </a>
-              <a
-                href="#"
-                aria-label="Telegram"
-                className="text-gray-700 hover:text-[#229ED9] transition-colors"
-              >
+              <a href="#" aria-label="Telegram" className="text-gray-500 hover:text-[#229ED9] transition-colors">
                 <FaTelegram size={16} />
               </a>
             </div>
@@ -594,17 +584,13 @@ export default function LandingPage() {
             </ul>
           </div>
         </div>
-        <div className="max-w-5xl mx-auto pt-6 border-t border-[#1a1a1a] flex flex-col md:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-gray-700">
+        <div className={`max-w-5xl mx-auto pt-6 border-t ${footerBorder} flex flex-col md:flex-row items-center justify-between gap-3`}>
+          <p className={`text-xs ${dark ? "text-gray-700" : "text-gray-400"}`}>
             © {new Date().getFullYear()} Membba. All rights reserved.
           </p>
-          <div className="flex gap-5 text-xs text-gray-700">
-            <a href="#" className="hover:text-gray-400 transition-colors">
-              Privacy Policy
-            </a>
-            <a href="#" className="hover:text-gray-400 transition-colors">
-              Terms of Service
-            </a>
+          <div className={`flex gap-5 text-xs ${dark ? "text-gray-700" : "text-gray-400"}`}>
+            <a href="#" className="hover:text-gray-400 transition-colors">Privacy Policy</a>
+            <a href="#" className="hover:text-gray-400 transition-colors">Terms of Service</a>
           </div>
         </div>
       </footer>
