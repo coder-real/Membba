@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "node --watch --env-file=../.env index.js"
+    "dev": "node --watch --env-file=../.env index.js",
+    "postinstall": "node -e \"if(process.env.PUPPETEER_SKIP_DOWNLOAD !== 'true') { require('child_process').execSync('npx puppeteer browsers install chrome', {stdio: 'inherit'}) }\""
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",

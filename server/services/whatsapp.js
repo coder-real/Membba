@@ -1,8 +1,45 @@
 import pkg from 'whatsapp-web.js'
-const { Client, LocalAuth } = pkg
+const { Client, RemoteAuth } = pkg
 import puppeteer from 'puppeteer'
 import qrcode from 'qrcode'
 import { supabase } from '../lib/supabase.js'
+
+// ── Supabase-backed session store for RemoteAuth ──────────────────────────
+// whatsapp-web.js calls save/extract/delete with { session, data }
+// where `data` is a Buffer (zip of the .wwebjs_auth folder).
+class SupabaseStore {
+  async sessionExists({ session }) {
+    const { data } = await supabase
+      .from('whatsapp_sessions')
+      .select('id')
+      .eq('id', session)
+      .maybeSingle()
+    return !!data
+  }
+
+  async save({ session, data }) {
+    const encoded = Buffer.isBuffer(data) ? data.toString('base64') : data
+    await supabase.from('whatsapp_sessions').upsert({
+      id: session,
+      session: encoded,
+      updated_at: new Date().toISOString(),
+    })
+  }
+
+  async extract({ session }) {
+    const { data } = await supabase
+      .from('whatsapp_sessions')
+      .select('session')
+      .eq('id', session)
+      .maybeSingle()
+    if (!data) return null
+    return Buffer.from(data.session, 'base64')
+  }
+
+  async delete({ session }) {
+    await supabase.from('whatsapp_sessions').delete().eq('id', session)
+  }
+}
 
 let currentQR = null
 let status = 'initializing' // 'initializing' | 'awaiting_qr' | 'authenticated'
@@ -17,12 +54,15 @@ export function getWhatsAppQR() { return currentQR }
 
 /**
  * Initialize the WhatsApp client.
- * Called once on server startup.
- * Session persisted to disk via LocalAuth (.wwebjs_auth/).
+ * Session is persisted to Supabase via RemoteAuth — survives Render redeploys.
+ * On first run: shows QR to scan. After that: auto-restores from Supabase.
  */
 export async function initWhatsApp() {
   client = new Client({
-    authStrategy: new LocalAuth(),
+    authStrategy: new RemoteAuth({
+      store: new SupabaseStore(),
+      backupSyncIntervalMs: 300_000, // save session to Supabase every 5 min
+    }),
     puppeteer: {
       headless: true,
       executablePath: puppeteer.executablePath(),
