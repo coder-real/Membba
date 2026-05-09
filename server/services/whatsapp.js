@@ -1,5 +1,6 @@
 import pkg from 'whatsapp-web.js'
 const { Client, LocalAuth } = pkg
+import puppeteer from 'puppeteer'
 import qrcode from 'qrcode'
 import { supabase } from '../lib/supabase.js'
 
@@ -24,6 +25,7 @@ export async function initWhatsApp() {
     authStrategy: new LocalAuth(),
     puppeteer: {
       headless: true,
+      executablePath: puppeteer.executablePath(),
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
     },
   })
