@@ -91,7 +91,9 @@ export async function createSubscription({
     }
 
   } else if (platform === 'whatsapp') {
-    if (whatsappPhone && community.whatsapp_group_invite_link) {
+    console.log(`\n[subscription] Platform is WhatsApp. Checking requirements for auto-add/invite...`)
+    console.log(`[subscription] whatsapp_phone: ${whatsappPhone || false}, group_id: ${community.whatsapp_group_id || false}`)
+    if (whatsappPhone && community.whatsapp_group_id) {
       if (getWhatsAppStatus() !== 'authenticated') {
         console.warn('[subscription] WhatsApp client not ready — invite skipped. Subscriber will need manual invite.')
       } else {
@@ -100,8 +102,8 @@ export async function createSubscription({
             whatsappPhone,
             community.whatsapp_group_invite_link,
             community.name,
-            communityId,               // needed to save refreshed link
-            community.whatsapp_group_id // needed to revoke old link
+            communityId,
+            community.whatsapp_group_id
           )
           inviteLink = community.whatsapp_group_invite_link
         } catch (err) {
@@ -109,7 +111,7 @@ export async function createSubscription({
         }
       }
     } else {
-      console.warn('[subscription] WhatsApp: missing phone or group invite link, skipping invite')
+      console.warn('[subscription] WhatsApp: missing phone or group ID, skipping invite')
     }
   }
 

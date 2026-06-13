@@ -1,12 +1,13 @@
 import express from 'express'
 import { supabase } from '../lib/supabase.js'
 import { kickChatMember, sendTelegramMessage } from '../services/telegram.js'
+import { removeWhatsAppMember, sendWhatsAppMessage, getWhatsAppStatus } from '../services/whatsapp.js'
 
 const router = express.Router()
 
 // ─────────────────────────────────────────────────────
 // POST /api/members/:subscriptionId/remove
-// Manually remove a member: kick from Telegram + cancel subscription.
+// Manually remove a member: kick from Telegram/WhatsApp + cancel subscription.
 // Only the community creator can call this.
 // ─────────────────────────────────────────────────────
 router.post('/:subscriptionId/remove', async (req, res) => {
@@ -16,7 +17,7 @@ router.post('/:subscriptionId/remove', async (req, res) => {
     // Fetch full subscription details
     const { data: sub, error } = await supabase
       .from('subscriptions')
-      .select('*, communities(telegram_chat_id, name, slug, creator_id)')
+      .select('*, communities(platform, telegram_chat_id, whatsapp_group_id, name, slug, creator_id)')
       .eq('id', subscriptionId)
       .single()
 
@@ -24,23 +25,37 @@ router.post('/:subscriptionId/remove', async (req, res) => {
       return res.status(404).json({ message: 'Subscription not found' })
     }
 
-    // Kick from Telegram group if we have the necessary IDs
-    const chatId = sub.communities?.telegram_chat_id
-    const userId = sub.telegram_user_id
+    const platform = sub.communities?.platform || 'telegram'
+    const joinUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/join/${sub.communities?.slug}`
+    const removeMsg = `⛔ You have been removed from *${sub.communities?.name}* by the community admin.\n\nRejoin here: ${joinUrl}`
 
-    if (chatId && userId) {
-      try {
-        await kickChatMember({ chatId, userId })
+    if (platform === 'telegram') {
+      const chatId = sub.communities?.telegram_chat_id
+      const userId = sub.telegram_user_id
 
-        // Notify the member they were removed
-        const joinUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/join/${sub.communities?.slug}`
-        await sendTelegramMessage({
-          userId,
-          text: `⛔ You have been removed from *${sub.communities?.name}* by the community admin.\n\n[Rejoin here](${joinUrl})`,
-        })
-      } catch (tgErr) {
-        console.error('[members/remove] Telegram kick failed:', tgErr.message)
-        // Non-fatal — still cancel the subscription
+      if (chatId && userId) {
+        try {
+          await kickChatMember({ chatId, userId })
+          await sendTelegramMessage({ userId, text: removeMsg })
+        } catch (tgErr) {
+          console.error('[members/remove] Telegram kick failed:', tgErr.message)
+        }
+      }
+    } else if (platform === 'whatsapp') {
+      const groupId = sub.communities?.whatsapp_group_id
+      const phone = sub.whatsapp_phone
+
+      if (groupId && phone) {
+        if (getWhatsAppStatus() === 'authenticated') {
+          try {
+            await removeWhatsAppMember(groupId, phone)
+            await sendWhatsAppMessage(phone, removeMsg)
+          } catch (waErr) {
+            console.error('[members/remove] WhatsApp kick failed:', waErr.message)
+          }
+        } else {
+          console.warn('[members/remove] WhatsApp client offline, member removed from DB only.')
+        }
       }
     }
 
@@ -52,7 +67,7 @@ router.post('/:subscriptionId/remove', async (req, res) => {
 
     if (updateErr) throw updateErr
 
-    console.log(`[members/remove] manually removed sub ${subscriptionId} (userId:${userId})`)
+    console.log(`[members/remove] manually removed sub ${subscriptionId} (userId/phone: ${sub.telegram_user_id || sub.whatsapp_phone})`)
 
     return res.json({ success: true, message: 'Member removed successfully' })
   } catch (err) {

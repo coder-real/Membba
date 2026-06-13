@@ -17,6 +17,16 @@ router.get('/status', (_req, res) => {
 })
 
 // ─────────────────────────────────────────────────────
+// GET /api/whatsapp/qr-data
+// Returns JSON with { qr: "dataUrl...", status: "awaiting_qr" }
+// ─────────────────────────────────────────────────────
+router.get('/qr-data', async (req, res) => {
+  const status = getWhatsAppStatus()
+  const qr = await getQRImage()
+  res.json({ status, qr })
+})
+
+// ─────────────────────────────────────────────────────
 // GET /api/whatsapp/qr
 // Renders the QR code as an HTML page for browser scanning.
 // Protect with a secret in production: /api/whatsapp/qr?secret=YOUR_SECRET

@@ -123,21 +123,27 @@ router.get('/verify/:reference', async (req, res) => {
   const { reference } = req.params
 
   try {
+    console.log(`\n[verify] Starting verification for reference: ${reference}`)
+
     // Idempotency check — webhook may have already processed this
     const { data: existing } = await supabase
       .from('subscriptions')
-      .select('id, status, expires_at, communities(name, slug)')
+      .select('id, status, expires_at, communities(name, slug, platform)')
       .eq('paystack_reference', reference)
       .maybeSingle()
 
     if (existing) {
+      console.log(`[verify] ❌ Short-circuit. Subscription already exists in DB! It was processed by the webhook.`)
       return res.json({
         success: true,
         already_processed: true,
         subscription: existing,
-        invite_link: null, // was already sent via Telegram DM by webhook handler
+        invite_link: null, // sent via DM by webhook handler
+        platform: existing.communities?.platform || 'telegram',
       })
     }
+
+    console.log(`[verify] ✅ No existing subscription found. Processing payment locally...`)
 
     // Verify with Paystack API
     const { data: psRes } = await axios.get(

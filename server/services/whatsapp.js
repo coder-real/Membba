@@ -1,6 +1,5 @@
 import pkg from 'whatsapp-web.js'
-const { Client, RemoteAuth } = pkg
-import puppeteer from 'puppeteer'
+const { Client, RemoteAuth, LocalAuth } = pkg
 import qrcode from 'qrcode'
 import { supabase } from '../lib/supabase.js'
 
@@ -49,6 +48,17 @@ let client = null
 const delay = ms => new Promise(r => setTimeout(r, ms))
 const randomDelay = () => delay(Math.random() * 3000 + 1000) // 1–4 seconds
 
+// ── In-memory whitelist ─────────────────────────────────────────────────────
+// When the bot adds someone via addParticipants(), the group_join event fires
+// asynchronously. WhatsApp's @lid privacy mode means the participant's ID in
+// that event doesn't match their stored phone number. We track recently-added
+// phones here so group_join can skip the kick check for them.
+const recentlyAddedPhones = new Set()
+function whitelistPhone(phone, ttlMs = 90_000) {
+  recentlyAddedPhones.add(phone)
+  setTimeout(() => recentlyAddedPhones.delete(phone), ttlMs)
+}
+
 export function getWhatsAppStatus() { return status }
 export function getWhatsAppQR() { return currentQR }
 
@@ -58,15 +68,28 @@ export function getWhatsAppQR() { return currentQR }
  * On first run: shows QR to scan. After that: auto-restores from Supabase.
  */
 export async function initWhatsApp() {
+  const isProd = process.env.NODE_ENV === 'production'
+
   client = new Client({
-    authStrategy: new RemoteAuth({
-      store: new SupabaseStore(),
-      backupSyncIntervalMs: 300_000, // save session to Supabase every 5 min
-    }),
+    authStrategy: isProd 
+      ? new RemoteAuth({
+          store: new SupabaseStore(),
+          backupSyncIntervalMs: 300_000, // save session to Supabase every 5 min
+        })
+      : new LocalAuth(),
     puppeteer: {
       headless: true,
-      executablePath: puppeteer.executablePath(),
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+        '--disable-extensions',
+      ],
     },
   })
 
@@ -102,7 +125,7 @@ export async function initWhatsApp() {
   // If they don't have an active subscription → remove them immediately.
   client.on('group_join', async notification => {
     const groupId = notification.chatId
-    const joinedId = notification.id?.participant // "2348012345678@c.us"
+    const joinedId = notification.id?.participant // may be @c.us OR @lid (privacy mode)
 
     if (!joinedId) return
 
@@ -124,8 +147,55 @@ export async function initWhatsApp() {
       return
     }
 
-    const phone = joinedId.replace('@c.us', '')
+    // If the bot itself added this member, bypass the check!
+    // We already validated their subscription during the auto-add phase.
+    // notification.author contains the ID of the admin who initiated the add.
+    if (notification.author === me) {
+      console.log(`[whatsapp] Bot auto-added this participant. Bypassing subscription check.`)
+      return
+    }
+
+    // ── Resolve @lid → real phone number ───────────────────────────────────
+    // WhatsApp's new privacy mode sends participant IDs as @lid instead of
+    // @c.us (e.g., "50259757637718@lid" instead of "2347040883919@c.us").
+    // We must resolve the real phone via getContactById before checking DB.
+    let phone = joinedId.replace(/@c\.us$|@lid$|@s\.whatsapp\.net$/, '')
+
+    if (joinedId.endsWith('@lid')) {
+      try {
+        const contact = await client.getContactById(joinedId)
+        if (contact?.number) {
+          phone = contact.number
+          console.log(`[whatsapp] resolved @lid ${joinedId} → phone ${phone}`)
+        } else {
+          // Can't resolve lid — give them the benefit of the doubt
+          console.warn(`[whatsapp] could not resolve @lid ${joinedId}, skipping kick check`)
+          return
+        }
+      } catch (err) {
+        console.warn(`[whatsapp] @lid resolution failed for ${joinedId}: ${err.message}, skipping`)
+        return
+      }
+    }
+
+    // ── Grace period — wait 5s to let the subscription record settle ────────
+    // The webhook that creates the subscription fires around the same time
+    // as the member clicking the invite link, so there can be a short race.
+    await delay(5000)
+
     console.log(`[whatsapp] ${phone} joined group ${groupId} — checking subscription...`)
+
+    // Get community IDs for this group
+    const { data: groupCommunities } = await supabase
+      .from('communities')
+      .select('id')
+      .eq('whatsapp_group_id', groupId)
+
+    const communityIds = groupCommunities?.map(c => c.id) || []
+    if (!communityIds.length) {
+      console.warn(`[whatsapp] no community found for group ${groupId}, skipping check`)
+      return
+    }
 
     // Check if they have an active subscription for this group
     const { data: sub } = await supabase
@@ -133,17 +203,26 @@ export async function initWhatsApp() {
       .select('id')
       .eq('whatsapp_phone', phone)
       .eq('status', 'active')
-      .in('community_id', (
-        // Sub-select: communities that have this group ID
-        await supabase
-          .from('communities')
-          .select('id')
-          .eq('whatsapp_group_id', groupId)
-          .then(r => r.data?.map(c => c.id) || [])
-      ))
+      .in('community_id', communityIds)
       .maybeSingle()
 
     if (!sub) {
+      // Check if this phone was recently whitelisted (bot-added in the last 90s)
+      // OR if the community has a recently-created active subscription (handles @lid mismatch)
+      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString()
+      const { data: recentSub } = await supabase
+        .from('subscriptions')
+        .select('id')
+        .in('community_id', communityIds)
+        .eq('status', 'active')
+        .gte('created_at', twoMinutesAgo)
+        .maybeSingle()
+
+      if (recentSub || recentlyAddedPhones.has(phone)) {
+        console.log(`[whatsapp] ${phone} was recently added by bot — skipping kick`)
+        return
+      }
+
       // Not a paying subscriber — remove immediately
       console.warn(`[whatsapp] non-subscriber ${phone} joined group ${groupId} — kicking`)
       try {
@@ -205,45 +284,46 @@ export async function sendWhatsAppMessage(phone, text) {
 }
 
 /**
- * Revoke the current group invite link and generate + save a fresh one.
- * Called after every subscriber invite to prevent link sharing.
- */
-async function revokeAndRefreshGroupLink(groupId, communityId) {
-  try {
-    const chat = await client.getChatById(groupId)
-    await chat.revokeInvite()                      // old link dies instantly
-    const newCode = await chat.getInviteCode()     // get fresh code
-    const newLink = `https://chat.whatsapp.com/${newCode}`
-
-    // Save the new link to the community so the next subscriber gets the fresh one
-    await supabase
-      .from('communities')
-      .update({ whatsapp_group_invite_link: newLink })
-      .eq('id', communityId)
-
-    console.log(`[whatsapp] invite link rotated for community ${communityId}`)
-    return newLink
-  } catch (err) {
-    // Non-fatal — subscriber already received their link
-    console.error('[whatsapp] failed to revoke/refresh invite link:', err.message)
-  }
-}
-
-/**
- * Send invite link to a new subscriber, then immediately rotate the group link.
- * communityId is required to save the new link after rotation.
+ * Send invite link to a new subscriber, or automatically add them to the group.
  */
 export async function sendWhatsAppInvite(phone, inviteLink, communityName, communityId, groupId) {
-  const text =
-    `🎉 Welcome! You're now a member of *${communityName}*.\n\n` +
-    `Tap the link below to join the group:\n${inviteLink}\n\n` +
-    `⚠️ _This link is for you only. Do not share it — it will stop working after use._`
+  let addedDirectly = false
 
-  await sendWhatsAppMessage(phone, text)
+  if (groupId && client && status === 'authenticated') {
+    try {
+      const chat = await client.getChatById(groupId)
+      const participantId = `${phone}@c.us`
 
-  // Rotate the link immediately so forwarded links are dead
-  if (groupId && communityId) {
-    await revokeAndRefreshGroupLink(groupId, communityId)
+      // Register in whitelist BEFORE adding — the group_join event fires
+      // asynchronously and the @lid mapping may differ from the real phone.
+      // This 90-second window lets group_join skip the kick for this member.
+      whitelistPhone(phone)
+      console.log(`[whatsapp] Attempting to auto-add ${phone} to group ${groupId}...`)
+      const res = await chat.addParticipants([participantId])
+      
+      // WhatsApp returns a map of results, 200 = Success, 403 = Privacy restricted
+      const joinStatus = res && res[participantId]
+      if (joinStatus && joinStatus.code === 200) {
+        addedDirectly = true
+        console.log(`[whatsapp] Successfully auto-added ${phone} to group!`)
+      }
+    } catch (err) {
+      console.warn(`[whatsapp] Failed to auto-add ${phone}:`, err.message)
+    }
+  }
+
+  if (addedDirectly) {
+    const text = `🎉 Welcome! You have been automatically added to the WhatsApp Group for *${communityName}* by the admin.\n\nPlease check your chat list to start participating!`
+    await sendWhatsAppMessage(phone, text)
+  } else {
+    // Fallback: If their privacy settings block being added, send the invite link via DM
+    const text =
+      `🎉 Welcome! You're now a member of *${communityName}*.\n\n` +
+      `Tap the link below to join the group:\n${inviteLink}\n\n` +
+      `⚠️ _This link is for you only. Do not share it._`
+
+    await sendWhatsAppMessage(phone, text)
+    console.warn(`[whatsapp] Invite link rotation temporarily disabled. Member ${phone} must use the standard link.`)
   }
 }
 
