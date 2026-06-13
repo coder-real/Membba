@@ -83,12 +83,12 @@ router.post('/webhook', async (req, res) => {
 // Usage: GET http://localhost:3001/api/bot/set-webhook?url=https://your-ngrok-url.ngrok.io
 // ─────────────────────────────────────────────────────
 router.get('/set-webhook', async (req, res) => {
-  const { url } = req.query
-  if (!url) {
-    return res.status(400).json({ message: 'Pass ?url=https://your-domain.com as query param' })
+  const serverUrl = process.env.SERVER_URL
+  if (!serverUrl) {
+    return res.status(400).json({ message: 'SERVER_URL environment variable is missing on this server.' })
   }
 
-  const webhookUrl = `${url}/api/bot/webhook`
+  const webhookUrl = `${serverUrl}/api/bot/webhook`
 
   try {
     const { data } = await axios.post(`${BASE}/setWebhook`, { url: webhookUrl })

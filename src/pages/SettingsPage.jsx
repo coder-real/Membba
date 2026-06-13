@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import toast from "react-hot-toast";
@@ -8,6 +8,40 @@ export default function SettingsPage() {
   const { user } = useAuth();
   const [name, setName] = useState(user?.user_metadata?.name || "");
   const [loading, setLoading] = useState(false);
+  const [webhookInfo, setWebhookInfo] = useState(null);
+  const [webhookLoading, setWebhookLoading] = useState(true);
+
+  useEffect(() => {
+    fetchWebhookInfo();
+  }, []);
+
+  const fetchWebhookInfo = async () => {
+    try {
+      setWebhookLoading(true);
+      const res = await fetch("/api/bot/webhook-info");
+      const data = await res.json();
+      setWebhookInfo(data.result);
+    } catch {
+      // ignore
+    } finally {
+      setWebhookLoading(false);
+    }
+  };
+
+  const handleRegisterWebhook = async () => {
+    try {
+      setWebhookLoading(true);
+      const res = await fetch("/api/bot/set-webhook");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      toast.success("Webhook successfully registered!");
+      fetchWebhookInfo();
+    } catch (err) {
+      toast.error(err.message || "Failed to register webhook");
+    } finally {
+      setWebhookLoading(false);
+    }
+  };
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
@@ -87,9 +121,22 @@ export default function SettingsPage() {
 
         {/* Telegram Bot */}
         <div className="bg-[#111] border border-white/[0.07] rounded-xl p-7">
-          <h2 className="text-[15px] font-bold text-white mb-2">
-            Telegram Bot
-          </h2>
+          <div className="flex items-start justify-between mb-2">
+            <h2 className="text-[15px] font-bold text-white">
+              Telegram Bot
+            </h2>
+            {webhookLoading ? (
+              <span className="text-[12px] text-white/30 font-semibold uppercase tracking-wider">Checking...</span>
+            ) : webhookInfo?.url ? (
+              <span className="text-[11.5px] font-bold text-[#9FFF57] px-2.5 py-1 rounded-full bg-[#9FFF57]/10 border border-[#9FFF57]/20 uppercase tracking-wider">
+                🟢 Webhook Active
+              </span>
+            ) : (
+              <span className="text-[11.5px] font-bold text-[#fbbf24] px-2.5 py-1 rounded-full bg-[#fbbf24]/10 border border-[#fbbf24]/20 uppercase tracking-wider">
+                🟡 Polling Active
+              </span>
+            )}
+          </div>
           <p className="text-[13.5px] text-white/45 mb-5 leading-relaxed">
             Add{" "}
             <span className="font-mono bg-white/[0.06] border border-white/[0.08] px-2 py-0.5 rounded-md text-white/70">
@@ -98,14 +145,23 @@ export default function SettingsPage() {
             to your Telegram group and make it an admin. Then paste your group
             ID when creating a community.
           </p>
-          <a
-            href="https://t.me/membba_bot"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2 border border-[#229ED9]/30 text-[#229ED9] px-5 py-2.5 rounded-lg text-[13.5px] font-semibold hover:bg-[#229ED9]/5 transition-colors"
-          >
-            Open @membba_bot →
-          </a>
+          <div className="flex items-center gap-3">
+            <a
+              href="https://t.me/membba_bot"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 border border-[#229ED9]/30 text-[#229ED9] px-5 py-2.5 rounded-lg text-[13.5px] font-semibold hover:bg-[#229ED9]/5 transition-colors"
+            >
+              Open @membba_bot →
+            </a>
+            <button
+              onClick={handleRegisterWebhook}
+              disabled={webhookLoading}
+              className="inline-flex items-center gap-2 border border-white/10 text-white/70 px-5 py-2.5 rounded-lg text-[13.5px] font-semibold hover:bg-white/5 hover:text-white transition-colors disabled:opacity-50"
+            >
+              Re-register Webhook
+            </button>
+          </div>
         </div>
       </div>
     </DashboardLayout>
