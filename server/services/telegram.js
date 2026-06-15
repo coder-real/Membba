@@ -49,14 +49,13 @@ async function tg(method, data, retryWithNewId = true) {
  * If DM fails (user hasn't /started), the invite link is still returned
  * so the caller can show it on the payment success page.
  */
-export async function sendTelegramInvite({ chatId, telegramUserId, communityName, communitySlug }) {
-  const expireDate = Math.floor(Date.now() / 1000) + 15 * 60 // 15 minutes
-
+export async function sendTelegramInvite({ chatId, telegramUserId, communityName, communitySlug, customMessage }) {
+  // Generate a 15-minute, single-use invite link safely via tg helper
   const linkRes = await tg('createChatInviteLink', {
     chat_id: chatId,
-    member_limit: 1,
-    expire_date: expireDate,
-    name: `Membba-${telegramUserId}`,
+    name: `sub_${telegramUserId}`,
+    expire_date: Math.floor(Date.now() / 1000) + 15 * 60, // 15 mins
+    member_limit: 1, // works once only
   })
 
   if (!linkRes.ok) {
@@ -66,9 +65,12 @@ export async function sendTelegramInvite({ chatId, telegramUserId, communityName
   const inviteLink = linkRes.result.invite_link
 
   try {
+    const defaultWelcome = `✅ Payment confirmed!\n\nClick below to join *${communityName}*:`
+    const welcomeText = customMessage || defaultWelcome
+
     await tg('sendMessage', {
       chat_id: telegramUserId,
-      text: `✅ Payment confirmed!\n\nClick below to join *${communityName}*:\n${inviteLink}\n\n⚠️ This link expires in 15 minutes and works once only.`,
+      text: `${welcomeText}\n${inviteLink}\n\n⚠️ This link expires in 15 minutes and works once only.`,
       parse_mode: 'Markdown',
     })
     console.log(`[telegram] invite sent to user ${telegramUserId}`)

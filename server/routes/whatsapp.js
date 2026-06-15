@@ -4,6 +4,7 @@ import {
   getWhatsAppStatus,
   getQRImage,
   joinGroup,
+  restartWhatsApp,
 } from '../services/whatsapp.js'
 
 const router = express.Router()
@@ -14,6 +15,20 @@ const router = express.Router()
 // ─────────────────────────────────────────────────────
 router.get('/status', (_req, res) => {
   res.json({ status: getWhatsAppStatus() })
+})
+
+// ─────────────────────────────────────────────────────
+// POST /api/whatsapp/restart
+// Terminates and reinitializes the WhatsApp client.
+// ─────────────────────────────────────────────────────
+router.post('/restart', async (_req, res) => {
+  try {
+    await restartWhatsApp()
+    res.json({ ok: true, status: getWhatsAppStatus() })
+  } catch (err) {
+    console.error('[whatsapp/restart] error:', err.message)
+    res.status(500).json({ message: 'Failed to restart WhatsApp client' })
+  }
 })
 
 // ─────────────────────────────────────────────────────
@@ -70,6 +85,19 @@ router.get('/qr', async (req, res) => {
     </body>
     </html>
   `)
+})
+
+// ─────────────────────────────────────────────────────
+// GET /api/whatsapp/qr-data
+// Returns JSON with status and base64 QR data
+// ─────────────────────────────────────────────────────
+router.get('/qr-data', async (_req, res) => {
+  const status = getWhatsAppStatus()
+  if (status === 'authenticated') {
+    return res.json({ status, qr: null })
+  }
+  const qrDataUrl = await getQRImage()
+  res.json({ status, qr: qrDataUrl || null })
 })
 
 // ─────────────────────────────────────────────────────

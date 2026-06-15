@@ -29,10 +29,10 @@ export async function createSubscription({
     return { ...existing, inviteLink: null }
   }
 
-  // Fetch plan for duration
+  // Fetch plan for duration and name
   const { data: plan, error: planErr } = await supabase
     .from('plans')
-    .select('duration_minutes')
+    .select('name, duration_minutes')
     .eq('id', planId)
     .single()
 
@@ -41,7 +41,7 @@ export async function createSubscription({
   // Fetch community for platform + config
   const { data: community, error: commErr } = await supabase
     .from('communities')
-    .select('platform, telegram_chat_id, whatsapp_group_id, whatsapp_group_invite_link, name, slug')
+    .select('platform, telegram_chat_id, whatsapp_group_id, whatsapp_group_invite_link, name, slug, welcome_message_enabled, welcome_message')
     .eq('id', communityId)
     .single()
 
@@ -71,6 +71,17 @@ export async function createSubscription({
 
   if (error) throw new Error('Failed to create subscription: ' + error.message)
 
+  // ── Build Custom Welcome Message (Automations) ──────────────────────
+  let customMessage = undefined
+  if (community.welcome_message_enabled && community.welcome_message) {
+    const userName = email ? email.split('@')[0] : 'Member'
+    customMessage = community.welcome_message
+      .replace(/{name}/g, userName)
+      .replace(/{community}/g, community.name)
+      .replace(/{plan}/g, plan.name)
+      .replace(/{expires_on}/g, expiresAt.toLocaleDateString())
+  }
+
   // ── Send invite based on platform ──────────────────────────────────
   let inviteLink = null
 
@@ -82,6 +93,7 @@ export async function createSubscription({
           telegramUserId,
           communityName: community.name,
           communitySlug: community.slug,
+          customMessage,
         })
       } catch (err) {
         console.error('[subscription] telegram invite failed:', err.message)
@@ -91,7 +103,9 @@ export async function createSubscription({
     }
 
   } else if (platform === 'whatsapp') {
-    if (whatsappPhone && community.whatsapp_group_invite_link) {
+    console.log(`\n[subscription] Platform is WhatsApp. Checking requirements for auto-add/invite...`)
+    console.log(`[subscription] whatsapp_phone: ${whatsappPhone || false}, group_id: ${community.whatsapp_group_id || false}`)
+    if (whatsappPhone && community.whatsapp_group_id) {
       if (getWhatsAppStatus() !== 'authenticated') {
         console.warn('[subscription] WhatsApp client not ready — invite skipped. Subscriber will need manual invite.')
       } else {
@@ -100,8 +114,9 @@ export async function createSubscription({
             whatsappPhone,
             community.whatsapp_group_invite_link,
             community.name,
-            communityId,               // needed to save refreshed link
-            community.whatsapp_group_id // needed to revoke old link
+            communityId,
+            community.whatsapp_group_id,
+            customMessage
           )
           inviteLink = community.whatsapp_group_invite_link
         } catch (err) {

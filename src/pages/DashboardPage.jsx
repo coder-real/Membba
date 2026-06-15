@@ -9,8 +9,22 @@ export default function DashboardPage() {
   const [stats, setStats] = useState({ communities: 0, activeMembers: 0, expiredMembers: 0, totalRevenue: 0 })
   const [recentPayments, setRecentPayments] = useState([])
   const [loading, setLoading] = useState(true)
+  const [waStatus, setWaStatus] = useState(null)
 
   useEffect(() => { fetchStats() }, [user])
+
+  useEffect(() => {
+    const fetchWaStatus = async () => {
+      try {
+        const res = await fetch('/api/whatsapp/status')
+        const data = await res.json()
+        setWaStatus(data.status)
+      } catch { setWaStatus('error') }
+    }
+    fetchWaStatus()
+    const interval = setInterval(fetchWaStatus, 10000)
+    return () => clearInterval(interval)
+  }, [])
 
   const fetchStats = async () => {
     setLoading(true)
@@ -59,12 +73,23 @@ export default function DashboardPage() {
             Welcome back, <span className="text-white/80">{user?.user_metadata?.name || user?.email}</span>
           </p>
         </div>
-        <Link
-          to="/dashboard/communities/new"
-          className="inline-flex items-center gap-2 border border-[#9FFF57]/40 text-[#9FFF57] px-4 py-2.5 rounded-lg text-[13px] font-bold hover:bg-[#9FFF57]/5 transition-colors"
-        >
-          ⊕ Create Community
-        </Link>
+        <div className="flex items-center gap-3">
+          {waStatus && (
+            <div className="hidden sm:flex items-center gap-2 bg-[#111] border border-white/[0.07] px-3 py-2 rounded-lg text-[12px] font-medium text-white/60">
+              {waStatus === 'authenticated'
+                ? <><span className="w-2 h-2 rounded-full bg-[#9FFF57] shadow-[0_0_6px_rgba(159,255,87,0.6)]"></span> WhatsApp<span className="text-[#9FFF57]">Online</span></>
+                : waStatus === 'awaiting_qr'
+                  ? <><span className="w-2 h-2 rounded-full bg-yellow-400 shadow-[0_0_6px_rgba(250,204,21,0.6)]"></span> WhatsApp <span className="text-yellow-400">Scan QR</span></>
+                  : <><span className="w-2 h-2 rounded-full bg-red-500"></span> WhatsApp <span className="text-red-400">Offline</span></>}
+            </div>
+          )}
+          <Link
+            to="/dashboard/communities/new"
+            className="inline-flex items-center gap-2 border border-[#9FFF57]/40 text-[#9FFF57] px-4 py-2.5 rounded-lg text-[13px] font-bold hover:bg-[#9FFF57]/5 transition-colors"
+          >
+            ⊕ Create Community
+          </Link>
+        </div>
       </div>
 
       {/* Stat Cards — 2 col mobile, 4 col desktop */}

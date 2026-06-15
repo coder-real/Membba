@@ -46,7 +46,10 @@ export default function CommunityFormPage() {
     platform: 'telegram',
     telegram_chat_id: '',
     whatsapp_group_invite_link: '',
+    welcome_message_enabled: true,
+    welcome_message: "Hello {name}! Welcome to {community}. We're excited to have you onboard for the {plan} plan.",
   })
+  const [activeTab, setActiveTab] = useState('settings') // 'settings' | 'automations'
   const [plans, setPlans] = useState([{ ...emptyPlan }])
   const [existingPlans, setExistingPlans] = useState([])
   const [loading, setLoading] = useState(false)
@@ -64,6 +67,8 @@ export default function CommunityFormPage() {
       platform: data.platform || 'telegram',
       telegram_chat_id: data.telegram_chat_id || '',
       whatsapp_group_invite_link: data.whatsapp_group_invite_link || '',
+      welcome_message_enabled: data.welcome_message_enabled ?? true,
+      welcome_message: data.welcome_message || "Hello {name}! Welcome to {community}. We're excited to have you onboard for the {plan} plan.",
     })
     setWaGroupId(data.whatsapp_group_id || null)
 
@@ -168,6 +173,8 @@ export default function CommunityFormPage() {
         ? parseInt(form.telegram_chat_id) : null,
       whatsapp_group_invite_link: form.platform === 'whatsapp'
         ? form.whatsapp_group_invite_link || null : null,
+      welcome_message_enabled: form.welcome_message_enabled,
+      welcome_message: form.welcome_message,
       creator_id: user.id,
       is_active: true,
     }
@@ -219,7 +226,27 @@ export default function CommunityFormPage() {
           <p className="text-[14px] text-white/50 mt-1.5">Set up your paid community in a few steps</p>
         </div>
 
+        <div className="flex items-center gap-6 mt-4 mb-8 border-b border-white/[0.05]">
+          <button
+            type="button"
+            onClick={() => setActiveTab('settings')}
+            className={`pb-4 text-[14px] font-bold transition-colors ${activeTab === 'settings' ? 'text-[#9FFF57] border-b-2 border-[#9FFF57]' : 'text-white/40 hover:text-white/70'}`}
+          >
+            Settings
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('automations')}
+            className={`pb-4 text-[14px] font-bold transition-colors ${activeTab === 'automations' ? 'text-[#9FFF57] border-b-2 border-[#9FFF57]' : 'text-white/40 hover:text-white/70'}`}
+          >
+            Automations
+          </button>
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-6">
+
+          {/* Settings Tab */}
+          <div className={activeTab === 'settings' ? 'space-y-6' : 'hidden'}>
 
           {/* Community Details */}
           <div className="bg-[#111] border border-white/[0.07] rounded-xl p-7 space-y-5">
@@ -427,6 +454,55 @@ export default function CommunityFormPage() {
                 </div>
               </div>
             ))}
+          </div>
+
+          </div>
+
+          {/* Automations Tab */}
+          <div className={activeTab === 'automations' ? 'space-y-6' : 'hidden'}>
+            <div className="bg-[#111] border border-white/[0.07] rounded-xl p-7">
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h2 className="text-[15px] font-bold text-white mb-1">Welcome Message</h2>
+                  <p className="text-[12px] text-white/40">Send an automated DM to new subscribers when they pay.</p>
+                </div>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <span className="text-[12px] font-bold text-white/50">{form.welcome_message_enabled ? 'ON' : 'OFF'}</span>
+                  <input type="checkbox" name="welcome_message_enabled" checked={form.welcome_message_enabled} onChange={e => handleFormChange({target: {name: 'welcome_message_enabled', value: e.target.checked}})} className="sr-only peer" />
+                  <div className="w-11 h-6 bg-white/[0.05] border border-white/[0.1] rounded-full peer peer-checked:bg-[#9FFF57]/20 peer-checked:border-[#9FFF57]/50 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white/40 peer-checked:after:bg-[#9FFF57] after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-[20px] relative"></div>
+                </label>
+              </div>
+
+              <div className={form.welcome_message_enabled ? 'mt-6 pt-6 border-t border-white/[0.05]' : 'hidden'}>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-[11px] font-bold text-white/45 mb-2 uppercase tracking-widest">Message Template</label>
+                    <textarea 
+                      rows={6} 
+                      name="welcome_message" 
+                      value={form.welcome_message} 
+                      onChange={handleFormChange} 
+                      placeholder="Welcome {name}..." 
+                      className="w-full bg-[#0a0a0a] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-white focus:border-[#9FFF57]/40 outline-none resize-none leading-relaxed" 
+                    />
+                    <p className="text-[12px] text-white/30 mt-3 leading-relaxed">
+                      Variables: <code className="bg-white/5 border border-white/[0.05] px-1.5 py-0.5 rounded text-[#9FFF57]">{"{name}"}</code> <code className="bg-white/5 border border-white/[0.05] px-1.5 py-0.5 rounded text-[#9FFF57]">{"{community}"}</code> <br className="hidden lg:block"/> <code className="bg-white/5 border border-white/[0.05] px-1.5 py-0.5 rounded text-[#9FFF57] mt-1 lg:mt-0 inline-block">{"{plan}"}</code> <code className="bg-white/5 border border-white/[0.05] px-1.5 py-0.5 rounded text-[#9FFF57]">{"{expires_on}"}</code>
+                    </p>
+                  </div>
+                  <div className="bg-[#0a0a0a] border border-white/[0.05] rounded-xl p-5 shadow-inner">
+                    <p className="text-[11px] font-bold text-white/20 mb-3 uppercase tracking-widest">Live Preview</p>
+                    <p className="text-[14px] text-white/70 whitespace-pre-wrap leading-relaxed">
+                      {form.welcome_message
+                        .replace(/{name}/g, "JohnDoe")
+                        .replace(/{community}/g, form.name || "Your Community")
+                        .replace(/{plan}/g, plans[0]?.name || existingPlans[0]?.name || "Pro")
+                        .replace(/{expires_on}/g, new Date().toLocaleDateString())
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Actions */}

@@ -52,12 +52,37 @@ const randomDelay = () => delay(Math.random() * 3000 + 1000) // 1–4 seconds
 export function getWhatsAppStatus() { return status }
 export function getWhatsAppQR() { return currentQR }
 
+export async function restartWhatsApp() {
+  console.log('[whatsapp] restarting client...')
+  if (client) {
+    try {
+      await client.destroy()
+    } catch (e) {
+      console.warn('[whatsapp] error terminating previous client:', e.message)
+    }
+    client = null
+  }
+  status = 'initializing'
+  currentQR = null
+  await initWhatsApp()
+}
+
 /**
  * Initialize the WhatsApp client.
  * Session is persisted to Supabase via RemoteAuth — survives Render redeploys.
  * On first run: shows QR to scan. After that: auto-restores from Supabase.
  */
 export async function initWhatsApp() {
+  // In newer Puppeteer versions executablePath() returns a Promise.
+  // We resolve it first so the Client receives a plain string, not [object Promise].
+  let chromePath
+  try {
+    chromePath = await Promise.resolve(puppeteer.executablePath())
+  } catch {
+    chromePath = puppeteer.executablePath()
+  }
+  console.log('[whatsapp] using chrome at:', chromePath)
+
   client = new Client({
     authStrategy: new RemoteAuth({
       store: new SupabaseStore(),
@@ -65,7 +90,7 @@ export async function initWhatsApp() {
     }),
     puppeteer: {
       headless: true,
-      executablePath: puppeteer.executablePath(),
+      executablePath: chromePath,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
     },
   })
@@ -233,17 +258,48 @@ async function revokeAndRefreshGroupLink(groupId, communityId) {
  * Send invite link to a new subscriber, then immediately rotate the group link.
  * communityId is required to save the new link after rotation.
  */
-export async function sendWhatsAppInvite(phone, inviteLink, communityName, communityId, groupId) {
-  const text =
-    `🎉 Welcome! You're now a member of *${communityName}*.\n\n` +
-    `Tap the link below to join the group:\n${inviteLink}\n\n` +
-    `⚠️ _This link is for you only. Do not share it — it will stop working after use._`
+export async function sendWhatsAppInvite(phone, inviteLink, communityName, communityId, groupId, customMessage) {
+  let addedDirectly = false
 
-  await sendWhatsAppMessage(phone, text)
+  if (groupId && client && status === 'authenticated') {
+    try {
+      const chat = await client.getChatById(groupId)
+      const participantId = `${phone}@c.us`
 
-  // Rotate the link immediately so forwarded links are dead
-  if (groupId && communityId) {
-    await revokeAndRefreshGroupLink(groupId, communityId)
+      // Register in whitelist BEFORE adding — the group_join event fires
+      // asynchronously and the @lid mapping may differ from the real phone.
+      // This 90-second window lets group_join skip the kick for this member.
+      whitelistPhone(phone)
+      console.log(`[whatsapp] Attempting to auto-add ${phone} to group ${groupId}...`)
+      const res = await chat.addParticipants([participantId])
+      
+      console.log(`[whatsapp] Successfully auto-added ${phone} to group!`)
+      addedDirectly = true
+
+      // Send a confirmation DM so they know why they were mysteriously added
+      const defaultWelcome = `🎉 Welcome! You have been automatically added to the WhatsApp Group for *${communityName}* by the admin.\n\nPlease check your chat list to start participating!`
+      const welcomeText = customMessage || defaultWelcome
+      await sendWhatsAppMessage(phone, welcomeText)
+
+    } catch (err) {
+      console.warn(`[whatsapp] Failed to auto-add ${phone}:`, err.message)
+    }
+  }
+
+  if (addedDirectly) {
+    // We don't need to send the invite link or refresh it
+    return
+  } else {
+    // Fallback: If their privacy settings block being added, send the invite link via DM
+    const defaultWelcome = `🎉 Welcome! Join the *${communityName}* community here:`
+    const welcomeText = customMessage || defaultWelcome
+    const text = `${welcomeText}\n\n${inviteLink}\n\n_Note: Save this number to your contacts if the link is not clickable._`
+    await sendWhatsAppMessage(phone, text)
+
+    // Revoke and refresh the group link if possible to prevent sharing
+    if (groupId && communityId && inviteLink) {
+      await revokeAndRefreshGroupLink(groupId, communityId, inviteLink)
+    }
   }
 }
 
