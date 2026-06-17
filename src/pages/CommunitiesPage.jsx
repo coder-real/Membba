@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import DashboardLayout from '../components/DashboardLayout'
 import toast from 'react-hot-toast'
+import QRCode from 'qrcode'
 import { FaTelegram, FaWhatsapp } from 'react-icons/fa'
 import { HiOutlineLink, HiOutlinePencilSquare, HiOutlineTrash } from 'react-icons/hi2'
 
@@ -20,6 +21,16 @@ export default function CommunitiesPage() {
   const { user } = useAuth()
   const [communities, setCommunities] = useState([])
   const [loading, setLoading] = useState(true)
+  const [botStatus, setBotStatus] = useState({}) // { [communityId]: true | false | null }
+  const [qrModal, setQrModal] = useState(null) // null | { name, slug, dataUrl }
+
+  const openQRModal = async (c) => {
+    const deepLink = `https://t.me/membba_bot?start=join_${c.slug}`
+    try {
+      const dataUrl = await QRCode.toDataURL(deepLink, { width: 280, margin: 2 })
+      setQrModal({ name: c.name, slug: c.slug, dataUrl, deepLink })
+    } catch { toast.error('Failed to generate QR code') }
+  }
 
   useEffect(() => { fetchCommunities() }, [user])
 
@@ -30,7 +41,23 @@ export default function CommunitiesPage() {
       .eq('creator_id', user.id)
       .order('created_at', { ascending: false })
     if (error) toast.error(error.message)
-    else setCommunities(data || [])
+    else {
+      setCommunities(data || [])
+      // Parallel admin checks for Telegram communities only
+      const telegramComms = (data || []).filter(c => !c.platform || c.platform === 'telegram')
+      const checks = await Promise.allSettled(
+        telegramComms.map(c =>
+          fetch(`/api/telegram/check-admin/${c.telegram_chat_id}`)
+            .then(r => r.json())
+            .then(d => ({ id: c.id, isAdmin: d.isAdmin }))
+        )
+      )
+      const statusMap = {}
+      checks.forEach(r => {
+        if (r.status === 'fulfilled') statusMap[r.value.id] = r.value.isAdmin
+      })
+      setBotStatus(statusMap)
+    }
     setLoading(false)
   }
 
@@ -103,6 +130,25 @@ export default function CommunitiesPage() {
                       ⚠ {isWhatsApp ? 'Group not registered' : 'Bot not configured'}
                     </span>
                   )}
+
+                  {/* TSK-101: Live bot-admin status badge (Telegram only) */}
+                  {isTelegram && c.telegram_chat_id && typeof botStatus[c.id] === 'boolean' && (
+                    <span
+                      title={botStatus[c.id] ? 'Bot is an admin with correct permissions' : 'Add @membba_bot as Admin to your Telegram group with "Add Members" and "Invite via Link" permissions'}
+                      className={`relative group cursor-help px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
+                        botStatus[c.id]
+                          ? 'bg-[#9FFF57]/10 text-[#9FFF57] border-[#9FFF57]/20'
+                          : 'bg-yellow-400/10 text-yellow-400 border-yellow-400/20'
+                      }`}
+                    >
+                      {botStatus[c.id] ? '✅ Bot is admin' : '⚠️ Bot not detected'}
+                      {!botStatus[c.id] && (
+                        <span className="absolute bottom-full left-0 mb-2 w-64 bg-[#1a1a1a] border border-white/[0.1] rounded-xl p-3 text-[11.5px] text-white/70 leading-relaxed hidden group-hover:block z-10 shadow-2xl font-normal">
+                          Add <strong className="text-white">@membba_bot</strong> as Admin to your Telegram group with <em>Add Members</em> &amp; <em>Invite via Link</em> permissions.
+                        </span>
+                      )}
+                    </span>
+                  )}
                 </div>
 
                 {c.description && (
@@ -135,6 +181,11 @@ export default function CommunitiesPage() {
                     <button onClick={() => copyLink(c.slug)} className="inline-flex items-center gap-1.5 text-[12px] border border-[#9FFF57]/25 text-[#9FFF57]/80 px-3 py-1.5 rounded-lg hover:bg-[#9FFF57]/5 hover:text-[#9FFF57] transition-all font-medium">
                       <HiOutlineLink size={13} /> Copy Link
                     </button>
+                    {isTelegram && (
+                      <button onClick={() => openQRModal(c)} className="inline-flex items-center gap-1.5 text-[12px] border border-[#229ED9]/20 text-[#229ED9]/70 px-3 py-1.5 rounded-lg hover:bg-[#229ED9]/5 hover:text-[#229ED9] transition-all font-medium">
+                        QR Code
+                      </button>
+                    )}
                     <Link to={`/dashboard/communities/${c.id}/edit`} className="inline-flex items-center gap-1.5 text-[12px] border border-white/[0.1] text-white/50 px-3 py-1.5 rounded-lg hover:border-white/20 hover:text-white transition-all font-medium">
                       <HiOutlinePencilSquare size={13} /> Edit
                     </Link>
@@ -146,6 +197,33 @@ export default function CommunitiesPage() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* TSK-301: Deep-Link QR Modal */}
+      {qrModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+          <div className="bg-[#111] border border-white/[0.1] rounded-2xl p-8 w-full max-w-xs text-center shadow-2xl relative">
+            <button
+              onClick={() => setQrModal(null)}
+              className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <p className="text-[11px] font-bold tracking-widest uppercase text-white/25 mb-1">Scan to Join</p>
+            <h3 className="text-[15px] font-black text-white mb-5">{qrModal.name}</h3>
+            <img src={qrModal.dataUrl} alt="QR Code" className="w-52 h-52 mx-auto rounded-xl border border-white/[0.06] mb-4" />
+            <p className="text-[11.5px] text-white/30 mb-5 leading-relaxed">
+              Scan with your phone camera or Telegram to open @membba_bot with your join context pre-filled.
+            </p>
+            <a
+              href={qrModal.dataUrl}
+              download={`membba-qr-${qrModal.slug}.png`}
+              className="inline-flex items-center gap-2 border border-white/[0.1] text-white/50 px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:border-white/20 hover:text-white/70 transition-colors"
+            >
+              ⬇ Download PNG
+            </a>
+          </div>
         </div>
       )}
     </DashboardLayout>

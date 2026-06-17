@@ -50,12 +50,11 @@ async function tg(method, data, retryWithNewId = true) {
  * so the caller can show it on the payment success page.
  */
 export async function sendTelegramInvite({ chatId, telegramUserId, communityName, communitySlug, customMessage }) {
-  // Generate a 15-minute, single-use invite link safely via tg helper
+  // Generate an invite link safely via tg helper
+  // We removed expire_date entirely for debugging
   const linkRes = await tg('createChatInviteLink', {
     chat_id: chatId,
     name: `sub_${telegramUserId}`,
-    expire_date: Math.floor(Date.now() / 1000) + 15 * 60, // 15 mins
-    member_limit: 1, // works once only
   })
 
   if (!linkRes.ok) {
@@ -65,13 +64,12 @@ export async function sendTelegramInvite({ chatId, telegramUserId, communityName
   const inviteLink = linkRes.result.invite_link
 
   try {
-    const defaultWelcome = `✅ Payment confirmed!\n\nClick below to join *${communityName}*:`
+    const defaultWelcome = `✅ Payment confirmed!\n\nClick below to join ${communityName}:`
     const welcomeText = customMessage || defaultWelcome
 
     await tg('sendMessage', {
       chat_id: telegramUserId,
-      text: `${welcomeText}\n${inviteLink}\n\n⚠️ This link expires in 15 minutes and works once only.`,
-      parse_mode: 'Markdown',
+      text: `${welcomeText}\n${inviteLink}\n\n⚠️ This link expires in 15 minutes.`,
     })
     console.log(`[telegram] invite sent to user ${telegramUserId}`)
   } catch (err) {
@@ -89,9 +87,22 @@ export async function sendTelegramInvite({ chatId, telegramUserId, communityName
  * Auto-handles supergroup migration via the tg() helper.
  */
 export async function kickChatMember({ chatId, userId }) {
-  await tg('banChatMember', { chat_id: chatId, user_id: userId })
-  await tg('unbanChatMember', { chat_id: chatId, user_id: userId, only_if_banned: true })
-  console.log(`[telegram] kicked user ${userId} from chat ${chatId}`)
+  if (!userId) return
+
+  try {
+    await tg('banChatMember', { chat_id: chatId, user_id: userId })
+    await tg('unbanChatMember', { chat_id: chatId, user_id: userId, only_if_banned: true })
+    console.log(`[telegram] kicked user ${userId} from chat ${chatId}`)
+  } catch (err) {
+    const msg = err.message || ''
+    if (msg.includes('can\'t remove chat owner')) {
+      console.log(`[telegram] skip kicking ${userId} — user is the chat owner`)
+    } else if (msg.includes('PARTICIPANT_ID_INVALID') || msg.includes('user not found')) {
+      console.log(`[telegram] skip kicking ${userId} — invalid ID or not in chat`)
+    } else {
+      throw err
+    }
+  }
 }
 
 /**
@@ -99,9 +110,11 @@ export async function kickChatMember({ chatId, userId }) {
  */
 export async function sendTelegramMessage({ userId, text }) {
   try {
-    await tg('sendMessage', { chat_id: userId, text, parse_mode: 'Markdown' })
+    const res = await tg('sendMessage', { chat_id: userId, text, parse_mode: 'Markdown' })
+    return res
   } catch (err) {
     console.warn(`[telegram] sendMessage to ${userId} failed: ${err.message}`)
+    return null
   }
 }
 
@@ -110,15 +123,28 @@ export async function sendTelegramMessage({ userId, text }) {
  */
 export async function checkBotAdminStatus(chatId) {
   try {
-    const meRes = await tg('getMe', {})
-    const botId = meRes.result.id
+    // Extract botId directly from token without making a network request
+    const botId = process.env.TELEGRAM_BOT_TOKEN.split(':')[0]
+    
     const memberRes = await tg('getChatMember', { chat_id: chatId, user_id: botId })
     const m = memberRes.result
     return (
       m.status === 'administrator' &&
       (m.can_invite_users === true || m.can_restrict_members === true)
     )
-  } catch {
+  } catch (err) {
+    console.warn(`[telegram] checkBotAdminStatus failed for ${chatId}:`, err.message)
     return false
+  }
+}
+
+/**
+ * Delete a message from a chat (used for self-destructing group ID messages)
+ */
+export async function deleteTelegramMessage({ chatId, messageId }) {
+  try {
+    await tg('deleteMessage', { chat_id: chatId, message_id: messageId })
+  } catch (err) {
+    console.warn(`[telegram] deleteMessage failed for ${chatId}/${messageId}:`, err.message)
   }
 }

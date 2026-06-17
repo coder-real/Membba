@@ -61,4 +61,50 @@ router.post('/:subscriptionId/remove', async (req, res) => {
   }
 })
 
+// ─────────────────────────────────────────────────────
+// POST /api/members/:id/resend-invite
+// Re-sends the Telegram invite link to the subscriber via DM.
+// ─────────────────────────────────────────────────────
+import { sendTelegramInvite as _sendTelegramInvite } from '../services/telegram.js'
+
+router.post('/:subscriptionId/resend-invite', async (req, res) => {
+  const { subscriptionId } = req.params
+  try {
+    const { data: sub, error } = await supabase
+      .from('subscriptions')
+      .select('*, communities(telegram_chat_id, whatsapp_group_invite_link, name, slug, platform)')
+      .eq('id', subscriptionId)
+      .single()
+
+    if (error || !sub) return res.status(404).json({ message: 'Subscription not found' })
+    if (sub.status !== 'active') return res.status(400).json({ message: 'Subscription is not active' })
+
+    const platform = sub.communities?.platform || 'telegram'
+
+    if (platform !== 'telegram') {
+      return res.status(400).json({ message: 'Re-send invite is only available for Telegram communities' })
+    }
+
+    if (!sub.telegram_user_id || !sub.communities?.telegram_chat_id) {
+      return res.status(400).json({ message: 'Missing Telegram user ID or Chat ID' })
+    }
+
+    await _sendTelegramInvite({
+      chatId: sub.communities.telegram_chat_id,
+      telegramUserId: sub.telegram_user_id,
+      communityName: sub.communities.name,
+      communitySlug: sub.communities.slug,
+    })
+
+    console.log(`[members/resend-invite] resent invite for sub ${subscriptionId}`)
+    return res.json({ success: true, message: 'Invite resent successfully' })
+  } catch (err) {
+    console.error('[members/resend-invite] error:', err.message)
+    const friendlyMsg = err.message?.includes('bot was blocked')
+      ? 'Member has not started @membba_bot — ask them to send /start first.'
+      : 'Failed to resend invite. The member may not have started the bot.'
+    return res.status(500).json({ message: friendlyMsg })
+  }
+})
+
 export default router

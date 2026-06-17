@@ -18,6 +18,7 @@ export default function MembersPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
   const [removing, setRemoving] = useState(null)
+  const [resending, setResending] = useState(null)
 
   useEffect(() => { fetchMembers() }, [user])
 
@@ -45,6 +46,17 @@ export default function MembersPage() {
       } else { toast.error(data.message || 'Failed to remove member') }
     } catch { toast.error('Could not connect to server') }
     finally { setRemoving(null) }
+  }
+
+  const handleResend = async (sub) => {
+    setResending(sub.id)
+    try {
+      const res = await fetch(`/api/members/${sub.id}/resend-invite`, { method: 'POST' })
+      const data = await res.json()
+      if (data.success) toast.success('Invite resent!')
+      else toast.error(data.message || 'Failed to resend invite')
+    } catch { toast.error('Could not connect to server') }
+    finally { setResending(null) }
   }
 
   const filtered = filter === 'all' ? subscriptions : subscriptions.filter(s => s.status === filter)
@@ -106,10 +118,19 @@ export default function MembersPage() {
                       </td>
                       <td className="px-5 py-4">
                         {s.status === 'active' ? (
-                          <button onClick={() => handleRemove(s)} disabled={removing === s.id}
-                            className="text-[12px] px-3 py-1.5 rounded-lg border border-red-500/20 text-red-400/80 hover:bg-red-500/5 hover:text-red-400 disabled:opacity-40 transition-all font-medium">
-                            {removing === s.id ? 'Removing...' : 'Remove'}
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => handleRemove(s)} disabled={removing === s.id}
+                              className="text-[12px] px-3 py-1.5 rounded-lg border border-red-500/20 text-red-400/80 hover:bg-red-500/5 hover:text-red-400 disabled:opacity-40 transition-all font-medium">
+                              {removing === s.id ? 'Removing...' : 'Remove'}
+                            </button>
+                            {/* TSK-103: Re-send invite for Telegram only */}
+                            {s.telegram_user_id && !s.whatsapp_phone && (
+                              <button onClick={() => handleResend(s)} disabled={resending === s.id}
+                                className="text-[12px] px-3 py-1.5 rounded-lg border border-[#229ED9]/20 text-[#229ED9]/80 hover:bg-[#229ED9]/5 hover:text-[#229ED9] disabled:opacity-40 transition-all font-medium">
+                                {resending === s.id ? 'Sending...' : 'Re-send'}
+                              </button>
+                            )}
+                          </div>
                         ) : <span className="text-[12px] text-white/20">—</span>}
                       </td>
                     </tr>
@@ -131,13 +152,21 @@ export default function MembersPage() {
                   <p className="text-[12px] text-white/40 mb-1">
                     {s.communities?.name}{s.plans?.name && <span> · {s.plans.name}</span>}
                   </p>
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
                     <p className="text-[11.5px] text-white/30">Expires {new Date(s.expires_at).toLocaleDateString()}</p>
                     {s.status === 'active' && (
-                      <button onClick={() => handleRemove(s)} disabled={removing === s.id}
-                        className="text-[12px] px-3 py-1.5 rounded-lg border border-red-500/20 text-red-400/80 hover:bg-red-500/5 disabled:opacity-40 transition-all font-medium">
-                        {removing === s.id ? 'Removing...' : 'Remove'}
-                      </button>
+                      <div className="flex gap-2">
+                        <button onClick={() => handleRemove(s)} disabled={removing === s.id}
+                          className="text-[12px] px-3 py-1.5 rounded-lg border border-red-500/20 text-red-400/80 hover:bg-red-500/5 disabled:opacity-40 transition-all font-medium">
+                          {removing === s.id ? 'Removing...' : 'Remove'}
+                        </button>
+                        {s.telegram_user_id && !s.whatsapp_phone && (
+                          <button onClick={() => handleResend(s)} disabled={resending === s.id}
+                            className="text-[12px] px-3 py-1.5 rounded-lg border border-[#229ED9]/20 text-[#229ED9]/80 hover:bg-[#229ED9]/5 disabled:opacity-40 transition-all font-medium">
+                            {resending === s.id ? 'Sending...' : 'Re-send'}
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>

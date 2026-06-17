@@ -47,6 +47,58 @@ export default function JoinPage() {
   const [loading, setLoading]       = useState(true)
   const [paying, setPaying]         = useState(false)
   const [form, setForm]             = useState({ email: '', telegram_user_id: '', whatsapp_phone: '' })
+  
+  // TSK-106: Telegram Auto-Fill State
+  const [uidToken, setUidToken]     = useState(null)
+  const [uidPolling, setUidPolling] = useState(false)
+  const [uidStatus, setUidStatus]   = useState('idle') // 'idle' | 'polling' | 'success'
+
+  const handleConnectTelegram = async () => {
+    try {
+      setUidStatus('polling')
+      setUidPolling(true)
+      const res = await fetch('/api/telegram/uid-token', { method: 'POST' })
+      const data = await res.json()
+      if (!data.token) throw new Error('No token')
+
+      // Open telegram
+      window.open(data.deepLink, '_blank')
+      
+      // Poll
+      let attempts = 0
+      const maxAttempts = 60 // 2 minutes (every 2s)
+      const intervalId = setInterval(async () => {
+        attempts++
+        if (attempts >= maxAttempts) {
+          clearInterval(intervalId)
+          setUidPolling(false)
+          setUidStatus('idle')
+          toast.error('Connection timed out. Please try again.')
+          return
+        }
+
+        try {
+          const checkRes = await fetch(`/api/telegram/uid-from-token?token=${data.token}`)
+          const checkData = await checkRes.json()
+          if (checkData.uid) {
+            clearInterval(intervalId)
+            setForm(f => ({ ...f, telegram_user_id: String(checkData.uid) }))
+            setUidPolling(false)
+            setUidStatus('success')
+            toast.success('Telegram Connected!')
+          }
+        } catch (e) {
+          // ignore network errors during poll
+        }
+      }, 2000)
+
+      setUidToken(data.token) // save in case we need it
+    } catch {
+      toast.error('Could not initialize Telegram connection')
+      setUidStatus('idle')
+      setUidPolling(false)
+    }
+  }
 
   useEffect(() => { fetchCommunity() }, [slug])
 
@@ -234,32 +286,77 @@ export default function JoinPage() {
                 <label className={labelCls}>
                   <span className="inline-flex items-center gap-1.5">
                     <FaTelegram size={10} style={{ color: plColor }} />
-                    Telegram User ID
+                    Telegram Account
                   </span>
                 </label>
-                <input type="text" name="telegram_user_id" required value={form.telegram_user_id}
-                  onChange={handleChange} className={inputCls}
-                  placeholder="123456789" />
-                <p className="text-[12px] text-white/30 mt-2">
-                  Must be your numeric ID, not @username.{' '}
-                  <a href="https://t.me/membba_bot" target="_blank" rel="noreferrer"
-                    className="text-[#229ED9] underline underline-offset-2 hover:text-[#229ED9]/80 transition-colors">
-                    Get it from @membba_bot →
-                  </a>
-                </p>
+
+                {uidStatus === 'success' ? (
+                  <div className="flex items-center justify-between bg-[#229ED9]/[0.08] border border-[#229ED9]/30 rounded-xl px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-[#229ED9]/20 flex items-center justify-center text-[#229ED9]">
+                        <FaTelegram size={16} />
+                      </div>
+                      <div>
+                        <p className="text-[13px] font-bold text-white">Connected</p>
+                        <p className="text-[11.5px] text-[#229ED9] font-mono">ID: {form.telegram_user_id}</p>
+                      </div>
+                    </div>
+                    <button type="button" onClick={() => { setUidStatus('idle'); setForm(f => ({...f, telegram_user_id: ''})) }} className="text-[12px] text-white/40 hover:text-white transition-colors underline underline-offset-2">
+                      Disconnect
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={handleConnectTelegram}
+                      disabled={uidPolling}
+                      className={`w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3.5 transition-all outline-none font-bold text-[14px] ${
+                        uidPolling 
+                          ? 'bg-[#229ED9]/10 text-[#229ED9] border border-[#229ED9]/20 cursor-wait' 
+                          : 'bg-[#229ED9] text-white hover:bg-[#1a8fc4]'
+                      }`}
+                    >
+                      {uidPolling ? (
+                        <>
+                          <div className="w-4 h-4 rounded-full border-2 border-[#229ED9]/30 border-t-[#229ED9] animate-spin" />
+                          Waiting for you in Telegram...
+                        </>
+                      ) : (
+                        <>
+                          <FaTelegram size={18} className={uidPolling ? '' : 'invert brightness-0'} />
+                          Connect Telegram
+                        </>
+                      )}
+                    </button>
+                    {!uidPolling && (
+                      <p className="text-[11.5px] text-white/30 mt-3 text-center leading-relaxed">
+                        Click the button to open Telegram and tap Start. We will automatically grab your account ID.
+                      </p>
+                    )}
+                    {uidPolling && (
+                      <p className="text-[11.5px] text-white/30 mt-3 text-center leading-relaxed animate-pulse">
+                        Please open Telegram, tap <b>Start</b>, and then return here.
+                      </p>
+                    )}
+                  </div>
+                )}
+                
+                {/* Fallback hidden input so it still submits */}
+                <input type="hidden" name="telegram_user_id" value={form.telegram_user_id} />
               </div>
             )}
 
             {/* Notice */}
-            {!isWA && (
-              <div className="border border-yellow-400/15 bg-yellow-400/[0.04] rounded-xl px-5 py-4 text-[13px]">
-                <p className="font-bold text-yellow-400 mb-1.5">Before you pay</p>
-                <div className="space-y-1 text-white/45 leading-relaxed">
-                  <p>1. Open <a href="https://t.me/membba_bot" target="_blank" rel="noreferrer"
-                    className="text-[#229ED9] underline underline-offset-2">@membba_bot</a> on Telegram and tap <span className="font-mono text-white/60">Start</span></p>
-                  <p>2. Come back here and complete payment</p>
-                  <p className="text-[11.5px] text-yellow-400/60">Without this step, the bot cannot send your invite link.</p>
-                </div>
+            {!isWA && uidStatus === 'idle' && (
+              <div className="border border-yellow-400/15 bg-yellow-400/[0.04] rounded-xl px-5 py-4 text-[13px] mt-4">
+                <p className="font-bold text-yellow-400 mb-1.5 flex items-center gap-1.5">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                  Required Step
+                </p>
+                <p className="text-white/45 leading-relaxed">
+                  You must connect your Telegram above before paying, otherwise the bot cannot invite you to the private group.
+                </p>
               </div>
             )}
             {isWA && (

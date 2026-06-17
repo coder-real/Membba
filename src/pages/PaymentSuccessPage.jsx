@@ -13,10 +13,11 @@ function Spinner() {
 export default function PaymentSuccessPage() {
   const [searchParams] = useSearchParams()
   const reference = searchParams.get('reference')
-  const [status, setStatus]           = useState('verifying')
+  const [status, setStatus]             = useState('verifying')
   const [subscription, setSubscription] = useState(null)
-  const [inviteLink, setInviteLink]   = useState(null)
-  const [platform, setPlatform]       = useState('telegram')
+  const [inviteLink, setInviteLink]     = useState(null)
+  const [platform, setPlatform]         = useState('telegram')
+  const [showHelp, setShowHelp]         = useState(false)
 
   useEffect(() => { if (reference) verifyPayment(); else setStatus('failed') }, [reference])
 
@@ -133,24 +134,47 @@ export default function PaymentSuccessPage() {
                 )}
               </div>
             ) : (
-              <div className="border rounded-xl px-5 py-4 mb-6 text-[13.5px] leading-relaxed"
-                style={{ borderColor: `${platColor}30`, backgroundColor: `${platColor}08` }}>
-                <p className="font-bold mb-1.5" style={{ color: platColor }}>
-                  Next step: check your {platLabel}
-                </p>
-                {isWA ? (
-                  <p className="text-white/50">
-                    We're sending your group invite link to the WhatsApp number you provided.
+              <>
+                <div className="border rounded-xl px-5 py-4 mb-6 text-[13.5px] leading-relaxed"
+                  style={{ borderColor: `${platColor}30`, backgroundColor: `${platColor}08` }}>
+                  <p className="font-bold mb-1.5" style={{ color: platColor }}>
+                    Next step: check your {platLabel}
                   </p>
-                ) : (
-                  <div className="text-white/50 space-y-1">
-                    <p>The bot will send you a join link on Telegram.</p>
-                    <p className="text-[12px] text-white/30">
-                      Haven't received it? Make sure you've sent <span className="font-mono">/start</span> to <span className="font-mono">@membba_bot</span> first.
+                  {isWA ? (
+                    <p className="text-white/50">
+                      We're sending your group invite link to the WhatsApp number you provided.
                     </p>
+                  ) : (
+                    <div className="text-white/50 space-y-1">
+                      <p>The bot will send you a join link on Telegram.</p>
+                      <p className="text-[12px] text-white/30">
+                        Haven't received it? Make sure you've sent <span className="font-mono">/start</span> to <span className="font-mono">@membba_bot</span> first.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* TSK-102: Expandable help for Telegram */}
+                {!isWA && (
+                  <div className="mb-6">
+                    <button
+                      onClick={() => setShowHelp(h => !h)}
+                      className="w-full flex items-center justify-between text-[12.5px] text-white/35 hover:text-white/55 transition-colors py-2"
+                    >
+                      <span>Didn't receive a link?</span>
+                      <span>{showHelp ? '▲' : '▼'}</span>
+                    </button>
+                    {showHelp && (
+                      <div className="mt-2 bg-[#111] border border-white/[0.07] rounded-xl p-4 text-[12.5px] text-white/50 space-y-2 leading-relaxed">
+                        <p>1. Open Telegram and search for <span className="font-mono text-white/70">@membba_bot</span></p>
+                        <p>2. Send the command <span className="font-mono text-white/70">/start</span></p>
+                        <p>3. Wait a moment — the bot will automatically send you the invite link.</p>
+                        <p className="text-white/30">If it still doesn't arrive, contact your community admin.</p>
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
+              </>
             )}
 
             {/* Reference */}

@@ -4,7 +4,10 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import DashboardLayout from '../components/DashboardLayout'
 import toast from 'react-hot-toast'
+import QRCode from 'qrcode'
 import { FaTelegram, FaWhatsapp } from 'react-icons/fa'
+import telegramLogo from '../assets/icons8-telegram.svg'
+import whatsappLogo from '../assets/icons8-whatsapp.svg'
 
 const generateSlug = (name) =>
   name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
@@ -55,6 +58,46 @@ export default function CommunityFormPage() {
   const [loading, setLoading] = useState(false)
   const [registeringGroup, setRegisteringGroup] = useState(false)
   const [waGroupId, setWaGroupId] = useState(null)
+  const [setupModal, setSetupModal] = useState(null) // null | { loading: true } | { allPass, checks }
+  const [connectQr, setConnectQr] = useState(null)
+
+  const openConnectQr = async () => {
+    // Generate QR code to add bot to a group
+    // Note: removed &admin=invite_users... as it often breaks the group search on some Telegram clients
+    const deepLink = `https://t.me/membba_bot?startgroup=setup`
+    try {
+      const dataUrl = await QRCode.toDataURL(deepLink, { width: 300, margin: 2 })
+      setConnectQr({ dataUrl, deepLink })
+    } catch {
+      toast.error('Failed to generate connection QR code')
+    }
+  }
+
+  const runSetupCheck = async () => {
+    setSetupModal({ loading: true, checks: [] })
+    try {
+      const res = await fetch(`/api/telegram/check-setup/${id}`)
+      const data = await res.json()
+      
+      // Animate checks appearing one by one
+      if (data.checks) {
+        let currentChecks = []
+        for (let i = 0; i < data.checks.length; i++) {
+          await new Promise(r => setTimeout(r, 600)) // Artificial delay for premium feel
+          currentChecks.push(data.checks[i])
+          setSetupModal(prev => ({ ...prev, checks: [...currentChecks] }))
+        }
+        await new Promise(r => setTimeout(r, 400))
+      }
+      setSetupModal(prev => ({ ...prev, loading: false, allPass: data.allPass }))
+    } catch {
+      setSetupModal({ 
+        loading: false, 
+        allPass: false, 
+        checks: [{ id: 'error', label: 'Could not reach server', pass: false, hint: 'Check your internet connection.' }] 
+      })
+    }
+  }
 
   useEffect(() => { if (isEditing) fetchCommunity() }, [id])
 
@@ -217,13 +260,27 @@ export default function CommunityFormPage() {
   const slug = generateSlug(form.name)
 
   return (
+    <>
     <DashboardLayout>
       <div className="max-w-2xl">
         <div className="mb-10">
-          <h1 className="text-3xl font-black text-white tracking-tight">
-            {isEditing ? 'Edit Community' : 'Create Community'}
-          </h1>
-          <p className="text-[14px] text-white/50 mt-1.5">Set up your paid community in a few steps</p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-black text-white tracking-tight">
+                {isEditing ? 'Edit Community' : 'Create Community'}
+              </h1>
+              <p className="text-[14px] text-white/50 mt-1.5">Set up your paid community in a few steps</p>
+            </div>
+            {isEditing && (
+              <button
+                type="button"
+                onClick={runSetupCheck}
+                className="flex-shrink-0 inline-flex items-center gap-1.5 border border-white/[0.1] text-white/50 px-4 py-2 rounded-lg text-[12.5px] font-semibold hover:border-white/20 hover:text-white/70 transition-colors"
+              >
+                📋 Test Setup
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-6 mt-4 mb-8 border-b border-white/[0.05]">
@@ -275,103 +332,212 @@ export default function CommunityFormPage() {
               />
             </div>
 
-            {/* Platform Picker */}
+            {/* ─── n8n-style Platform Picker ─── */}
             <div>
-              <label className="block text-[11px] font-bold text-white/45 mb-2.5 uppercase tracking-widest">Platform *</label>
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { value: 'telegram', label: 'Telegram', Icon: FaTelegram, sub: 'Bot adds/removes members automatically', activeColor: 'border-[#229ED9]/50 bg-[#229ED9]/5', activeIcon: 'text-[#229ED9]' },
-                  { value: 'whatsapp', label: 'WhatsApp', Icon: FaWhatsapp, sub: 'Via whatsapp-web.js (dedicated number required)', activeColor: 'border-[#25D366]/50 bg-[#25D366]/5', activeIcon: 'text-[#25D366]' },
-                ].map(opt => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setPlatform(opt.value)}
-                    className={`text-left rounded-xl border px-4 py-3.5 transition-all ${
-                      form.platform === opt.value
-                        ? `${opt.activeColor} text-white`
-                        : 'border-white/[0.08] bg-white/[0.02] text-white/40 hover:border-white/15 hover:text-white/60'
-                    }`}
-                  >
-                    <p className="font-semibold text-[13.5px] flex items-center gap-2">
-                      <opt.Icon size={15} className={form.platform === opt.value ? opt.activeIcon : 'text-white/30'} />
-                      {opt.label}
-                    </p>
-                    <p className="text-[11.5px] mt-1 text-white/30 leading-relaxed">{opt.sub}</p>
-                  </button>
-                ))}
+              <label className="block text-[11px] font-bold text-white/40 mb-4 uppercase tracking-widest">Platform *</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                {/* Telegram Card */}
+                <button
+                  type="button"
+                  onClick={() => setPlatform('telegram')}
+                  className={`group relative overflow-hidden text-left rounded-2xl border-2 p-5 transition-all duration-300 ${
+                    form.platform === 'telegram'
+                      ? 'border-[#229ED9] bg-[#229ED9]/[0.07] shadow-[0_0_30px_rgba(34,158,217,0.12)]'
+                      : 'border-white/[0.06] bg-white/[0.02] opacity-60 hover:opacity-80 hover:border-white/[0.12]'
+                  }`}
+                >
+                  {/* watermark logo */}
+                  <img src={telegramLogo} alt="" className="absolute right-4 top-1/2 -translate-y-1/2 w-20 h-20 opacity-[0.06] select-none pointer-events-none" />
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+                        form.platform === 'telegram' ? 'bg-[#229ED9]/20' : 'bg-white/[0.04]'
+                      }`}>
+                        <img src={telegramLogo} alt="Telegram" className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-[14px] font-bold text-white">Telegram</p>
+                        {form.platform === 'telegram' && (
+                          <span className="text-[10px] font-bold text-[#229ED9] uppercase tracking-widest">Selected</span>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-[12px] text-white/40 leading-relaxed">Bot auto-adds &amp; removes members. Fully automated, no phone number needed.</p>
+                    <div className="mt-4 flex flex-wrap gap-1.5">
+                      {['Instant delivery','Bot-managed','Reliable'].map(t => (
+                        <span key={t} className="text-[10px] px-2 py-0.5 rounded-full bg-[#229ED9]/10 text-[#229ED9]/80 border border-[#229ED9]/15 font-medium">{t}</span>
+                      ))}
+                    </div>
+                  </div>
+                </button>
+
+                {/* WhatsApp Card */}
+                <button
+                  type="button"
+                  onClick={() => setPlatform('whatsapp')}
+                  className={`group relative overflow-hidden text-left rounded-2xl border-2 p-5 transition-all duration-300 ${
+                    form.platform === 'whatsapp'
+                      ? 'border-[#25D366] bg-[#25D366]/[0.07] shadow-[0_0_30px_rgba(37,211,102,0.10)]'
+                      : 'border-white/[0.06] bg-white/[0.02] opacity-60 hover:opacity-80 hover:border-white/[0.12]'
+                  }`}
+                >
+                  {/* watermark logo */}
+                  <img src={whatsappLogo} alt="" className="absolute right-4 top-1/2 -translate-y-1/2 w-20 h-20 opacity-[0.06] select-none pointer-events-none" />
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+                        form.platform === 'whatsapp' ? 'bg-[#25D366]/20' : 'bg-white/[0.04]'
+                      }`}>
+                        <img src={whatsappLogo} alt="WhatsApp" className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-[14px] font-bold text-white">WhatsApp</p>
+                        {form.platform === 'whatsapp' && (
+                          <span className="text-[10px] font-bold text-[#25D366] uppercase tracking-widest">Selected</span>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-[12px] text-white/40 leading-relaxed">Via dedicated WhatsApp number. Managed via whatsapp-web.js on your server.</p>
+                    <div className="mt-4 flex flex-wrap gap-1.5">
+                      {['Requires number','Invite-based','Manual setup'].map(t => (
+                        <span key={t} className="text-[10px] px-2 py-0.5 rounded-full bg-[#25D366]/10 text-[#25D366]/80 border border-[#25D366]/15 font-medium">{t}</span>
+                      ))}
+                    </div>
+                  </div>
+                </button>
               </div>
             </div>
 
-            {/* Telegram Config */}
-            {form.platform === 'telegram' && (
-              <div>
-                <label className="block text-[11px] font-bold text-white/45 mb-2 uppercase tracking-widest">Telegram Chat ID *</label>
-                <input
-                  type="text" name="telegram_chat_id" value={form.telegram_chat_id} onChange={handleFormChange}
-                  className="w-full bg-[#0a0a0a] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-white placeholder-white/20 focus:outline-none focus:border-[#229ED9]/40 focus:ring-1 focus:ring-[#229ED9]/15 transition-colors"
-                  placeholder="-1001234567890"
-                />
-                <div className="mt-3 bg-[#229ED9]/5 border border-[#229ED9]/15 rounded-xl p-4 text-[12px]">
-                  <p className="font-bold text-[#229ED9] mb-2">How to get your Telegram Chat ID:</p>
-                  <ol className="list-decimal list-inside space-y-1.5 text-white/40">
-                    <li>Add <span className="font-mono text-white/60">@userinfobot</span> to your group — it replies with the numeric ID</li>
-                    <li>The ID starts with <span className="font-mono text-white/60">-100…</span> — paste it above</li>
-                    <li>Add <span className="font-mono text-white/60">@membba_bot</span> as Admin with <em>Add/Remove Members</em> permissions</li>
-                  </ol>
+          </div>{/* end Community Details card */}
+
+          {/* ─── Telegram Setup Section ─── */}
+          {form.platform === 'telegram' && (
+            <div
+              className="rounded-2xl border-2 border-[#229ED9]/30 bg-[#229ED9]/[0.04] relative overflow-hidden"
+              style={{ boxShadow: '0 0 40px rgba(34,158,217,0.06)' }}
+            >
+              {/* Corner watermark */}
+              <img src={telegramLogo} alt="" className="absolute -right-6 -bottom-6 w-36 h-36 opacity-[0.04] pointer-events-none select-none" />
+
+              {/* Header */}
+              <div className="flex items-center gap-3 px-7 py-5 border-b border-[#229ED9]/10">
+                <div className="w-9 h-9 rounded-xl bg-[#229ED9]/15 flex items-center justify-center">
+                  <img src={telegramLogo} alt="Telegram" className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-[14px] font-black text-white">Telegram Group Setup</p>
+                  <p className="text-[11.5px] text-[#229ED9]/70">Connect your group in 2 steps</p>
                 </div>
               </div>
-            )}
 
-            {/* WhatsApp Config */}
-            {form.platform === 'whatsapp' && (
-              <div className="space-y-4">
-                <div className="bg-yellow-400/5 border border-yellow-400/15 rounded-xl p-4 text-[12px]">
-                  <p className="font-bold mb-2 text-yellow-400">⚠ WhatsApp Requirements</p>
-                  <ol className="list-decimal list-inside space-y-1.5 text-white/40">
-                    <li>Use a <span className="text-white/70">dedicated WhatsApp number</span> — never your personal number</li>
-                    <li>Add that number to your WhatsApp group as <span className="text-white/70">Admin</span></li>
-                    <li>Bot must be authenticated — visit <span className="font-mono text-white/60">/api/whatsapp/qr</span> to scan QR</li>
-                    <li>Paste your group invite link below and click <span className="text-white/70">Register Group</span></li>
-                  </ol>
+              <div className="px-7 py-6 space-y-6">
+
+                {/* Step 1 */}
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0 w-7 h-7 rounded-full bg-[#229ED9]/20 border border-[#229ED9]/30 flex items-center justify-center text-[#229ED9] text-[12px] font-black">1</div>
+                  <div className="flex-1">
+                    <p className="text-[13px] font-bold text-white mb-1">Add Membba Bot to your group as Admin</p>
+                    <p className="text-[12px] text-white/40 mb-3">Scan the QR or click the button to open Telegram and select your group. The bot will automatically send your Chat ID.</p>
+                    <button
+                      type="button"
+                      onClick={openConnectQr}
+                      className="inline-flex items-center gap-2 bg-[#229ED9] text-white text-[13px] font-bold px-5 py-2.5 rounded-xl hover:bg-[#1a8fc4] transition-colors"
+                    >
+                      <img src={telegramLogo} alt="" className="w-4 h-4 invert brightness-0" />
+                      Connect via Bot
+                    </button>
+                  </div>
                 </div>
 
+                {/* Step 2 */}
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0 w-7 h-7 rounded-full bg-[#229ED9]/20 border border-[#229ED9]/30 flex items-center justify-center text-[#229ED9] text-[12px] font-black">2</div>
+                  <div className="flex-1">
+                    <p className="text-[13px] font-bold text-white mb-1">Paste your Group Chat ID</p>
+                    <p className="text-[12px] text-white/40 mb-3">The bot will post the ID to your group. Copy it here. It will self-destruct in 5 minutes.</p>
+                    <input
+                      type="text"
+                      name="telegram_chat_id"
+                      value={form.telegram_chat_id || ''}
+                      onChange={handleFormChange}
+                      className="w-full bg-[#0a0a0a] border border-[#229ED9]/20 rounded-xl px-4 py-3 text-[14px] text-white placeholder-white/20 focus:outline-none focus:border-[#229ED9]/50 focus:ring-1 focus:ring-[#229ED9]/15 transition-colors font-mono"
+                      placeholder="e.g. -1001234567890"
+                    />
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {/* ─── WhatsApp Setup Section ─── */}
+          {form.platform === 'whatsapp' && (
+            <div
+              className="rounded-2xl border-2 border-[#25D366]/30 bg-[#25D366]/[0.03] relative overflow-hidden"
+              style={{ boxShadow: '0 0 40px rgba(37,211,102,0.05)' }}
+            >
+              {/* Corner watermark */}
+              <img src={whatsappLogo} alt="" className="absolute -right-6 -bottom-6 w-36 h-36 opacity-[0.04] pointer-events-none select-none" />
+
+              {/* Header */}
+              <div className="flex items-center gap-3 px-7 py-5 border-b border-[#25D366]/10">
+                <div className="w-9 h-9 rounded-xl bg-[#25D366]/15 flex items-center justify-center">
+                  <img src={whatsappLogo} alt="WhatsApp" className="w-5 h-5" />
+                </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-white/45 mb-2 uppercase tracking-widest">WhatsApp Group Invite Link *</label>
+                  <p className="text-[14px] font-black text-white">WhatsApp Group Setup</p>
+                  <p className="text-[11.5px] text-[#25D366]/70">Requires a dedicated WhatsApp number</p>
+                </div>
+              </div>
+
+              <div className="px-7 py-6 space-y-6">
+
+                {/* Requirements notice */}
+                <div className="flex gap-3 bg-yellow-400/5 border border-yellow-400/15 rounded-xl p-4">
+                  <span className="text-yellow-400 text-[16px] flex-shrink-0">⚠</span>
+                  <div className="text-[12px] text-white/50 space-y-1 leading-relaxed">
+                    <p className="text-yellow-400 font-bold text-[12.5px] mb-1.5">Requirements</p>
+                    <p>Use a <span className="text-white/80">dedicated WhatsApp number</span> — never your personal number.</p>
+                    <p>Authenticate the number at <span className="text-white/60 font-mono text-[11px]">/api/whatsapp/qr</span> before continuing.</p>
+                  </div>
+                </div>
+
+                {/* Group invite link */}
+                <div>
+                  <label className="block text-[11px] font-bold text-white/40 mb-2 uppercase tracking-widest">Group Invite Link *</label>
                   <input
-                    type="url" name="whatsapp_group_invite_link"
-                    value={form.whatsapp_group_invite_link} onChange={handleFormChange}
-                    className="w-full bg-[#0a0a0a] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-white placeholder-white/20 focus:outline-none focus:border-[#25D366]/40 focus:ring-1 focus:ring-[#25D366]/15 transition-colors"
+                    type="url"
+                    name="whatsapp_group_invite_link"
+                    value={form.whatsapp_group_invite_link}
+                    onChange={handleFormChange}
+                    className="w-full bg-[#0a0a0a] border border-[#25D366]/20 rounded-xl px-4 py-3 text-[14px] text-white placeholder-white/20 focus:outline-none focus:border-[#25D366]/50 focus:ring-1 focus:ring-[#25D366]/15 transition-colors"
                     placeholder="https://chat.whatsapp.com/xxxxxxxxxx"
                   />
                 </div>
 
-                {isEditing && (
+                {/* Register button */}
+                {isEditing ? (
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
                       onClick={handleRegisterWhatsAppGroup}
                       disabled={registeringGroup}
-                      className="text-[13px] border border-[#25D366]/30 text-[#25D366] px-4 py-2.5 rounded-lg hover:bg-[#25D366]/5 disabled:opacity-50 transition-colors font-semibold"
+                      className="inline-flex items-center gap-2 bg-[#25D366] text-white text-[13px] font-bold px-5 py-2.5 rounded-xl hover:bg-[#1da851] disabled:opacity-50 transition-colors"
                     >
-                      {registeringGroup ? 'Joining group...' : 'Register Group →'}
+                      <img src={whatsappLogo} alt="" className="w-4 h-4 invert brightness-0" />
+                      {registeringGroup ? 'Joining group...' : 'Register Group'}
                     </button>
-                    {waGroupId && (
-                      <span className="text-[12.5px] text-[#9FFF57] font-semibold">✅ Group registered ({waGroupId})</span>
-                    )}
-                    {!waGroupId && (
-                      <span className="text-[12.5px] text-yellow-400/70">⚠ Group not yet registered</span>
-                    )}
+                    {waGroupId && <span className="text-[12.5px] text-[#9FFF57] font-semibold">✅ Registered ({waGroupId})</span>}
+                    {!waGroupId && <span className="text-[12.5px] text-yellow-400/70">⚠ Not yet registered</span>}
                   </div>
+                ) : (
+                  <p className="text-[12px] text-white/30">Save the community first, then return here to register the group.</p>
                 )}
-                {!isEditing && (
-                  <p className="text-[12.5px] text-white/30">
-                    Save the community first, then come back to register the WhatsApp group.
-                  </p>
-                )}
+
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Existing Plans (edit mode) */}
           {isEditing && existingPlans.length > 0 && (
@@ -519,5 +685,88 @@ export default function CommunityFormPage() {
         </form>
       </div>
     </DashboardLayout>
+
+      {/* TSK-105/TSK-106: Test Setup Modal with sequential fading */}
+      {setupModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+          <div className="bg-[#111] border border-white/[0.1] rounded-2xl p-7 w-full max-w-md shadow-2xl relative">
+            <button
+              onClick={() => setSetupModal(null)}
+              className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors"
+              disabled={setupModal.loading && (setupModal.checks || []).length < 2}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <h3 className="text-[16px] font-black text-white mb-5">📋 Running Diagnostics...</h3>
+            
+            <div className="space-y-4 mb-6 min-h-[120px]">
+              {/* Render verified checks sequentially */}
+              {(setupModal.checks || []).map((c, i) => (
+                <div key={c.id} className="flex items-start gap-3 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                  <span className="flex-shrink-0 mt-0.5 text-[16px]">{c.pass ? '✅' : '❌'}</span>
+                  <div>
+                    <p className={`text-[13px] font-semibold ${c.pass ? 'text-white/70' : 'text-white'}`}>{c.label}</p>
+                    {!c.pass && <p className="text-[12px] text-white/35 mt-0.5 leading-relaxed">{c.hint}</p>}
+                  </div>
+                </div>
+              ))}
+
+              {/* Show simple spinner for pending check */}
+              {setupModal.loading && (
+                <div className="flex items-center gap-3 opacity-50 animate-pulse">
+                   <svg className="animate-spin text-[#9FFF57] flex-shrink-0" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                  </svg>
+                  <p className="text-[13px] font-semibold text-white/50">Processing...</p>
+                </div>
+              )}
+            </div>
+
+            {!setupModal.loading && (
+              <div className={`rounded-xl px-4 py-3 text-[13px] font-semibold text-center animate-in fade-in zoom-in-95 duration-500 ${setupModal.allPass ? 'bg-[#9FFF57]/10 text-[#9FFF57] border border-[#9FFF57]/20' : 'bg-yellow-400/10 text-yellow-400 border border-yellow-400/20'}`}>
+                {setupModal.allPass ? '🚀 All systems go — your community is live!' : '⚠️ Fix the issues above before marketing.'}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* TSK-106: Connect via Telegram Bot Modal */}
+      {connectQr && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+          <div className="bg-[#111] border border-white/[0.1] rounded-2xl p-8 w-full max-w-sm text-center shadow-2xl relative">
+            <button
+              onClick={() => setConnectQr(null)}
+              className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            
+            <div className="mx-auto w-12 h-12 bg-[#229ED9]/10 rounded-full flex items-center justify-center mb-4 text-[#229ED9]">
+              <FaTelegram size={24} />
+            </div>
+            <h3 className="text-[17px] font-black text-white mb-2">Connect Telegram Group</h3>
+            <p className="text-[12.5px] text-white/40 mb-6 leading-relaxed px-2">
+              Scan this QR to add Membba Bot as an admin to your Telegram Group. It will reply with your Chat ID.
+            </p>
+            
+            <div className="bg-white p-3 rounded-2xl inline-block mb-6 shadow-lg">
+              <img src={connectQr.dataUrl} alt="Connect Telegram Bot" className="w-48 h-48" />
+            </div>
+
+            <p className="text-[11.5px] font-bold text-white/30 uppercase tracking-widest mb-3" >OR CLICK DIRECTLY</p>
+            
+            <a
+              href={connectQr.deepLink}
+              target="_blank" rel="noopener noreferrer"
+              className="block w-full border border-[#229ED9]/40 bg-[#229ED9]/10 text-[#229ED9] px-5 py-3 rounded-xl text-[14px] font-bold hover:bg-[#229ED9]/20 transition-colors"
+            >
+              Open in Telegram
+            </a>
+          </div>
+        </div>
+      )}
+    </>
   )
 }

@@ -5,6 +5,7 @@ import paymentsRouter from './routes/payments.js'
 import botRouter from './routes/bot.js'
 import membersRouter from './routes/members.js'
 import whatsappRouter from './routes/whatsapp.js'
+import telegramRouter from './routes/telegram.js'
 import { processExpiredSubscriptions } from './services/subscription.js'
 import { startPolling } from './services/botPoller.js'
 import { registerWebhook } from './services/botWebhook.js'
@@ -29,6 +30,7 @@ app.use('/api/payments', paymentsRouter)
 app.use('/api/bot', botRouter)
 app.use('/api/members', membersRouter)
 app.use('/api/whatsapp', whatsappRouter)
+app.use('/api/telegram', telegramRouter)
 
 app.get('/api/health', (_req, res) =>
   res.json({ status: 'ok', time: new Date().toISOString() })
