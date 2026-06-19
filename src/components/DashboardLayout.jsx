@@ -48,11 +48,16 @@ export default function DashboardLayout({ children, pageTitle }) {
   const { dark, toggleTheme } = useTheme()
   const location = useLocation()
   const navigate = useNavigate()
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [search, setSearch] = useState('')
 
   const displayName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Creator'
 
-  useEffect(() => {}, [location.pathname])
+  useEffect(() => { setMobileOpen(false) }, [location.pathname])
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [mobileOpen])
 
   const handleSignOut = async () => {
     await signOut()
@@ -190,25 +195,58 @@ export default function DashboardLayout({ children, pageTitle }) {
       className="flex min-h-screen text-[14px] text-[#dcddde] bg-[#000]"
       style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
     >
-      {/* ── Sidebar (Desktop + Mobile) — Always Fixed ───── */}
+      {/* ── Desktop Sidebar (Fixed, Hidden on Mobile) ───── */}
       <aside
-        className="fixed inset-y-0 left-0 w-64 lg:w-[240px] flex flex-col border-r border-white/[0.06] z-50 overflow-y-auto bg-[#111]"
+        className="hidden lg:flex fixed inset-y-0 left-0 w-[240px] flex-col border-r border-white/[0.06] z-50 overflow-y-auto bg-[#111]"
+      >
+        <SidebarBody />
+      </aside>
+
+      {/* ── Mobile: Backdrop ─────────────────────────────── */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* ── Mobile: Drawer ──────────────────────────────── */}
+      <aside
+        className={`
+          fixed inset-y-0 left-0 z-50 w-64 flex flex-col
+          border-r border-white/[0.06]
+          transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)]
+          lg:hidden
+          ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}
+        style={{ background: '#2b2d31' }}
       >
         <SidebarBody />
       </aside>
 
       {/* ── Main content area with left margin for fixed sidebar ── */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen ml-64 lg:ml-[240px]">
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen lg:ml-[240px]">
 
         {/* ── Topbar ─────────────────────────────────────── */}
         <header
           className="h-[60px] flex-shrink-0 border-b border-white/[0.06] bg-[#111]/80 backdrop-blur-md flex items-center justify-between px-4 sm:px-6 lg:px-8 z-10 sticky top-0"
         >
-          {/* Left: breadcrumb (no mobile menu needed) */}
-          <div className="flex items-center gap-1.5 text-[14px]">
-            <span className="text-[#72767d] font-medium">Workspace</span>
-            <span className="text-[#4f545c] font-light">·</span>
-            <span className="text-white font-semibold">{pageName}</span>
+          {/* Left: mobile menu + breadcrumb */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setMobileOpen(true)}
+              aria-label="Open menu"
+              className="lg:hidden text-[#72767d] hover:text-white p-1.5 rounded transition-all"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <div className="flex items-center gap-1.5 text-[14px]">
+              <span className="text-[#72767d] font-medium">Workspace</span>
+              <span className="text-[#4f545c] font-light">·</span>
+              <span className="text-white font-semibold">{pageName}</span>
+            </div>
           </div>
 
           {/* Right: search */}
@@ -230,32 +268,6 @@ export default function DashboardLayout({ children, pageTitle }) {
           </div>
         </main>
       </div>
-
-      {/* ── MOBILE: Bottom Tab Bar ─────────────────────── */}
-      <nav
-        className="lg:hidden fixed bottom-0 inset-x-0 z-40 flex items-center justify-around px-2 border-t border-white/[0.06]"
-        style={{ background: '#2b2d31', paddingBottom: 'env(safe-area-inset-bottom, 8px)', paddingTop: 8 }}
-      >
-        {[
-          { label: 'Overview', path: '/dashboard', Icon: HiOutlineSquares2X2 },
-          ...WORKSPACE_LINKS.slice(0, 3),
-          { label: 'Settings', path: '/dashboard/settings', Icon: HiOutlineCog6Tooth },
-        ].map(({ label, path, Icon }) => {
-          const active = isActive(path)
-          return (
-            <Link
-              key={path}
-              to={path}
-              className={`nav-item flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-all ${
-                active ? 'text-[#9FFF57]' : 'text-[#72767d] hover:text-[#96989d]'
-              }`}
-            >
-              <Icon size={20} />
-              <span className="text-[9px] font-medium">{label}</span>
-            </Link>
-          )
-        })}
-      </nav>
     </div>
   )
 }
