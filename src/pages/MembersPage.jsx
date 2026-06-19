@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import API_BASE from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import DashboardLayout from '../components/DashboardLayout'
 import Avatar from '../components/Avatar'
@@ -45,7 +46,7 @@ export default function MembersPage() {
   const handleResend = async (s) => {
     setResending(s.id)
     try {
-      await fetch('/api/telegram/resend-invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscriptionId: s.id }) })
+      await fetch(`${API_BASE}/api/telegram/resend-invite`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscriptionId: s.id }) })
       toast.success('Invite resent')
     } catch { toast.error('Failed to resend invite') }
     setResending(null)

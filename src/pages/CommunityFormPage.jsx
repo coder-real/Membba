@@ -9,6 +9,7 @@ import QRCode from 'qrcode'
 import { FaTelegram, FaWhatsapp } from 'react-icons/fa'
 import telegramLogo from '../assets/icons8-telegram.svg'
 import whatsappLogo from '../assets/icons8-whatsapp.svg'
+import API_BASE from '../lib/api'
 
 const generateSlug = (name) =>
   name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
@@ -194,7 +195,7 @@ export default function CommunityFormPage() {
     }
     setRegisteringGroup(true)
     try {
-      const res = await fetch('/api/whatsapp/join-group', {
+      const res = await fetch(`${API_BASE}/api/whatsapp/join-group`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

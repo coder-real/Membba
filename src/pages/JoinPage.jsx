@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import API_BASE from '../lib/api'
 import toast from 'react-hot-toast'
 import { FaTelegram, FaWhatsapp } from 'react-icons/fa'
 
@@ -57,7 +58,7 @@ export default function JoinPage() {
     try {
       setUidStatus('polling')
       setUidPolling(true)
-      const res = await fetch('/api/telegram/uid-token', { method: 'POST' })
+      const res = await fetch(`${API_BASE}/api/telegram/uid-token`, { method: 'POST' })
       const data = await res.json()
       if (!data.token) throw new Error('No token')
 
@@ -78,7 +79,7 @@ export default function JoinPage() {
         }
 
         try {
-          const checkRes = await fetch(`/api/telegram/uid-from-token?token=${data.token}`)
+          const checkRes = await fetch(`${API_BASE}/api/telegram/uid-from-token?token=${data.token}`)
           const checkData = await checkRes.json()
           if (checkData.uid) {
             clearInterval(intervalId)
@@ -142,7 +143,7 @@ export default function JoinPage() {
       const body = { plan_id: selectedPlan.id, email: form.email }
       if (isWhatsApp) body.whatsapp_phone = form.whatsapp_phone.trim()
       else body.telegram_user_id = form.telegram_user_id.trim()
-      const res  = await fetch('/api/payments/initialize', {
+      const res  = await fetch(`${API_BASE}/api/payments/initialize`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
       })
       const data = await res.json()
