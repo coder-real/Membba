@@ -116,14 +116,26 @@ export async function initWhatsApp() {
     console.log('[whatsapp] client ready — bot is online')
   })
 
-  client.on('auth_failure', msg => {
+  client.on('auth_failure', async msg => {
     status = 'awaiting_qr'
-    console.error('[whatsapp] auth failure:', msg)
+    currentQR = null
+    console.error('[whatsapp] auth failure — clearing stale session and restarting for fresh QR:', msg)
+    // Wipe the stored session so RemoteAuth won't try to restore it again
+    try {
+      await supabase.from('whatsapp_sessions').delete().neq('id', '__placeholder__')
+      console.log('[whatsapp] stale sessions cleared from Supabase')
+    } catch (e) {
+      console.warn('[whatsapp] could not clear sessions:', e.message)
+    }
+    // Wait a moment then restart so a new QR is generated
+    setTimeout(() => restartWhatsApp(), 3000)
   })
 
   client.on('disconnected', reason => {
     status = 'initializing'
     console.warn('[whatsapp] disconnected:', reason)
+    // Auto-restart on unexpected disconnection
+    setTimeout(() => restartWhatsApp(), 5000)
   })
 
   // ── Auto-kick non-subscribers on group join ─────────────────────────────
