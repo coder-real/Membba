@@ -95,7 +95,26 @@ export async function initWhatsApp() {
     puppeteer: {
       headless: true,
       executablePath: executablePath || undefined,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',       // use /tmp instead of /dev/shm (crucial on Render)
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',                   // prevents extra chrome helper processes
+        '--single-process',              // run Chrome in a single process (saves ~100MB)
+        '--disable-gpu',
+        '--disable-extensions',
+        '--disable-background-networking',
+        '--disable-default-apps',
+        '--disable-sync',
+        '--disable-translate',
+        '--hide-scrollbars',
+        '--metrics-recording-only',
+        '--mute-audio',
+        '--safebrowsing-disable-auto-update',
+        '--js-flags=--max-old-space-size=256', // cap V8 heap at 256MB
+      ],
     },
   })
 
