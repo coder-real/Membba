@@ -7,3 +7,6 @@ dist
 # WhatsApp session — local only, never commit
 .wwebjs_auth/
 .wwebjs_cache/
+
+.cache
+.cache/
