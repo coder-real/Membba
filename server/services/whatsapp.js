@@ -73,16 +73,6 @@ export async function restartWhatsApp() {
  * On first run: shows QR to scan. After that: auto-restores from Supabase.
  */
 export async function initWhatsApp() {
-  // In newer Puppeteer versions executablePath() returns a Promise.
-  // We resolve it first so the Client receives a plain string, not [object Promise].
-  let chromePath
-  try {
-    chromePath = await Promise.resolve(puppeteer.executablePath())
-  } catch {
-    chromePath = puppeteer.executablePath()
-  }
-  console.log('[whatsapp] using chrome at:', chromePath)
-
   client = new Client({
     authStrategy: new RemoteAuth({
       store: new SupabaseStore(),
@@ -90,7 +80,6 @@ export async function initWhatsApp() {
     }),
     puppeteer: {
       headless: true,
-      executablePath: chromePath,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
     },
   })
