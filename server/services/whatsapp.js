@@ -73,13 +73,28 @@ export async function restartWhatsApp() {
  * On first run: shows QR to scan. After that: auto-restores from Supabase.
  */
 export async function initWhatsApp() {
+  // whatsapp-web.js bundles its own puppeteer (v146) which looks for a different
+  // Chrome version than what we install. We explicitly pass our standalone puppeteer's
+  // executablePath so both use the same binary (downloaded via .puppeteerrc.cjs).
+  let executablePath
+  try {
+    executablePath = puppeteer.executablePath()
+    if (executablePath && typeof executablePath.then === 'function') {
+      executablePath = await executablePath
+    }
+  } catch {
+    executablePath = undefined
+  }
+  console.log('[whatsapp] using chrome at:', executablePath || 'default (system)')
+
   client = new Client({
     authStrategy: new RemoteAuth({
       store: new SupabaseStore(),
-      backupSyncIntervalMs: 300_000, // save session to Supabase every 5 min
+      backupSyncIntervalMs: 300_000,
     }),
     puppeteer: {
       headless: true,
+      executablePath: executablePath || undefined,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
     },
   })
