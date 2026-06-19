@@ -126,7 +126,7 @@ router.get('/verify/:reference', async (req, res) => {
     // Idempotency check — webhook may have already processed this
     const { data: existing } = await supabase
       .from('subscriptions')
-      .select('id, status, expires_at, communities(name, slug)')
+      .select('id, status, expires_at, communities(name, slug, platform)')
       .eq('paystack_reference', reference)
       .maybeSingle()
 
@@ -135,6 +135,7 @@ router.get('/verify/:reference', async (req, res) => {
         success: true,
         already_processed: true,
         subscription: existing,
+        platform: existing.communities?.platform || 'telegram',
         invite_link: null, // was already sent via Telegram DM by webhook handler
       })
     }
