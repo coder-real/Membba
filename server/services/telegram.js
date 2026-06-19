@@ -49,13 +49,25 @@ async function tg(method, data, retryWithNewId = true) {
  * If DM fails (user hasn't /started), the invite link is still returned
  * so the caller can show it on the payment success page.
  */
-export async function sendTelegramInvite({ chatId, telegramUserId, communityName, communitySlug, customMessage }) {
-  // Generate an invite link safely via tg helper
-  // We removed expire_date entirely for debugging
-  const linkRes = await tg('createChatInviteLink', {
+export async function sendTelegramInvite({
+  chatId,
+  telegramUserId,
+  communityName,
+  communitySlug,
+  customMessage,
+  inviteLinkTtlMinutes = 60,   // 0 = never expire
+  msgAutoDeleteSeconds  = 120,  // 0 = never delete
+}) {
+  // Build invite link params
+  const linkParams = {
     chat_id: chatId,
     name: `sub_${telegramUserId}`,
-  })
+  }
+  if (inviteLinkTtlMinutes > 0) {
+    linkParams.expire_date = Math.floor(Date.now() / 1000) + inviteLinkTtlMinutes * 60
+  }
+
+  const linkRes = await tg('createChatInviteLink', linkParams)
 
   if (!linkRes.ok) {
     throw new Error(`createChatInviteLink returned not ok: ${JSON.stringify(linkRes)}`)
@@ -64,14 +76,29 @@ export async function sendTelegramInvite({ chatId, telegramUserId, communityName
   const inviteLink = linkRes.result.invite_link
 
   try {
+    const expiryNote = inviteLinkTtlMinutes > 0
+      ? `\n\n⚠️ This link expires in ${inviteLinkTtlMinutes >= 60
+          ? `${inviteLinkTtlMinutes / 60} hour${inviteLinkTtlMinutes / 60 !== 1 ? 's' : ''}`
+          : `${inviteLinkTtlMinutes} minute${inviteLinkTtlMinutes !== 1 ? 's' : ''}`}.`
+      : ''
+
     const defaultWelcome = `✅ Payment confirmed!\n\nClick below to join ${communityName}:`
     const welcomeText = customMessage || defaultWelcome
 
-    await tg('sendMessage', {
+    const msgRes = await tg('sendMessage', {
       chat_id: telegramUserId,
-      text: `${welcomeText}\n${inviteLink}\n\n⚠️ This link expires in 15 minutes.`,
+      text: `${welcomeText}\n${inviteLink}${expiryNote}`,
     })
     console.log(`[telegram] invite sent to user ${telegramUserId}`)
+
+    // Auto-delete the DM after the configured delay
+    if (msgAutoDeleteSeconds > 0 && msgRes?.ok && msgRes.result?.message_id) {
+      const messageId = msgRes.result.message_id
+      setTimeout(() => {
+        deleteTelegramMessage({ chatId: telegramUserId, messageId })
+      }, msgAutoDeleteSeconds * 1000)
+      console.log(`[telegram] scheduled DM delete for msg ${messageId} in ${msgAutoDeleteSeconds}s`)
+    }
   } catch (err) {
     console.warn(`[telegram] could not DM user ${telegramUserId}: ${err.message}`)
     console.warn('[telegram] subscriber must /start the bot before the bot can DM them.')

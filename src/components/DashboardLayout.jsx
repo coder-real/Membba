@@ -9,37 +9,50 @@ import {
   HiOutlineUsers,
   HiOutlineCreditCard,
   HiOutlineCog6Tooth,
-  HiOutlineArrowRightOnRectangle,
-  HiOutlinePlusCircle,
-  HiOutlineBars3,
-  HiOutlineXMark,
+  HiOutlineMagnifyingGlass,
+  HiOutlineBolt,
   HiOutlineSun,
   HiOutlineMoon,
+  HiOutlineArrowRightOnRectangle,
 } from 'react-icons/hi2'
+import { HiOutlineBolt as Bolt } from 'react-icons/hi2'
 
-const navLinks = [
-  { label: 'Overview',     path: '/dashboard',               Icon: HiOutlineSquares2X2 },
-  { label: 'Communities',  path: '/dashboard/communities',   Icon: HiOutlineUserGroup  },
-  { label: 'Members',      path: '/dashboard/members',       Icon: HiOutlineUsers      },
-  { label: 'Payments',     path: '/dashboard/payments',      Icon: HiOutlineCreditCard },
-  { label: 'Settings',     path: '/dashboard/settings',      Icon: HiOutlineCog6Tooth  },
+// ── Avatar initials circle ───────────────────────────────
+const AVATAR_COLORS = ['#9FFF57','#57C4FF','#FF6B9D','#FFB347','#B39DFF','#48CFAD']
+function UserAvatar({ name, size = 28 }) {
+  const idx = name ? name.charCodeAt(0) % AVATAR_COLORS.length : 0
+  const color = AVATAR_COLORS[idx]
+  return (
+    <div
+      style={{ width: size, height: size, background: color + '22', border: `1.5px solid ${color}44`, color, fontSize: Math.floor(size * 0.38) }}
+      className="rounded-full flex items-center justify-center font-bold select-none flex-shrink-0"
+    >
+      {name ? name[0].toUpperCase() : '?'}
+    </div>
+  )
+}
+
+// ── Nav structure (mirrors reference images exactly) ────
+const WORKSPACE_LINKS = [
+  { label: 'Communities', path: '/dashboard/communities', Icon: HiOutlineUserGroup  },
+  { label: 'Members',     path: '/dashboard/members',     Icon: HiOutlineUsers      },
+  { label: 'Payments',    path: '/dashboard/payments',    Icon: HiOutlineCreditCard },
+]
+const TOOL_LINKS = [
+  { label: 'Automations', path: '/dashboard/automations', Icon: HiOutlineBolt },
+  { label: 'Settings',    path: '/dashboard/settings',    Icon: HiOutlineCog6Tooth  },
 ]
 
-export default function DashboardLayout({ children }) {
+export default function DashboardLayout({ children, pageTitle }) {
   const { user, signOut } = useAuth()
   const { dark, toggleTheme } = useTheme()
-  const location  = useLocation()
-  const navigate  = useNavigate()
-  const [open, setOpen] = useState(false)
+  const location = useLocation()
+  const navigate = useNavigate()
+  const [search, setSearch] = useState('')
 
-  // Close sidebar when route changes on mobile
-  useEffect(() => { setOpen(false) }, [location.pathname])
+  const displayName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Creator'
 
-  // Lock body scroll when drawer is open
-  useEffect(() => {
-    document.body.style.overflow = open ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
-  }, [open])
+  useEffect(() => {}, [location.pathname])
 
   const handleSignOut = async () => {
     await signOut()
@@ -47,181 +60,202 @@ export default function DashboardLayout({ children }) {
     navigate('/')
   }
 
-  const displayName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Creator'
-  const initial     = displayName[0]?.toUpperCase()
+  const isActive = (path) =>
+    path === '/dashboard'
+      ? location.pathname === '/dashboard'
+      : location.pathname === path || location.pathname.startsWith(path + '/')
 
-  // Theme-aware classes
-  const sideBg      = dark ? 'bg-[#0a0a0a] border-white/[0.06]' : 'bg-white border-gray-200'
-  const mainBg      = dark ? 'bg-[#0d0d0d] text-white' : 'bg-gray-50 text-gray-900'
-  const headerBg    = dark ? 'bg-[#0a0a0a] border-white/[0.06]' : 'bg-white border-gray-200'
-  const navActive   = dark ? 'bg-[#9FFF57]/10 text-white' : 'bg-[#9FFF57]/15 text-gray-900'
-  const navInactive = dark ? 'text-white/40 hover:text-white/80 hover:bg-white/[0.04]' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
-  const iconActive  = dark ? 'text-[#9FFF57]' : 'text-[#5ab020]'
-  const iconInact   = dark ? 'text-white/30 group-hover:text-white/60' : 'text-gray-400 group-hover:text-gray-600'
-  const userNameCls = dark ? 'text-white' : 'text-gray-900'
-  const userEmailCls = dark ? 'text-white/30' : 'text-gray-400'
-  const signOutCls  = dark ? 'text-white/35 hover:text-red-400 hover:bg-white/[0.04]' : 'text-gray-400 hover:text-red-500 hover:bg-gray-100'
-  const toggleBtnCls = dark
-    ? 'bg-white/[0.07] hover:bg-white/[0.12] text-white/60'
-    : 'bg-gray-100 hover:bg-gray-200 text-gray-500'
+  // Figure out breadcrumb label
+  const allLinks = [
+    { label: 'Overview', path: '/dashboard' },
+    ...WORKSPACE_LINKS,
+    ...TOOL_LINKS,
+  ]
+  const activeLink = allLinks.find(l => isActive(l.path)) || allLinks[0]
+  const pageName = pageTitle || activeLink.label
 
-  /* ── Shared sidebar content ─────────────────────────── */
-  const SidebarContent = () => (
-    <>
-      {/* Logo */}
-      <div className={`px-6 py-6 border-b ${dark ? 'border-white/[0.06]' : 'border-gray-200'}`}>
-        <Link to="/" className="flex items-center gap-2.5">
-          <img src="/green.svg" alt="Membba" className="h-8" />
-        </Link>
-      </div>
+  // Subscription counts placeholder (could be data-driven later)
+  const COUNTS = {}
 
-      {/* Nav */}
-      <nav className="flex-1 px-3 py-5 space-y-0.5">
-        {navLinks.map(({ label, path, Icon }) => {
-          const active = location.pathname === path ||
-            (path !== '/dashboard' && location.pathname.startsWith(path))
-          return (
-            <Link
-              key={path}
-              to={path}
-              className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] font-medium transition-all ${
-                active ? navActive : navInactive
-              }`}
-            >
-              <Icon
-                size={18}
-                className={`flex-shrink-0 transition-colors ${active ? iconActive : iconInact}`}
-              />
-              {label}
-              {active && (
-                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#9FFF57] flex-shrink-0" />
-              )}
-            </Link>
-          )
-        })}
-      </nav>
+  // ── Reusable NavItem ─────────────────────────────────
+  const NavItem = ({ label, path, Icon, count }) => {
+    const active = isActive(path)
+    return (
+      <Link
+        to={path}
+        className={`group flex items-center gap-3 px-3 py-[9px] rounded-[8px] text-[14px] font-medium transition-all mx-2 ${
+          active
+            ? 'bg-[rgba(159,255,87,0.12)] text-white'
+            : 'text-[#96989d] hover:text-[#dcddde] hover:bg-white/[0.04]'
+        }`}
+      >
+        <Icon size={18} className={active ? 'text-[#9FFF57]' : 'text-[#72767d] group-hover:text-[#96989d]'} />
+        <span className="flex-1 truncate">{label}</span>
+        {count !== undefined && count !== null && (
+          <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
+            active ? 'bg-[#9FFF57]/20 text-[#9FFF57]' : 'bg-white/[0.08] text-white/50'
+          }`}>
+            {count}
+          </span>
+        )}
+        {active && (
+          <span className="w-[3px] h-4 bg-[#9FFF57] rounded-full absolute right-0" />
+        )}
+      </Link>
+    )
+  }
 
-      {/* New Community */}
-      <div className="px-3 pb-4">
-        <Link
-          to="/dashboard/communities/new"
-          className="flex items-center justify-center gap-2 w-full bg-[#9FFF57] text-black py-2.5 rounded-lg text-[13px] font-bold hover:bg-[#b0ff6e] active:bg-[#8aed47] transition-all"
-        >
-          <HiOutlinePlusCircle size={16} />
-          New Community
-        </Link>
-      </div>
-
-      {/* Theme toggle + User footer */}
-      <div className={`px-4 py-4 border-t ${dark ? 'border-white/[0.06]' : 'border-gray-200'}`}>
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 rounded-full bg-[#9FFF57]/10 border border-[#9FFF57]/20 flex items-center justify-center text-sm font-bold text-[#9FFF57] flex-shrink-0">
-            {initial}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className={`text-[13px] font-semibold truncate leading-tight ${userNameCls}`}>{displayName}</p>
-            <p className={`text-[11px] truncate leading-tight ${userEmailCls}`}>{user?.email}</p>
-          </div>
-          {/* Theme toggle in sidebar */}
-          <button
-            onClick={toggleTheme}
-            aria-label="Toggle theme"
-            className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${toggleBtnCls}`}
-          >
-            {dark ? <HiOutlineSun size={14} /> : <HiOutlineMoon size={14} />}
-          </button>
-        </div>
-        <button
-          onClick={handleSignOut}
-          className={`w-full flex items-center gap-2 px-3 py-2 text-[12.5px] rounded-lg transition-all ${signOutCls}`}
-        >
-          <HiOutlineArrowRightOnRectangle size={15} />
-          Sign out
-        </button>
-      </div>
-    </>
+  // ── Section label ─────────────────────────────────────
+  const SectionLabel = ({ label }) => (
+    <p className="px-3 pt-4 pb-1 text-[11px] font-bold text-[#72767d] uppercase tracking-[0.7px] select-none">
+      {label}
+    </p>
   )
 
-  return (
-    <div className={`flex min-h-screen ${mainBg} transition-colors duration-300`} style={{ fontFamily: "'Inter', sans-serif" }}>
+  // ── Sidebar body (reused for desktop + mobile drawer) ──
+  const SidebarBody = () => (
+    <div className="flex flex-col h-full">
+      {/* Page/section header in sidebar (mirrors "Overview" at top) */}
+      <div className="px-3 py-3 border-b border-white/[0.06] flex-shrink-0">
+        <p className="text-[14px] font-bold text-white truncate">{pageName}</p>
+      </div>
 
-      {/* ── Desktop Sidebar (hidden on mobile) ─────────── */}
-      <aside className={`hidden lg:flex w-60 border-r flex-col flex-shrink-0 ${sideBg}`}>
-        <SidebarContent />
-      </aside>
-
-      {/* ── Mobile Backdrop ─────────────────────────────── */}
-      {open && (
-        <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
-          onClick={() => setOpen(false)}
-        />
-      )}
-
-      {/* ── Mobile Drawer Sidebar ───────────────────────── */}
-      <aside className={`
-        fixed inset-y-0 left-0 z-50 w-72 border-r
-        flex flex-col flex-shrink-0 transition-transform duration-300 ease-in-out
-        lg:hidden
-        ${open ? 'translate-x-0' : '-translate-x-full'}
-        ${sideBg}
-      `}>
-        <button
-          onClick={() => setOpen(false)}
-          className={`absolute top-4 right-4 p-1.5 rounded-lg transition-colors ${
-            dark ? 'text-white/40 hover:text-white hover:bg-white/[0.06]' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
-          }`}
-        >
-          <HiOutlineXMark size={20} />
-        </button>
-        <SidebarContent />
-      </aside>
-
-      {/* ── Main Content ────────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
-
-        {/* Mobile Top Bar */}
-        <header className={`lg:hidden flex items-center justify-between px-5 py-4 border-b sticky top-0 z-30 ${headerBg}`}>
-          <button
-            onClick={() => setOpen(true)}
-            className={`p-1.5 rounded-lg transition-colors ${
-              dark ? 'text-white/50 hover:text-white hover:bg-white/[0.06]' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+      {/* Nav scroll area */}
+      <div className="flex-1 overflow-y-auto py-1">
+        {/* Dashboard (top, ungrouped) */}
+        <div className="mx-1 mt-1 mb-0.5">
+          <Link
+            to="/dashboard"
+            className={`flex items-center gap-2.5 px-2 py-[7px] rounded-[6px] text-[13.5px] font-medium transition-all ${
+              isActive('/dashboard')
+                ? 'bg-[rgba(159,255,87,0.12)] text-white'
+                : 'text-[#96989d] hover:text-[#dcddde] hover:bg-[rgba(255,255,255,0.06)]'
             }`}
           >
-            <HiOutlineBars3 size={22} />
-          </button>
+            <HiOutlineSquares2X2 size={16} className={isActive('/dashboard') ? 'text-[#9FFF57]' : 'text-[#72767d]'} />
+            Dashboard
+          </Link>
+        </div>
 
-          <img src="/green.svg" alt="Membba" className="h-7" />
+        {/* WORKSPACE group */}
+        <SectionLabel label="Workspace" />
+        <div className="relative space-y-0.5">
+          {WORKSPACE_LINKS.map(({ label, path, Icon }) => (
+            <NavItem key={path} label={label} path={path} Icon={Icon} />
+          ))}
+        </div>
 
+        {/* TOOLS group */}
+        <SectionLabel label="Tools" />
+        <div className="relative space-y-0.5">
+          {TOOL_LINKS.map(({ label, path, Icon }) => (
+            <NavItem key={path} label={label} path={path} Icon={Icon} />
+          ))}
+        </div>
+      </div>
+
+      {/* User card at bottom */}
+      <div className="border-t border-white/[0.06] p-3 flex-shrink-0">
+        <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-white/[0.06] transition-all">
+          <UserAvatar name={displayName} size={32} />
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-semibold text-white/90 truncate leading-tight">{displayName}</p>
+            <p className="text-[11px] text-[#72767d] truncate leading-tight">Free plan</p>
+          </div>
           <div className="flex items-center gap-1">
-            {/* Theme toggle in mobile header */}
             <button
               onClick={toggleTheme}
+              type="button"
               aria-label="Toggle theme"
-              className={`p-1.5 rounded-lg transition-colors ${
-                dark ? 'text-white/50 hover:text-white hover:bg-white/[0.06]' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
-              }`}
+              className="p-2 rounded-lg text-[#72767d] hover:text-white hover:bg-white/[0.12] transition-all"
             >
               {dark ? <HiOutlineSun size={18} /> : <HiOutlineMoon size={18} />}
             </button>
-            <Link
-              to="/dashboard/communities/new"
-              className={`p-1.5 rounded-lg transition-colors ${
-                dark ? 'text-[#9FFF57]/80 hover:text-[#9FFF57] hover:bg-[#9FFF57]/10' : 'text-[#5ab020] hover:text-[#3d8015] hover:bg-[#9FFF57]/10'
-              }`}
+            <button
+              onClick={handleSignOut}
+              type="button"
+              aria-label="Sign out"
+              className="p-2 rounded-lg text-[#72767d] hover:text-red-400 hover:bg-red-500/15 transition-all"
             >
-              <HiOutlinePlusCircle size={22} />
-            </Link>
+              <HiOutlineArrowRightOnRectangle size={18} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
+  return (
+    <div
+      className="flex min-h-screen text-[14px] text-[#dcddde] bg-[#000]"
+      style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
+    >
+      {/* ── Sidebar (Desktop + Mobile) — Always Fixed ───── */}
+      <aside
+        className="fixed inset-y-0 left-0 w-64 lg:w-[240px] flex flex-col border-r border-white/[0.06] z-50 overflow-y-auto bg-[#111]"
+      >
+        <SidebarBody />
+      </aside>
+
+      {/* ── Main content area with left margin for fixed sidebar ── */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen ml-64 lg:ml-[240px]">
+
+        {/* ── Topbar ─────────────────────────────────────── */}
+        <header
+          className="h-[60px] flex-shrink-0 border-b border-white/[0.06] bg-[#111]/80 backdrop-blur-md flex items-center justify-between px-4 sm:px-6 lg:px-8 z-10 sticky top-0"
+        >
+          {/* Left: breadcrumb (no mobile menu needed) */}
+          <div className="flex items-center gap-1.5 text-[14px]">
+            <span className="text-[#72767d] font-medium">Workspace</span>
+            <span className="text-[#4f545c] font-light">·</span>
+            <span className="text-white font-semibold">{pageName}</span>
+          </div>
+
+          {/* Right: search */}
+          <div className="flex items-center gap-2">
+            <div
+              className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-[6px] text-[13px] text-[#72767d] cursor-text hover:bg-white/[0.06] transition-all"
+              style={{ background: '#1e1f22', minWidth: 160 }}
+            >
+              <HiOutlineMagnifyingGlass size={14} />
+              <span>Search...</span>
+            </div>
           </div>
         </header>
 
-        {/* Page content */}
+        {/* ── Page content ───────────────────────────────── */}
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+          <div className="w-full px-4 sm:px-6 lg:px-8 py-6 lg:py-8 page-enter" style={{ paddingBottom: 80 }}>
             {children}
           </div>
         </main>
       </div>
+
+      {/* ── MOBILE: Bottom Tab Bar ─────────────────────── */}
+      <nav
+        className="lg:hidden fixed bottom-0 inset-x-0 z-40 flex items-center justify-around px-2 border-t border-white/[0.06]"
+        style={{ background: '#2b2d31', paddingBottom: 'env(safe-area-inset-bottom, 8px)', paddingTop: 8 }}
+      >
+        {[
+          { label: 'Overview', path: '/dashboard', Icon: HiOutlineSquares2X2 },
+          ...WORKSPACE_LINKS.slice(0, 3),
+          { label: 'Settings', path: '/dashboard/settings', Icon: HiOutlineCog6Tooth },
+        ].map(({ label, path, Icon }) => {
+          const active = isActive(path)
+          return (
+            <Link
+              key={path}
+              to={path}
+              className={`nav-item flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-all ${
+                active ? 'text-[#9FFF57]' : 'text-[#72767d] hover:text-[#96989d]'
+              }`}
+            >
+              <Icon size={20} />
+              <span className="text-[9px] font-medium">{label}</span>
+            </Link>
+          )
+        })}
+      </nav>
     </div>
   )
 }

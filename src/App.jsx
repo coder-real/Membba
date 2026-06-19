@@ -13,6 +13,7 @@ import CommunityFormPage from './pages/CommunityFormPage'
 import MembersPage from './pages/MembersPage'
 import PaymentsPage from './pages/PaymentsPage'
 import SettingsPage from './pages/SettingsPage'
+import AutomationsPage from './pages/AutomationsPage'
 import JoinPage from './pages/JoinPage'
 import PaymentSuccessPage from './pages/PaymentSuccessPage'
 
@@ -51,6 +52,7 @@ export default function App() {
             <Route path="/dashboard/communities/:id/edit" element={<ProtectedRoute><CommunityFormPage /></ProtectedRoute>} />
             <Route path="/dashboard/members" element={<ProtectedRoute><MembersPage /></ProtectedRoute>} />
             <Route path="/dashboard/payments" element={<ProtectedRoute><PaymentsPage /></ProtectedRoute>} />
+            <Route path="/dashboard/automations" element={<ProtectedRoute><AutomationsPage /></ProtectedRoute>} />
             <Route path="/dashboard/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
 
             <Route path="*" element={<Navigate to="/" replace />} />

@@ -27,7 +27,7 @@ function NotFound() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-6">
       <div className="text-center max-w-sm">
-        <p className="text-[11px] font-bold tracking-[0.15em] text-white/25 uppercase mb-4">404 — Not Found</p>
+        <p className="text-[14px] font-bold tracking-[0.15em] text-white/25 uppercase mb-4">404 — Not Found</p>
         <h1 className="text-2xl font-black text-white mb-3">This community doesn't exist</h1>
         <p className="text-[14px] text-white/40 leading-relaxed">
           The link may be invalid or this community is no longer accepting members.
@@ -167,19 +167,19 @@ export default function JoinPage() {
     'border-white/[0.08] focus:border-[#9FFF57]/40 focus:ring-2 focus:ring-[#9FFF57]/10',
   ].join(' ')
 
-  const labelCls = 'block text-[11.5px] font-bold tracking-widest uppercase text-white/40 mb-2'
+  const labelCls = 'block text-[14px] font-bold tracking-widest uppercase text-white/40 mb-2'
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]" style={{ fontFamily: "'Inter', sans-serif" }}>
 
       {/* Top bar */}
       <div className="border-b border-white/[0.05] px-6 py-4 flex items-center justify-between max-w-xl mx-auto">
-        <span className="text-[13px] font-black tracking-wider text-white/30 uppercase">Membba</span>
+        <span className="text-[14px] font-black tracking-wider text-white/30 uppercase">Membba</span>
         <div className="flex items-center gap-1.5 text-white/25">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
           </svg>
-          <span className="text-[11.5px] font-semibold">Secured by Paystack</span>
+          <span className="text-[14px] font-semibold">Secured by Paystack</span>
         </div>
       </div>
 
@@ -187,7 +187,7 @@ export default function JoinPage() {
 
         {/* Community identity */}
         <div className="mb-8">
-          <div className={`inline-flex items-center gap-1.5 text-[11px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full border mb-4 ${plBg} ${plText}`}>
+          <div className={`inline-flex items-center gap-1.5 text-[14px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full border mb-4 ${plBg} ${plText}`}>
             <PlatIcon size={10} />
             {platLabel} Community
           </div>
@@ -202,7 +202,7 @@ export default function JoinPage() {
 
         {/* Plans */}
         {plans.length === 0 ? (
-          <div className="border border-yellow-400/20 bg-yellow-400/5 rounded-xl px-5 py-4 text-[13.5px] text-yellow-400 mb-8">
+          <div className="border border-yellow-400/20 bg-yellow-400/5 rounded-xl px-5 py-4 text-[14px] text-yellow-400 mb-8">
             No active plans available at the moment — check back soon.
           </div>
         ) : (
@@ -223,7 +223,7 @@ export default function JoinPage() {
                         : 'border-white/[0.07] hover:border-white/[0.13] bg-[#111]',
                     ].join(' ')}
                   >
-                    <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start justify-between gap-7">
                       {/* Radio indicator */}
                       <div className={`mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
                         active ? 'border-[#9FFF57]' : 'border-white/20 group-hover:border-white/35'
@@ -235,14 +235,14 @@ export default function JoinPage() {
                           {plan.name}
                         </p>
                         {plan.description && (
-                          <p className="text-[12.5px] text-white/35 mt-0.5 truncate">{plan.description}</p>
+                          <p className="text-[14px] text-white/35 mt-0.5 truncate">{plan.description}</p>
                         )}
                       </div>
                       <div className="text-right flex-shrink-0">
                         <p className={`font-black text-[17px] leading-tight ${active ? 'text-[#9FFF57]' : 'text-white'}`}>
                           ₦{plan.price.toLocaleString()}
                         </p>
-                        <p className="text-[11.5px] text-white/30 font-medium mt-0.5">
+                        <p className="text-[14px] text-white/30 font-medium mt-0.5">
                           {formatDuration(plan.duration_minutes)}
                         </p>
                       </div>
@@ -276,7 +276,7 @@ export default function JoinPage() {
                 <input type="tel" name="whatsapp_phone" required value={form.whatsapp_phone}
                   onChange={handleChange} className={inputCls}
                   placeholder="2348012345678" />
-                <p className="text-[12px] text-white/30 mt-2">
+                <p className="text-[14px] text-white/30 mt-2">
                   Country code + number, no spaces or + sign
                   <span className="font-mono text-white/45 ml-1">(e.g. 2348012345678)</span>
                 </p>
@@ -297,11 +297,11 @@ export default function JoinPage() {
                         <FaTelegram size={16} />
                       </div>
                       <div>
-                        <p className="text-[13px] font-bold text-white">Connected</p>
-                        <p className="text-[11.5px] text-[#229ED9] font-mono">ID: {form.telegram_user_id}</p>
+                        <p className="text-[14px] font-bold text-white">Connected</p>
+                        <p className="text-[14px] text-[#229ED9] font-mono">ID: {form.telegram_user_id}</p>
                       </div>
                     </div>
-                    <button type="button" onClick={() => { setUidStatus('idle'); setForm(f => ({...f, telegram_user_id: ''})) }} className="text-[12px] text-white/40 hover:text-white transition-colors underline underline-offset-2">
+                    <button type="button" onClick={() => { setUidStatus('idle'); setForm(f => ({...f, telegram_user_id: ''})) }} className="text-[14px] text-white/40 hover:text-white transition-colors underline underline-offset-2">
                       Disconnect
                     </button>
                   </div>
@@ -330,12 +330,12 @@ export default function JoinPage() {
                       )}
                     </button>
                     {!uidPolling && (
-                      <p className="text-[11.5px] text-white/30 mt-3 text-center leading-relaxed">
+                      <p className="text-[14px] text-white/30 mt-3 text-center leading-relaxed">
                         Click the button to open Telegram and tap Start. We will automatically grab your account ID.
                       </p>
                     )}
                     {uidPolling && (
-                      <p className="text-[11.5px] text-white/30 mt-3 text-center leading-relaxed animate-pulse">
+                      <p className="text-[14px] text-white/30 mt-3 text-center leading-relaxed animate-pulse">
                         Please open Telegram, tap <b>Start</b>, and then return here.
                       </p>
                     )}
@@ -349,7 +349,7 @@ export default function JoinPage() {
 
             {/* Notice */}
             {!isWA && uidStatus === 'idle' && (
-              <div className="border border-yellow-400/15 bg-yellow-400/[0.04] rounded-xl px-5 py-4 text-[13px] mt-4">
+              <div className="border border-yellow-400/15 bg-yellow-400/[0.04] rounded-xl px-5 py-4 text-[14px] mt-4">
                 <p className="font-bold text-yellow-400 mb-1.5 flex items-center gap-1.5">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                   Required Step
@@ -360,7 +360,7 @@ export default function JoinPage() {
               </div>
             )}
             {isWA && (
-              <div className="border border-[#25D366]/15 bg-[#25D366]/[0.04] rounded-xl px-5 py-4 text-[13px] text-white/45">
+              <div className="border border-[#25D366]/15 bg-[#25D366]/[0.04] rounded-xl px-5 py-4 text-[14px] text-white/45">
                 <p className="font-bold text-[#25D366] mb-1">After payment</p>
                 <p>You'll receive a WhatsApp message with your group invite link at the number you entered above.</p>
               </div>
@@ -387,7 +387,7 @@ export default function JoinPage() {
                   : 'Select a plan to continue'}
             </button>
 
-            <p className="text-center text-[11.5px] text-white/20 leading-relaxed">
+            <p className="text-center text-[14px] text-white/20 leading-relaxed">
               By continuing you agree to Membba's terms. Payments processed securely by Paystack.
             </p>
           </form>

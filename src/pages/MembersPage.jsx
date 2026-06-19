@@ -2,136 +2,178 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import DashboardLayout from '../components/DashboardLayout'
+import Avatar from '../components/Avatar'
+import Skeleton from '../components/ui/Skeleton'
 import toast from 'react-hot-toast'
 
-const STATUS_STYLES = {
-  active:    'bg-[#9FFF57]/10 text-[#9FFF57] border border-[#9FFF57]/20',
-  expired:   'bg-red-500/10 text-red-400 border border-red-500/20',
-  cancelled: 'bg-white/5 text-white/35 border border-white/10',
-}
-
-const FILTERS = ['all', 'active', 'expired', 'cancelled']
+const TABS = ['all', 'active', 'expired', 'cancelled']
 
 export default function MembersPage() {
   const { user } = useAuth()
   const [subscriptions, setSubscriptions] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState('all')
+  const [tab, setTab] = useState('all')
   const [removing, setRemoving] = useState(null)
   const [resending, setResending] = useState(null)
 
-  useEffect(() => { fetchMembers() }, [user])
+  useEffect(() => { fetchSubs() }, [user])
 
-  const fetchMembers = async () => {
+  const fetchSubs = async () => {
     const { data: communities } = await supabase.from('communities').select('id').eq('creator_id', user.id)
-    const communityIds = communities?.map(c => c.id) || []
-    if (communityIds.length === 0) { setSubscriptions([]); setLoading(false); return }
-    const { data, error } = await supabase
-      .from('subscriptions').select('*, communities(name), plans(name)')
-      .in('community_id', communityIds).order('created_at', { ascending: false })
-    if (error) toast.error(error.message)
-    else setSubscriptions(data || [])
+    const ids = communities?.map(c => c.id) || []
+    if (!ids.length) { setLoading(false); return }
+    const { data } = await supabase
+      .from('subscriptions')
+      .select('*, communities(name), plans(name)')
+      .in('community_id', ids)
+      .order('started_at', { ascending: false })
+    setSubscriptions(data || [])
     setLoading(false)
   }
 
-  const handleRemove = async (sub) => {
-    if (!window.confirm(`Remove ${sub.email} from ${sub.communities?.name}?`)) return
-    setRemoving(sub.id)
+  const handleRemove = async (s) => {
+    setRemoving(s.id)
     try {
-      const res = await fetch(`/api/members/${sub.id}/remove`, { method: 'POST' })
-      const data = await res.json()
-      if (data.success) {
-        toast.success('Member removed successfully')
-        setSubscriptions(prev => prev.map(s => s.id === sub.id ? { ...s, status: 'cancelled' } : s))
-      } else { toast.error(data.message || 'Failed to remove member') }
-    } catch { toast.error('Could not connect to server') }
-    finally { setRemoving(null) }
+      const endpoint = s.telegram_user_id ? '/api/telegram/remove-member' : '/api/whatsapp/remove-member'
+      await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscriptionId: s.id }) })
+      toast.success('Member removed')
+      fetchSubs()
+    } catch { toast.error('Failed to remove member') }
+    setRemoving(null)
   }
 
-  const handleResend = async (sub) => {
-    setResending(sub.id)
+  const handleResend = async (s) => {
+    setResending(s.id)
     try {
-      const res = await fetch(`/api/members/${sub.id}/resend-invite`, { method: 'POST' })
-      const data = await res.json()
-      if (data.success) toast.success('Invite resent!')
-      else toast.error(data.message || 'Failed to resend invite')
-    } catch { toast.error('Could not connect to server') }
-    finally { setResending(null) }
+      await fetch('/api/telegram/resend-invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscriptionId: s.id }) })
+      toast.success('Invite resent')
+    } catch { toast.error('Failed to resend invite') }
+    setResending(null)
   }
 
-  const filtered = filter === 'all' ? subscriptions : subscriptions.filter(s => s.status === filter)
+  const filtered = tab === 'all' ? subscriptions : subscriptions.filter(s => s.status === tab)
+
+  const counts = {
+    all:       subscriptions.length,
+    active:    subscriptions.filter(s => s.status === 'active').length,
+    expired:   subscriptions.filter(s => s.status === 'expired').length,
+    cancelled: subscriptions.filter(s => s.status === 'cancelled').length,
+  }
+
+  const Pill = ({ status }) => {
+    if (status === 'active') return (
+      <span className="inline-flex items-center gap-1.5 bg-[#9FFF57]/10 border border-[#9FFF57]/10 px-2 py-0.5 rounded-[4px] text-[14px] font-bold text-[#9FFF57]">
+        <span className="w-1.5 h-1.5 rounded-full bg-[#9FFF57]" /> Active
+      </span>
+    )
+    if (status === 'expired') return (
+      <span className="inline-flex items-center gap-1.5 bg-yellow-400/10 border border-yellow-400/10 px-2 py-0.5 rounded-[4px] text-[14px] font-bold text-yellow-400">
+        <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" /> Expired
+      </span>
+    )
+    return (
+      <span className="inline-flex items-center gap-1.5 bg-white/[0.05] border border-white/[0.05] px-2 py-0.5 rounded-[4px] text-[14px] font-bold text-[#96989d]">
+        <span className="w-1.5 h-1.5 rounded-full bg-[#4f545c]" /> Cancelled
+      </span>
+    )
+  }
 
   return (
-    <DashboardLayout>
-      <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Members</h1>
-        <p className="text-[14px] text-white/50 mt-1.5">All subscribers across your communities</p>
+    <DashboardLayout pageTitle="Members">
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-[24px] font-black text-[#f2f3f5] tracking-tight">Members</h1>
+        <p className="text-[14px] text-[#b5bac1] mt-1">All subscribers across your communities</p>
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex gap-2 mb-5 flex-wrap">
-        {FILTERS.map(f => (
-          <button key={f} onClick={() => setFilter(f)}
-            className={`px-3 sm:px-4 py-2 rounded-lg text-[12.5px] sm:text-[13px] font-semibold capitalize transition-all ${
-              filter === f
-                ? 'bg-[#9FFF57]/10 text-[#9FFF57] border border-[#9FFF57]/25'
-                : 'bg-[#111] border border-white/[0.08] text-white/45 hover:text-white/70'
-            }`}>
-            {f}
-            {f !== 'all' && <span className="ml-1.5 text-[11px] opacity-60">({subscriptions.filter(s => s.status === f).length})</span>}
+      {/* Pill Tab Filter */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {TABS.map(t => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`px-3 py-1.5 rounded-[4px] text-[14px] font-medium transition-all capitalize ${
+              tab === t
+                ? 'bg-white/[0.08] text-[#f2f3f5]'
+                : 'text-[#96989d] hover:text-[#dbdee1] hover:bg-white/[0.03]'
+            }`}
+          >
+            {t.charAt(0).toUpperCase() + t.slice(1)}
+            <span className={`ml-1.5 text-[14px] ${tab === t ? 'text-[#f2f3f5]/50' : 'text-[#72767d]'}`}>
+              {counts[t]}
+            </span>
           </button>
         ))}
       </div>
 
-      <div className="bg-[#111] border border-white/[0.07] rounded-xl overflow-hidden">
+      <div className="bg-[#111] rounded-[8px] shadow-sm border border-white/[0.02] overflow-hidden">
         {loading ? (
-          <div className="py-16 text-center text-[13px] text-white/30">Loading...</div>
+          <div className="p-7 space-y-4">
+            <Skeleton width="w-full" height="h-6" />
+            <Skeleton width="w-full" height="h-6" />
+            <Skeleton width="w-full" height="h-6" />
+          </div>
         ) : filtered.length === 0 ? (
-          <div className="py-16 text-center text-[14px] text-white/35">No members found.</div>
+          <div className="py-16 text-center px-6">
+            <p className="text-[14px] font-semibold text-[#f2f3f5] mb-1">
+              No {tab !== 'all' ? tab : ''} members
+            </p>
+            <p className="text-[14px] text-[#96989d]">
+              {tab === 'all' ? 'Members will appear here when they subscribe.' : `No members with "${tab}" status.`}
+            </p>
+          </div>
         ) : (
           <>
             {/* Desktop table */}
             <div className="hidden md:block overflow-x-auto">
-              <table className="w-full min-w-[720px]">
+              <table className="w-full min-w-[760px]">
                 <thead>
-                  <tr className="border-b border-white/[0.05]">
-                    {['Subscriber', 'Community / Plan', 'Telegram / WA ID', 'Started', 'Expires', 'Status', 'Action'].map(h => (
-                      <th key={h} className="px-5 py-4 text-left text-[11px] font-semibold text-white/35 uppercase tracking-widest">{h}</th>
+                  <tr className="border-b border-white/[0.04]">
+                    {['Member', 'Community / Plan', 'Platform ID', 'Started', 'Expires', 'Status', 'Actions'].map(h => (
+                      <th key={h} className="px-5 py-3.5 text-left text-[14px] font-bold text-[#b5bac1] uppercase tracking-[0.8px]">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.04]">
                   {filtered.map(s => (
-                    <tr key={s.id} className={`hover:bg-white/[0.02] transition-colors ${s.status !== 'active' ? 'opacity-50' : ''}`}>
-                      <td className="px-5 py-4 text-[13px] text-white/75 max-w-[160px] truncate">{s.email}</td>
-                      <td className="px-5 py-4">
-                        <span className="text-[13px] text-white/80">{s.communities?.name}</span>
-                        {s.plans?.name && <span className="text-white/30 ml-2 text-[12px]">· {s.plans.name}</span>}
+                    <tr key={s.id} className={`hover:bg-white/[0.015] transition-colors ${s.status !== 'active' ? 'opacity-50' : ''}`}>
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-2.5">
+                          <Avatar name={s.email} size={24} />
+                          <span className="text-[14px] font-semibold text-[#f2f3f5] max-w-[150px] truncate">{s.email}</span>
+                        </div>
                       </td>
-                      <td className="px-5 py-4 font-mono text-[11px] text-white/35">{s.telegram_user_id || s.whatsapp_phone || '—'}</td>
-                      <td className="px-5 py-4 text-[12px] text-white/40">{new Date(s.started_at).toLocaleDateString()}</td>
-                      <td className="px-5 py-4 text-[12px] text-white/40">{new Date(s.expires_at).toLocaleDateString()}</td>
-                      <td className="px-5 py-4">
-                        <span className={`inline-block text-[11px] px-2.5 py-1 rounded-full font-semibold ${STATUS_STYLES[s.status] || 'bg-white/5 text-white/35 border border-white/10'}`}>
-                          {s.status}
-                        </span>
+                      <td className="px-5 py-3.5">
+                        <span className="text-[14px] text-[#dbdee1]">{s.communities?.name}</span>
+                        {s.plans?.name && <span className="text-[#96989d] ml-2 text-[14px]">· {s.plans.name}</span>}
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-3.5 font-mono text-[14px] text-[#96989d]">{s.telegram_user_id || s.whatsapp_phone || '—'}</td>
+                      <td className="px-5 py-3.5 text-[14px] text-[#96989d]">{new Date(s.started_at).toLocaleDateString()}</td>
+                      <td className="px-5 py-3.5 text-[14px] text-[#96989d]">{new Date(s.expires_at).toLocaleDateString()}</td>
+                      <td className="px-5 py-3.5"><Pill status={s.status} /></td>
+                      <td className="px-5 py-3.5">
                         {s.status === 'active' ? (
                           <div className="flex items-center gap-2">
-                            <button onClick={() => handleRemove(s)} disabled={removing === s.id}
-                              className="text-[12px] px-3 py-1.5 rounded-lg border border-red-500/20 text-red-400/80 hover:bg-red-500/5 hover:text-red-400 disabled:opacity-40 transition-all font-medium">
-                              {removing === s.id ? 'Removing...' : 'Remove'}
+                            <button
+                              onClick={() => handleRemove(s)}
+                              disabled={removing === s.id}
+                              aria-label={`Remove ${s.email}`}
+                              className="text-[14px] px-2.5 py-1 rounded-[4px] font-medium text-red-400 hover:bg-red-500/10 disabled:opacity-40 transition-colors"
+                            >
+                              {removing === s.id ? '…' : 'Remove'}
                             </button>
-                            {/* TSK-103: Re-send invite for Telegram only */}
                             {s.telegram_user_id && !s.whatsapp_phone && (
-                              <button onClick={() => handleResend(s)} disabled={resending === s.id}
-                                className="text-[12px] px-3 py-1.5 rounded-lg border border-[#229ED9]/20 text-[#229ED9]/80 hover:bg-[#229ED9]/5 hover:text-[#229ED9] disabled:opacity-40 transition-all font-medium">
-                                {resending === s.id ? 'Sending...' : 'Re-send'}
+                              <button
+                                onClick={() => handleResend(s)}
+                                disabled={resending === s.id}
+                                aria-label={`Resend invite to ${s.email}`}
+                                className="text-[14px] px-2.5 py-1 rounded-[4px] font-medium text-[#229ED9] hover:bg-[#229ED9]/10 disabled:opacity-40 transition-colors"
+                              >
+                                {resending === s.id ? '…' : 'Resend'}
                               </button>
                             )}
                           </div>
-                        ) : <span className="text-[12px] text-white/20">—</span>}
+                        ) : <span className="text-[14px] text-[#72767d]">—</span>}
                       </td>
                     </tr>
                   ))}
@@ -143,27 +185,34 @@ export default function MembersPage() {
             <div className="md:hidden divide-y divide-white/[0.04]">
               {filtered.map(s => (
                 <div key={s.id} className={`px-5 py-4 ${s.status !== 'active' ? 'opacity-50' : ''}`}>
-                  <div className="flex items-start justify-between gap-2 mb-1.5">
-                    <p className="text-[13px] text-white/80 font-medium truncate flex-1">{s.email}</p>
-                    <span className={`flex-shrink-0 inline-block text-[11px] px-2.5 py-1 rounded-full font-semibold ${STATUS_STYLES[s.status] || 'bg-white/5 text-white/35 border border-white/10'}`}>
-                      {s.status}
-                    </span>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <Avatar name={s.email} size={24} />
+                      <p className="text-[14px] text-[#f2f3f5] font-semibold truncate">{s.email}</p>
+                    </div>
+                    <Pill status={s.status} />
                   </div>
-                  <p className="text-[12px] text-white/40 mb-1">
-                    {s.communities?.name}{s.plans?.name && <span> · {s.plans.name}</span>}
+                  <p className="text-[14px] text-[#dbdee1] mb-1.5 ml-[34px]">
+                    {s.communities?.name}{s.plans?.name && <span className="text-[#96989d]"> · {s.plans.name}</span>}
                   </p>
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <p className="text-[11.5px] text-white/30">Expires {new Date(s.expires_at).toLocaleDateString()}</p>
+                  <div className="flex items-center justify-between gap-2 flex-wrap ml-[34px]">
+                    <p className="text-[14px] text-[#96989d]">Expires {new Date(s.expires_at).toLocaleDateString()}</p>
                     {s.status === 'active' && (
                       <div className="flex gap-2">
-                        <button onClick={() => handleRemove(s)} disabled={removing === s.id}
-                          className="text-[12px] px-3 py-1.5 rounded-lg border border-red-500/20 text-red-400/80 hover:bg-red-500/5 disabled:opacity-40 transition-all font-medium">
-                          {removing === s.id ? 'Removing...' : 'Remove'}
+                        <button
+                          onClick={() => handleRemove(s)}
+                          disabled={removing === s.id}
+                          className="text-[14px] px-2 py-0.5 rounded-[4px] text-red-400 hover:bg-red-500/10 font-medium transition-colors"
+                        >
+                          Remove
                         </button>
                         {s.telegram_user_id && !s.whatsapp_phone && (
-                          <button onClick={() => handleResend(s)} disabled={resending === s.id}
-                            className="text-[12px] px-3 py-1.5 rounded-lg border border-[#229ED9]/20 text-[#229ED9]/80 hover:bg-[#229ED9]/5 disabled:opacity-40 transition-all font-medium">
-                            {resending === s.id ? 'Sending...' : 'Re-send'}
+                          <button
+                            onClick={() => handleResend(s)}
+                            disabled={resending === s.id}
+                            className="text-[14px] px-2 py-0.5 rounded-[4px] text-[#229ED9] hover:bg-[#229ED9]/10 font-medium transition-colors"
+                          >
+                            Resend
                           </button>
                         )}
                       </div>

@@ -224,7 +224,7 @@ export default function LandingPage() {
           Membba handles payments, access, and removals — fully automated.
         </p>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-7 mb-20">
           <Link
             to="/register"
             className="inline-flex items-center gap-2 bg-[#9FFF57] text-black px-6 py-3 rounded-xl font-bold hover:bg-[#8aed47] transition-colors text-sm"
@@ -251,7 +251,7 @@ export default function LandingPage() {
                 membba · dashboard
               </span>
             </div>
-            <div className="p-5">
+            <div className="p-7">
               <div className="flex items-center justify-between mb-1">
                 <p className="text-xs text-gray-600">Active Members</p>
                 <span className="text-[#9FFF57] text-xs">● Live</span>
@@ -309,11 +309,11 @@ export default function LandingPage() {
             Everything you need to run a paid community — nothing you don't.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-7">
             {engineeredFeatures.map((f) => (
               <div
                 key={f.id}
-                className={`border rounded-2xl p-5 hover:border-[#9FFF57]/25 transition-all duration-300 ${cardBg}`}
+                className={`border rounded-2xl p-7 hover:border-[#9FFF57]/25 transition-all duration-300 ${cardBg}`}
               >
                 <div className="w-9 h-9 rounded-lg bg-[#9FFF57]/10 border border-[#9FFF57]/15 flex items-center justify-center mb-4 text-base">
                   {f.emoji}
@@ -350,7 +350,7 @@ export default function LandingPage() {
             </p>
             <div className="space-y-7">
               {forCreators.map((item) => (
-                <div key={item.n} className="flex gap-4">
+                <div key={item.n} className="flex gap-7">
                   <span className="text-[#9FFF57] font-black text-xl leading-none w-8 flex-shrink-0 mt-0.5">
                     {item.n}
                   </span>
@@ -370,7 +370,7 @@ export default function LandingPage() {
             </p>
             <div className="space-y-7">
               {forSubscribers.map((item) => (
-                <div key={item.n} className="flex gap-4">
+                <div key={item.n} className="flex gap-7">
                   <span className="text-[#9FFF57] font-black text-xl leading-none w-8 flex-shrink-0 mt-0.5">
                     {item.n}
                   </span>
@@ -427,7 +427,7 @@ export default function LandingPage() {
               <p className="text-xs text-gray-600 uppercase tracking-widest mb-6 text-center">
                 Works with
               </p>
-              <div className="flex items-center justify-center gap-6">
+              <div className="flex items-center justify-center gap-7">
                 {/*
                   PLATFORM LOGO PLACEHOLDERS
                   Replace inner content with actual logos once you have them:
@@ -506,7 +506,7 @@ export default function LandingPage() {
               Monetize and automate your messaging communities with zero
               friction.
             </p>
-            <div className="flex gap-4">
+            <div className="flex gap-7">
               <a href="#" aria-label="X (Twitter)" className="text-gray-500 hover:text-[#9FFF57] transition-colors">
                 <FaXTwitter size={16} />
               </a>
@@ -588,7 +588,7 @@ export default function LandingPage() {
           <p className={`text-xs ${dark ? "text-gray-700" : "text-gray-400"}`}>
             © {new Date().getFullYear()} Membba. All rights reserved.
           </p>
-          <div className={`flex gap-5 text-xs ${dark ? "text-gray-700" : "text-gray-400"}`}>
+          <div className={`flex gap-7 text-xs ${dark ? "text-gray-700" : "text-gray-400"}`}>
             <a href="#" className="hover:text-gray-400 transition-colors">Privacy Policy</a>
             <a href="#" className="hover:text-gray-400 transition-colors">Terms of Service</a>
           </div>

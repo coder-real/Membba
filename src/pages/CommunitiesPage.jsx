@@ -6,7 +6,8 @@ import DashboardLayout from '../components/DashboardLayout'
 import toast from 'react-hot-toast'
 import QRCode from 'qrcode'
 import { FaTelegram, FaWhatsapp } from 'react-icons/fa'
-import { HiOutlineLink, HiOutlinePencilSquare, HiOutlineTrash } from 'react-icons/hi2'
+import { HiOutlineLink, HiOutlinePencilSquare, HiOutlineTrash, HiOutlinePlusCircle, HiOutlineUsers } from 'react-icons/hi2'
+import Skeleton from '../components/ui/Skeleton'
 
 const formatDuration = (minutes) => {
   if (!minutes) return '—'
@@ -21,8 +22,9 @@ export default function CommunitiesPage() {
   const { user } = useAuth()
   const [communities, setCommunities] = useState([])
   const [loading, setLoading] = useState(true)
-  const [botStatus, setBotStatus] = useState({}) // { [communityId]: true | false | null }
-  const [qrModal, setQrModal] = useState(null) // null | { name, slug, dataUrl }
+  const [botStatus, setBotStatus] = useState({})
+  const [qrModal, setQrModal] = useState(null)
+  const [tab, setTab] = useState('all')
 
   const openQRModal = async (c) => {
     const deepLink = `https://t.me/membba_bot?start=join_${c.slug}`
@@ -40,24 +42,25 @@ export default function CommunitiesPage() {
       .select('*, plans(id, name, price, duration_minutes, is_active), subscriptions(count)')
       .eq('creator_id', user.id)
       .order('created_at', { ascending: false })
-    if (error) toast.error(error.message)
-    else {
-      setCommunities(data || [])
-      // Parallel admin checks for Telegram communities only
-      const telegramComms = (data || []).filter(c => !c.platform || c.platform === 'telegram')
-      const checks = await Promise.allSettled(
-        telegramComms.map(c =>
-          fetch(`/api/telegram/check-admin/${c.telegram_chat_id}`)
-            .then(r => r.json())
-            .then(d => ({ id: c.id, isAdmin: d.isAdmin }))
-        )
-      )
-      const statusMap = {}
-      checks.forEach(r => {
-        if (r.status === 'fulfilled') statusMap[r.value.id] = r.value.isAdmin
-      })
-      setBotStatus(statusMap)
+    
+    if (error) {
+      toast.error(error.message)
+      setLoading(false)
+      return
     }
+
+    setCommunities(data || [])
+    const telegramComms = (data || []).filter(c => !c.platform || c.platform === 'telegram')
+    const checks = await Promise.allSettled(
+      telegramComms.map(c =>
+        fetch(`/api/telegram/check-admin/${c.telegram_chat_id}`)
+          .then(r => r.json())
+          .then(d => ({ id: c.id, isAdmin: d.isAdmin }))
+      )
+    )
+    const statusMap = {}
+    checks.forEach(r => { if (r.status === 'fulfilled') statusMap[r.value.id] = r.value.isAdmin })
+    setBotStatus(statusMap)
     setLoading(false)
   }
 
@@ -69,127 +72,188 @@ export default function CommunitiesPage() {
   }
 
   const joinLink = (slug) => `${window.location.origin}/join/${slug}`
-  const copyLink = (slug) => { navigator.clipboard.writeText(joinLink(slug)); toast.success('Join link copied!') }
+  const copyLink = (slug) => { navigator.clipboard.writeText(joinLink(slug)); toast.success('Link copied!') }
+
+  const filtered = communities.filter(c => {
+    if (tab === 'telegram') return !c.platform || c.platform === 'telegram'
+    if (tab === 'whatsapp') return c.platform === 'whatsapp'
+    return true
+  })
+
+  const telegramCount  = communities.filter(c => !c.platform || c.platform === 'telegram').length
+  const whatsappCount  = communities.filter(c => c.platform === 'whatsapp').length
+
+  const TABS = [
+    { id: 'all',      label: `All`, count: communities.length },
+    { id: 'telegram', label: `Telegram`, count: telegramCount },
+    { id: 'whatsapp', label: `WhatsApp`, count: whatsappCount },
+  ]
 
   return (
-    <DashboardLayout>
+    <DashboardLayout pageTitle="Communities">
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
+      <div className="flex flex-wrap items-center justify-between gap-7 mb-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Communities</h1>
-          <p className="text-[14px] text-white/50 mt-1.5">Manage your paid community groups</p>
+          <h1 className="text-[24px] font-black text-[#f2f3f5] tracking-tight">Communities</h1>
+          <p className="text-[14px] text-[#b5bac1] mt-1">
+            {communities.length} active group{communities.length !== 1 ? 's' : ''}
+          </p>
         </div>
         <Link
           to="/dashboard/communities/new"
-          className="inline-flex items-center gap-2 border border-[#9FFF57]/40 text-[#9FFF57] px-4 py-2.5 rounded-lg text-[13px] font-bold hover:bg-[#9FFF57]/5 transition-colors"
+          className="inline-flex items-center gap-2 bg-[#9FFF57] hover:bg-[#b0ff6e] text-black px-4 py-2 rounded-[6px] text-[14px] font-bold transition-colors shadow-sm"
         >
-          ⊕ New Community
+          <HiOutlinePlusCircle size={15} />
+          New Community
         </Link>
       </div>
 
+      {/* Pill Tab Filter */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {TABS.map(t => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`px-3 py-1.5 rounded-[4px] text-[14px] font-medium transition-colors ${
+              tab === t.id
+                ? 'bg-white/[0.08] text-[#f2f3f5]'
+                : 'text-[#96989d] hover:text-[#dbdee1] hover:bg-white/[0.03]'
+            }`}
+          >
+            {t.label} 
+            <span className={`ml-1.5 text-[14px] ${tab === t.id ? 'text-[#f2f3f5]/50' : 'text-[#72767d]'}`}>
+              {t.count}
+            </span>
+          </button>
+        ))}
+      </div>
+
       {loading ? (
-        <div className="py-12 text-center text-[13px] text-white/30">Loading...</div>
-      ) : communities.length === 0 ? (
-        <div className="bg-[#111] border border-white/[0.07] rounded-xl py-20 text-center px-6">
-          <p className="text-[15px] text-white/50 mb-6">You haven't created any communities yet.</p>
-          <Link to="/dashboard/communities/new" className="inline-flex items-center gap-2 bg-[#9FFF57] text-black px-6 py-3 rounded-lg text-[14px] font-bold hover:bg-[#b0ff6e] transition-colors">
-            Create Your First Community →
+        <div className="space-y-4">
+          {[1,2].map(k => (
+            <div key={k} className="bg-[#111] rounded-[8px] p-7 shadow-sm border border-white/[0.02]">
+              <Skeleton width="w-48" height="h-6" className="mb-4" />
+              <Skeleton width="w-full" height="h-3" className="mb-2" />
+              <Skeleton width="w-3/4" height="h-3" className="mb-6" />
+              <div className="flex gap-2">
+                <Skeleton width="w-24" height="h-8" />
+                <Skeleton width="w-24" height="h-8" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="bg-[#111] rounded-[8px] py-20 text-center px-6 border border-white/[0.02]">
+          <p className="text-[14px] font-bold text-[#f2f3f5] mb-2">
+            {tab === 'all' ? "No communities yet" : `No ${tab} communities`}
+          </p>
+          <p className="text-[14px] text-[#96989d] mb-6">
+            {tab === 'all' ? 'Create your first paid community to start accepting members.' : `You haven't added any ${tab} groups yet.`}
+          </p>
+          <Link to="/dashboard/communities/new" className="inline-flex items-center gap-2 bg-[#9FFF57] hover:bg-[#b0ff6e] text-black px-6 py-2.5 rounded-[6px] text-[14px] font-bold transition-colors">
+            <HiOutlinePlusCircle size={15} /> Create Community
           </Link>
         </div>
       ) : (
-        <div className="space-y-4">
-          {communities.map(c => {
-            const activePlans  = (c.plans || []).filter(p => p.is_active)
-            const memberCount  = c.subscriptions?.[0]?.count ?? 0
-            const isTelegram   = !c.platform || c.platform === 'telegram'
-            const isWhatsApp   = c.platform === 'whatsapp'
-            const hasBot       = isTelegram ? Boolean(c.telegram_chat_id) : Boolean(c.whatsapp_group_id)
+        <div className="space-y-3">
+          {filtered.map(c => {
+            const activePlans = (c.plans || []).filter(p => p.is_active)
+            const memberCount = c.subscriptions?.[0]?.count ?? 0
+            const isTelegram  = !c.platform || c.platform === 'telegram'
+            const isWhatsApp  = c.platform === 'whatsapp'
+            const hasBot      = isTelegram ? Boolean(c.telegram_chat_id) : Boolean(c.whatsapp_group_id)
 
             return (
-              <div key={c.id} className="bg-[#111] border border-white/[0.07] rounded-xl p-5 sm:p-6 hover:border-white/[0.12] transition-all">
-
+              <div key={c.id} className="bg-[#111] rounded-[8px] p-7 shadow-sm border border-white/[0.02] hover:bg-white/[0.02] transition-colors">
+                
                 {/* Title row */}
-                <div className="flex flex-wrap items-start gap-2 mb-2">
-                  <h2 className="text-[15px] sm:text-[16px] font-bold text-white">{c.name}</h2>
+                <div className="flex flex-wrap items-center gap-2.5 mb-3">
+                  <h2 className="text-[16px] font-bold text-[#f2f3f5] mr-1">{c.name}</h2>
 
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
-                    isWhatsApp ? 'bg-[#25D366]/10 text-[#25D366] border-[#25D366]/25' : 'bg-[#229ED9]/10 text-[#229ED9] border-[#229ED9]/25'
+                  <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] text-[14px] font-bold ${
+                    isWhatsApp ? 'bg-[#25D366]/10 text-[#25D366]' : 'bg-[#229ED9]/10 text-[#229ED9]'
                   }`}>
-                    {isWhatsApp ? <FaWhatsapp size={11} /> : <FaTelegram size={11} />}
+                    {isWhatsApp ? <FaWhatsapp size={10} /> : <FaTelegram size={10} />}
                     {isWhatsApp ? 'WhatsApp' : 'Telegram'}
                   </span>
 
-                  <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
-                    c.is_active ? 'bg-[#9FFF57]/10 text-[#9FFF57] border-[#9FFF57]/20' : 'bg-white/5 text-white/30 border-white/10'
+                  <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] text-[14px] font-bold ${
+                    c.is_active ? 'bg-[#9FFF57]/10 text-[#9FFF57]' : 'bg-white/[0.05] text-[#96989d]'
                   }`}>
-                    {c.is_active ? '● Active' : '○ Inactive'}
+                    <span className={`w-1.5 h-1.5 rounded-full ${c.is_active ? 'bg-[#9FFF57]' : 'bg-[#4f545c]'}`} />
+                    {c.is_active ? 'Active' : 'Inactive'}
                   </span>
 
                   {!hasBot && (
-                    <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold border bg-yellow-400/10 text-yellow-400 border-yellow-400/20">
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] text-[14px] font-bold bg-yellow-400/10 text-yellow-400">
                       ⚠ {isWhatsApp ? 'Group not registered' : 'Bot not configured'}
                     </span>
                   )}
 
-                  {/* TSK-101: Live bot-admin status badge (Telegram only) */}
                   {isTelegram && c.telegram_chat_id && typeof botStatus[c.id] === 'boolean' && (
-                    <span
-                      title={botStatus[c.id] ? 'Bot is an admin with correct permissions' : 'Add @membba_bot as Admin to your Telegram group with "Add Members" and "Invite via Link" permissions'}
-                      className={`relative group cursor-help px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
-                        botStatus[c.id]
-                          ? 'bg-[#9FFF57]/10 text-[#9FFF57] border-[#9FFF57]/20'
-                          : 'bg-yellow-400/10 text-yellow-400 border-yellow-400/20'
-                      }`}
-                    >
-                      {botStatus[c.id] ? '✅ Bot is admin' : '⚠️ Bot not detected'}
-                      {!botStatus[c.id] && (
-                        <span className="absolute bottom-full left-0 mb-2 w-64 bg-[#1a1a1a] border border-white/[0.1] rounded-xl p-3 text-[11.5px] text-white/70 leading-relaxed hidden group-hover:block z-10 shadow-2xl font-normal">
-                          Add <strong className="text-white">@membba_bot</strong> as Admin to your Telegram group with <em>Add Members</em> &amp; <em>Invite via Link</em> permissions.
-                        </span>
-                      )}
+                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] text-[14px] font-bold ${
+                      botStatus[c.id] ? 'bg-[#9FFF57]/10 text-[#9FFF57]' : 'bg-yellow-400/10 text-yellow-400'
+                    }`}>
+                      {botStatus[c.id] ? '✅ Bot admin' : '⚠️ Bot not detected'}
                     </span>
                   )}
                 </div>
 
                 {c.description && (
-                  <p className="text-[13px] text-white/50 mb-3 leading-relaxed">{c.description}</p>
+                  <p className="text-[14px] text-[#dbdee1] mb-5 leading-relaxed">{c.description}</p>
                 )}
 
                 {/* Plans */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {activePlans.length > 0 ? activePlans.map(p => (
-                    <span key={p.id} className="inline-flex items-center gap-1.5 bg-white/[0.04] text-white/60 border border-white/[0.08] rounded-lg px-3 py-1 text-[12px] font-medium">
+                <div className="flex flex-wrap gap-2 mb-5">
+                  {activePlans.length > 0 ? activePlans.map((p, idx) => (
+                    <span key={p.id} className="inline-flex items-center gap-1.5 bg-[#1e1f22] text-[#f2f3f5] rounded-[6px] px-3 py-1.5 text-[14px] font-medium border border-transparent">
                       {p.name}
                       <span className="text-[#9FFF57] font-bold">₦{p.price.toLocaleString()}</span>
-                      <span className="text-white/30">· {formatDuration(p.duration_minutes)}</span>
+                      <span className="text-[#72767d]">· {formatDuration(p.duration_minutes)}</span>
                     </span>
                   )) : (
-                    <span className="text-[12.5px] text-red-400">No active plans — add one to accept payments</span>
+                    <span className="text-[14px] text-red-400/90 font-medium">No active plans — add one to accept payments</span>
                   )}
                 </div>
 
-                {/* Subscriber link */}
-                <div className="inline-flex items-center gap-2 bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2 mb-4 max-w-full overflow-hidden">
-                  <HiOutlineLink size={13} className="text-white/30 flex-shrink-0" />
-                  <span className="text-[11.5px] text-white/40 font-mono truncate">{joinLink(c.slug)}</span>
+                {/* Join link */}
+                <div className="flex items-center gap-2 bg-[#1e1f22] rounded-[4px] px-3 py-2 mb-5 w-max max-w-full">
+                  <HiOutlineLink size={14} className="text-[#96989d] flex-shrink-0" />
+                  <span className="text-[14px] text-[#b5bac1] font-mono truncate">{joinLink(c.slug)}</span>
                 </div>
 
-                {/* Actions + member count */}
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <span className="text-[12px] text-white/35 font-medium">{memberCount} member{memberCount !== 1 ? 's' : ''}</span>
+                {/* Footer: member count + action buttons */}
+                <div className="flex flex-wrap items-center justify-between gap-7 pt-4 border-t border-white/[0.04]">
+                  <span className="flex items-center gap-1.5 text-[14px] text-[#b5bac1] font-medium">
+                    <HiOutlineUsers size={14} />
+                    {memberCount} member{memberCount !== 1 ? 's' : ''}
+                  </span>
+                  
                   <div className="flex flex-wrap gap-2">
-                    <button onClick={() => copyLink(c.slug)} className="inline-flex items-center gap-1.5 text-[12px] border border-[#9FFF57]/25 text-[#9FFF57]/80 px-3 py-1.5 rounded-lg hover:bg-[#9FFF57]/5 hover:text-[#9FFF57] transition-all font-medium">
+                    <button
+                      onClick={() => copyLink(c.slug)}
+                      className="inline-flex items-center gap-1.5 text-[14px] text-[#dbdee1] border border-white/[0.08] hover:bg-white/[0.02] px-3 py-1.5 rounded-[4px] font-medium transition-colors"
+                    >
                       <HiOutlineLink size={13} /> Copy Link
                     </button>
                     {isTelegram && (
-                      <button onClick={() => openQRModal(c)} className="inline-flex items-center gap-1.5 text-[12px] border border-[#229ED9]/20 text-[#229ED9]/70 px-3 py-1.5 rounded-lg hover:bg-[#229ED9]/5 hover:text-[#229ED9] transition-all font-medium">
+                      <button
+                        onClick={() => openQRModal(c)}
+                        className="inline-flex items-center gap-1.5 text-[14px] text-[#dbdee1] border border-white/[0.08] hover:bg-white/[0.02] px-3 py-1.5 rounded-[4px] font-medium transition-colors"
+                      >
                         QR Code
                       </button>
                     )}
-                    <Link to={`/dashboard/communities/${c.id}/edit`} className="inline-flex items-center gap-1.5 text-[12px] border border-white/[0.1] text-white/50 px-3 py-1.5 rounded-lg hover:border-white/20 hover:text-white transition-all font-medium">
+                    <Link
+                      to={`/dashboard/communities/${c.id}/edit`}
+                      className="inline-flex items-center gap-1.5 text-[14px] text-[#dbdee1] border border-white/[0.08] hover:bg-white/[0.02] px-3 py-1.5 rounded-[4px] font-medium transition-colors"
+                    >
                       <HiOutlinePencilSquare size={13} /> Edit
                     </Link>
-                    <button onClick={() => handleDelete(c.id)} className="inline-flex items-center gap-1.5 text-[12px] border border-red-500/15 text-red-400/70 px-3 py-1.5 rounded-lg hover:bg-red-500/5 hover:text-red-400 hover:border-red-500/30 transition-all font-medium">
+                    <button
+                      onClick={() => handleDelete(c.id)}
+                      className="inline-flex items-center gap-1.5 text-[14px] text-red-400 border border-red-500/20 hover:bg-red-500/10 px-3 py-1.5 rounded-[4px] font-medium transition-colors"
+                    >
                       <HiOutlineTrash size={13} /> Delete
                     </button>
                   </div>
@@ -200,26 +264,28 @@ export default function CommunitiesPage() {
         </div>
       )}
 
-      {/* TSK-301: Deep-Link QR Modal */}
+      {/* QR Modal */}
       {qrModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-[#111] border border-white/[0.1] rounded-2xl p-8 w-full max-w-xs text-center shadow-2xl relative">
+          <div className="bg-[#0a0a0a] border border-white/[0.05] rounded-[8px] p-8 w-full max-w-xs text-center shadow-2xl relative">
             <button
               onClick={() => setQrModal(null)}
-              className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors"
+              className="absolute top-7 right-4 text-[#96989d] hover:text-[#dbdee1] transition-colors"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
-            <p className="text-[11px] font-bold tracking-widest uppercase text-white/25 mb-1">Scan to Join</p>
-            <h3 className="text-[15px] font-black text-white mb-5">{qrModal.name}</h3>
-            <img src={qrModal.dataUrl} alt="QR Code" className="w-52 h-52 mx-auto rounded-xl border border-white/[0.06] mb-4" />
-            <p className="text-[11.5px] text-white/30 mb-5 leading-relaxed">
-              Scan with your phone camera or Telegram to open @membba_bot with your join context pre-filled.
+            <p className="text-[14px] font-bold tracking-widest uppercase text-[#b5bac1] mb-1">Scan to Join</p>
+            <h3 className="text-[16px] font-bold text-[#f2f3f5] mb-5">{qrModal.name}</h3>
+            <img src={qrModal.dataUrl} alt="QR Code" className="w-52 h-52 mx-auto rounded-[8px] mb-4" />
+            <p className="text-[14px] text-[#96989d] mb-6 leading-relaxed">
+              Scan with your phone camera or Telegram to join via @membba_bot.
             </p>
             <a
               href={qrModal.dataUrl}
               download={`membba-qr-${qrModal.slug}.png`}
-              className="inline-flex items-center gap-2 border border-white/[0.1] text-white/50 px-5 py-2.5 rounded-lg text-[13px] font-semibold hover:border-white/20 hover:text-white/70 transition-colors"
+              className="inline-flex items-center gap-2 border border-white/[0.1] text-[#dbdee1] px-5 py-2.5 rounded-[4px] text-[14px] font-medium hover:bg-white/[0.02] transition-colors"
             >
               ⬇ Download PNG
             </a>

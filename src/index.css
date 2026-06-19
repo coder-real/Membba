@@ -1,3 +1,85 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  /* Interactive element transitions */
+  button,
+  a[role="button"],
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"] {
+    @apply transition-all duration-150;
+  }
+
+  /* Link transitions */
+  a {
+    @apply transition-colors duration-150;
+  }
+
+  /* Form input focus states */
+  input,
+  textarea,
+  select {
+    @apply transition-colors duration-150;
+  }
+
+  /* Toggle/checkbox transitions */
+  input[type="checkbox"],
+  input[type="radio"] {
+    @apply transition-all duration-150;
+  }
+
+  /* Hover state for cards/containers */
+  .card-hover {
+    @apply transition-all duration-150;
+  }
+
+  /* Badge/pill transitions */
+  .badge,
+  .pill {
+    @apply transition-colors duration-150;
+  }
+
+  /* Smooth transitions for opacity changes */
+  .fade-in {
+    @apply transition-opacity duration-150;
+  }
+
+  .fade-out {
+    @apply transition-opacity duration-150;
+  }
+}
+
+/* ──── Custom Scrollbars ──── */
+/* Chrome, Edge, Safari */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+  transition: background-color 150ms ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.35);
+}
+
+/* Thin scrollbar variant for sidebars/modals */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+}
+
+/* Firefox */
+* {
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  scrollbar-width: thin;
+}

@@ -4,8 +4,17 @@ import DashboardLayout from "../components/DashboardLayout";
 import toast from "react-hot-toast";
 import { supabase } from "../lib/supabase";
 
+const TABS = [
+  { id: 'account', label: 'My account' },
+  { id: 'billing', label: 'Billing' },
+  { id: 'notifications', label: 'Notifications' },
+  { id: 'integrations', label: 'Integrations' },
+  { id: 'danger', label: 'Danger zone', isDanger: true }
+];
+
 export default function SettingsPage() {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('account');
   const [name, setName] = useState(user?.user_metadata?.name || "");
   const [loading, setLoading] = useState(false);
 
@@ -79,176 +88,200 @@ export default function SettingsPage() {
   };
 
   const inputCls =
-    "w-full bg-[#0a0a0a] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-white placeholder-white/20 focus:outline-none focus:border-[#9FFF57]/40 focus:ring-1 focus:ring-[#9FFF57]/15 transition-colors";
+    "w-full bg-[#1e1f22] border border-transparent rounded-[4px] px-3.5 py-2.5 text-[14px] text-[#dbdee1] placeholder-[#72767d] focus:outline-none focus:border-white/[0.05] focus:bg-[#111] transition-all";
   const labelCls =
-    "block text-[11px] font-bold text-white/45 mb-2 uppercase tracking-widest";
-
-  const waBadge =
-    waStatus === "authenticated"
-      ? { dot: "bg-[#9FFF57]", label: "Connected", color: "text-[#9FFF57]" }
-      : waStatus === "awaiting_qr"
-        ? {
-            dot: "bg-yellow-400",
-            label: "Needs QR Scan",
-            color: "text-yellow-400",
-          }
-        : { dot: "bg-red-500", label: "Offline", color: "text-red-400" };
+    "block text-[14px] font-bold text-[#b5bac1] mb-2 uppercase tracking-wide";
 
   return (
-    <DashboardLayout>
-      <div className="mb-10">
-        <h1 className="text-3xl font-black text-white tracking-tight">
+    <DashboardLayout pageTitle="Settings">
+      <div className="mb-6">
+        <h1 className="text-[24px] font-black text-[#f2f3f5] tracking-tight">
           Settings
         </h1>
-        <p className="text-[14px] text-white/50 mt-1.5">
-          Manage your account and integrations
+        <p className="text-[14px] text-[#b5bac1] mt-1">
+          Manage your account and preferences
         </p>
       </div>
 
-      <div className="max-w-xl space-y-5">
-        {/* Profile */}
-        <div className="bg-[#111] border border-white/[0.07] rounded-xl p-7">
-          <h2 className="text-[15px] font-bold text-white mb-6">Profile</h2>
-          <form onSubmit={handleUpdateProfile} className="space-y-5">
-            <div>
-              <label className={labelCls}>Display Name</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className={inputCls}
-                placeholder="Your name"
-              />
+      <div className="flex flex-col md:flex-row items-start gap-8">
+        
+        {/* Left Sub-nav */}
+        <div className="w-full md:w-48 flex-shrink-0 flex flex-col space-y-0.5">
+          {TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`text-left px-3 py-2 rounded-[4px] text-[14px] font-medium transition-colors ${
+                activeTab === tab.id
+                  ? (tab.isDanger ? 'bg-red-500/10 text-red-400' : 'bg-white/[0.06] text-[#dbdee1]')
+                  : (tab.isDanger ? 'text-red-400 hover:bg-red-500/5' : 'text-[#96989d] hover:bg-white/[0.02] hover:text-[#dbdee1]')
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Right Content */}
+        <div className="flex-1 w-full max-w-2xl">
+          {activeTab === 'account' && (
+            <div className="bg-[#111] rounded-[8px] p-7 shadow-sm border border-white/[0.02]">
+              <h2 className="text-[15px] font-bold text-[#f2f3f5] mb-6 border-b border-white/[0.06] pb-3">Profile</h2>
+              <form onSubmit={handleUpdateProfile} className="space-y-5">
+                <div>
+                  <label className={labelCls}>DISPLAY NAME</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className={inputCls}
+                    placeholder="Tony Oche"
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>EMAIL</label>
+                  <input
+                    type="email"
+                    value={user?.email}
+                    disabled
+                    className="w-full bg-[#1e1f22] border border-transparent opacity-60 rounded-[4px] px-3.5 py-2.5 text-[14px] text-[#dbdee1] cursor-not-allowed"
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>BUSINESS NAME</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. REACH Initiative"
+                    className={inputCls}
+                  />
+                </div>
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="bg-[#2da059] hover:bg-[#208b49] text-white px-4 py-2 rounded-[4px] text-[14px] font-medium transition-colors disabled:opacity-50"
+                  >
+                    {loading ? "Saving..." : "Save changes"}
+                  </button>
+                </div>
+              </form>
             </div>
-            <div>
-              <label className={labelCls}>Email</label>
-              <input
-                type="email"
-                value={user?.email}
-                disabled
-                className="w-full bg-[#0a0a0a] border border-white/[0.05] rounded-xl px-4 py-3 text-[14px] text-white/25 cursor-not-allowed"
-              />
-              <p className="text-[11.5px] text-white/25 mt-2">
-                Email cannot be changed
+          )}
+
+          {activeTab === 'danger' && (
+            <div className="bg-[#111] rounded-[8px] p-7 shadow-sm border border-red-500/20">
+              <h2 className="text-[15px] font-bold text-red-400 mb-2">Danger zone</h2>
+              <p className="text-[14px] text-[#96989d] mb-5">
+                Deleting your account is permanent and cannot be undone. All communities, members, and payment data will be lost.
               </p>
+              <button
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-[4px] text-[14px] font-medium transition-colors"
+                onClick={() => toast.error('This action is disabled in the prototype')}
+              >
+                Delete my account
+              </button>
             </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-[#9FFF57] text-black px-6 py-2.5 rounded-lg text-[14px] font-bold hover:bg-[#b0ff6e] disabled:opacity-50 transition-colors"
-            >
-              {loading ? "Saving..." : "Save Profile"}
-            </button>
-          </form>
-        </div>
+          )}
 
-        {/* Paystack */}
-        <div className="bg-[#111] border border-white/[0.07] rounded-xl p-7">
-          <h2 className="text-[15px] font-bold text-white mb-2">
-            Paystack Integration
-          </h2>
-          <p className="text-[13.5px] text-white/45 mb-5 leading-relaxed">
-            Your Paystack secret key is managed server-side via environment
-            variables. Contact support to update it.
-          </p>
-          <div className="bg-[#0a0a0a] border border-white/[0.07] rounded-xl px-4 py-3 text-[13px] font-mono text-white/25 tracking-wider">
-            sk_live_••••••••••••••••••••••••
-          </div>
-        </div>
+          {(activeTab === 'billing' || activeTab === 'notifications') && (
+            <div className="text-[#96989d] text-[14px] py-10 px-4 text-center bg-[#111] rounded-[8px] border border-white/[0.02]">
+              Settings for {TABS.find(t=>t.id===activeTab)?.label.toLowerCase()} are coming soon.
+            </div>
+          )}
 
-        {/* Telegram Bot */}
-        <div className="bg-[#111] border border-white/[0.07] rounded-xl p-7">
-          <h2 className="text-[15px] font-bold text-white mb-2">
-            Telegram Bot
-          </h2>
-          <p className="text-[13.5px] text-white/45 mb-5 leading-relaxed">
-            Add{" "}
-            <span className="font-mono bg-white/[0.06] border border-white/[0.08] px-2 py-0.5 rounded-md text-white/70">
-              @membba_bot
-            </span>{" "}
-            to your Telegram group and make it an admin. Then paste your group
-            ID when creating a community.
-          </p>
-          <a
-            href="https://t.me/membba_bot"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2 border border-[#229ED9]/30 text-[#229ED9] px-5 py-2.5 rounded-lg text-[13.5px] font-semibold hover:bg-[#229ED9]/5 transition-colors"
-          >
-            Open @membba_bot →
-          </a>
-        </div>
+          {activeTab === 'integrations' && (
+            <div className="space-y-6">
+              {/* Paystack */}
+              <div className="bg-[#111] border border-white/[0.02] rounded-[8px] p-7 shadow-sm">
+                <h2 className="text-[15px] font-bold text-[#f2f3f5] mb-2">
+                  Paystack Integration
+                </h2>
+                <p className="text-[14px] text-[#96989d] mb-4">
+                  Your Paystack secret key is managed server-side via environment variables.
+                </p>
+                <div className="bg-[#1e1f22] rounded-[4px] px-3.5 py-2.5 text-[14px] font-mono text-[#72767d] tracking-wider">
+                  sk_live_••••••••••••••••••••••••
+                </div>
+              </div>
 
-        {/* WhatsApp Bot */}
-        <div className="bg-[#111] border border-white/[0.07] rounded-xl p-7">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-[15px] font-bold text-white">WhatsApp Bot</h2>
-            <span
-              className={`flex items-center gap-1.5 text-[12px] font-semibold ${waBadge.color}`}
-            >
-              <span className={`w-2 h-2 rounded-full ${waBadge.dot}`}></span>
-              {waBadge.label}
-            </span>
-          </div>
-          <p className="text-[13.5px] text-white/45 mb-5 leading-relaxed">
-            The WhatsApp client runs on a dedicated number linked to this
-            server. Scan the QR code below to authenticate it.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            {waStatus !== "authenticated" && (
-              <button
-                onClick={openQRModal}
-                className="inline-flex items-center gap-2 border border-[#25D366]/30 text-[#25D366] px-5 py-2.5 rounded-lg text-[13.5px] font-semibold hover:bg-[#25D366]/5 transition-colors"
-              >
-                Connect WhatsApp
-              </button>
-            )}
-            {waStatus === "authenticated" && (
-              <button
-                onClick={openQRModal}
-                className="inline-flex items-center gap-2 border border-white/[0.1] text-white/50 px-5 py-2.5 rounded-lg text-[13.5px] font-semibold hover:border-white/20 hover:text-white/70 transition-colors"
-              >
-                View QR Code
-              </button>
-            )}
-            <button
-              onClick={handleRestart}
-              disabled={restarting}
-              className="inline-flex items-center gap-2 border border-white/[0.08] text-white/40 px-5 py-2.5 rounded-lg text-[13.5px] font-semibold hover:border-white/15 hover:text-white/60 disabled:opacity-40 transition-colors"
-            >
-              {restarting ? "Restarting..." : "↺ Restart Client"}
-            </button>
-          </div>
+              {/* Telegram Bot */}
+              <div className="bg-[#111] border border-white/[0.02] rounded-[8px] p-7 shadow-sm">
+                <h2 className="text-[15px] font-bold text-[#f2f3f5] mb-2">
+                  Telegram Bot
+                </h2>
+                <p className="text-[14px] text-[#96989d] mb-4">
+                  Add <span className="font-mono bg-white/[0.06] px-1.5 py-0.5 rounded text-[#dbdee1]">@membba_bot</span> to your Telegram group and make it an admin.
+                </p>
+                <a
+                  href="https://t.me/membba_bot"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 border border-[#229ED9]/50 text-[#229ED9] px-4 py-2 rounded-[4px] text-[14px] font-medium hover:bg-[#229ED9]/5 transition-colors"
+                >
+                  Open @membba_bot →
+                </a>
+              </div>
+
+              {/* WhatsApp Bot */}
+              <div className="bg-[#111] border border-white/[0.02] rounded-[8px] p-7 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-[15px] font-bold text-[#f2f3f5]">WhatsApp Bot</h2>
+                  <span className={`flex items-center gap-1.5 text-[14px] font-semibold ${waStatus === 'authenticated' ? 'text-[#9FFF57]' : waStatus === 'awaiting_qr' ? 'text-yellow-400' : 'text-red-400'}`}>
+                    <span className={`w-2 h-2 rounded-full ${waStatus === 'authenticated' ? 'bg-[#9FFF57]' : waStatus === 'awaiting_qr' ? 'bg-yellow-400' : 'bg-red-400'}`}></span>
+                    {waStatus === 'authenticated' ? 'Connected' : waStatus === 'awaiting_qr' ? 'Needs Scan' : 'Offline'}
+                  </span>
+                </div>
+                <p className="text-[14px] text-[#96989d] mb-4">
+                  The WhatsApp client runs on a dedicated number linked to this server. Scan the QR code below to authenticate it.
+                </p>
+                <div className="flex flex-wrap gap-2.5">
+                  {waStatus !== "authenticated" && (
+                    <button
+                      onClick={openQRModal}
+                      className="inline-flex items-center gap-2 border border-[#25D366]/50 text-[#25D366] px-4 py-2 rounded-[4px] text-[14px] font-medium hover:bg-[#25D366]/5 transition-colors"
+                    >
+                      Connect WhatsApp
+                    </button>
+                  )}
+                  {waStatus === "authenticated" && (
+                    <button
+                      onClick={openQRModal}
+                      className="inline-flex items-center gap-2 border border-white/[0.1] text-[#b5bac1] px-4 py-2 rounded-[4px] text-[14px] font-medium hover:bg-white/[0.02] transition-colors"
+                    >
+                      View QR Code
+                    </button>
+                  )}
+                  <button
+                    onClick={handleRestart}
+                    disabled={restarting}
+                    className="inline-flex items-center gap-2 border border-white/[0.1] text-[#b5bac1] px-4 py-2 rounded-[4px] text-[14px] font-medium hover:bg-white/[0.02] disabled:opacity-50 transition-colors"
+                  >
+                    {restarting ? "Restarting..." : "↺ Restart Client"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* QR Modal */}
       {showQRModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-[#111] border border-white/[0.1] rounded-2xl p-8 pt-10 w-full max-w-sm text-center shadow-2xl relative">
+          <div className="bg-[#0a0a0a] border border-white/[0.1] rounded-[8px] p-8 pt-10 w-full max-w-sm text-center shadow-2xl relative">
             <button
               onClick={closeQRModal}
-              className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors"
+              className="absolute top-7 right-4 text-[#96989d] hover:text-[#dbdee1] transition-colors"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
             </button>
-            <h3 className="text-[17px] font-black text-white mb-1">
+            <h3 className="text-[18px] font-bold text-[#f2f3f5] mb-1">
               Connect WhatsApp
             </h3>
-            <p className="text-[12.5px] text-white/40 mb-6">
+            <p className="text-[14px] text-[#96989d] mb-6">
               Open WhatsApp → Linked Devices → Link a Device → scan this QR
             </p>
             {waStatus === "authenticated" ? (
@@ -262,33 +295,15 @@ export default function SettingsPage() {
               <img
                 src={waQR}
                 alt="WhatsApp QR"
-                className="w-56 h-56 mx-auto rounded-xl border border-white/[0.06] mb-2"
+                className="w-56 h-56 mx-auto rounded-[8px] border border-white/[0.06] mb-2"
               />
             ) : (
               <div className="py-10 flex flex-col items-center gap-3">
-                <svg
-                  className="animate-spin text-[#25D366]"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="32"
-                  height="32"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8v8H4z"
-                  ></path>
+                <svg className="animate-spin text-[#25D366]" xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                 </svg>
-                <p className="text-white/30 text-[12px]">Generating QR code…</p>
+                <p className="text-[#96989d] text-[14px]">Generating QR code…</p>
               </div>
             )}
           </div>

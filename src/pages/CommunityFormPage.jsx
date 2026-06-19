@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import DashboardLayout from '../components/DashboardLayout'
+import Select from '../components/Select'
 import toast from 'react-hot-toast'
 import QRCode from 'qrcode'
 import { FaTelegram, FaWhatsapp } from 'react-icons/fa'
@@ -51,8 +52,47 @@ export default function CommunityFormPage() {
     whatsapp_group_invite_link: '',
     welcome_message_enabled: true,
     welcome_message: "Hello {name}! Welcome to {community}. We're excited to have you onboard for the {plan} plan.",
+    invite_link_ttl_minutes: 60,
+    msg_auto_delete_seconds: 120,
   })
-  const [activeTab, setActiveTab] = useState('settings') // 'settings' | 'automations'
+  const [currentStep, setCurrentStep] = useState(1) // 1: Platform, 2: Config, 3: Plans, 4: Automations
+
+  const handleNext = () => {
+    // Validate current step before proceeding
+    if (currentStep === 1) {
+      if (!form.platform) {
+        toast.error('Please select a platform')
+        return
+      }
+    }
+    if (currentStep === 2) {
+      if (!form.name.trim()) {
+        toast.error('Community name is required')
+        return
+      }
+      if (form.platform === 'telegram' && !form.telegram_chat_id.trim()) {
+        toast.error('Telegram Chat ID is required')
+        return
+      }
+      if (form.platform === 'whatsapp' && !form.whatsapp_group_invite_link.trim()) {
+        toast.error('WhatsApp group invite link is required')
+        return
+      }
+    }
+    if (currentStep === 3) {
+      const hasValidPlan = [...plans, ...existingPlans].some(p => p.name?.trim() && p.price && p.duration)
+      if (!hasValidPlan) {
+        toast.error('Add at least one complete plan (name, price, duration)')
+        return
+      }
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    setCurrentStep(s => Math.min(4, s + 1))
+  }
+  const handlePrev = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    setCurrentStep(s => Math.max(1, s - 1))
+  }
   const [plans, setPlans] = useState([{ ...emptyPlan }])
   const [existingPlans, setExistingPlans] = useState([])
   const [loading, setLoading] = useState(false)
@@ -112,6 +152,8 @@ export default function CommunityFormPage() {
       whatsapp_group_invite_link: data.whatsapp_group_invite_link || '',
       welcome_message_enabled: data.welcome_message_enabled ?? true,
       welcome_message: data.welcome_message || "Hello {name}! Welcome to {community}. We're excited to have you onboard for the {plan} plan.",
+      invite_link_ttl_minutes: data.invite_link_ttl_minutes ?? 60,
+      msg_auto_delete_seconds: data.msg_auto_delete_seconds ?? 120,
     })
     setWaGroupId(data.whatsapp_group_id || null)
 
@@ -218,6 +260,8 @@ export default function CommunityFormPage() {
         ? form.whatsapp_group_invite_link || null : null,
       welcome_message_enabled: form.welcome_message_enabled,
       welcome_message: form.welcome_message,
+      invite_link_ttl_minutes: parseInt(form.invite_link_ttl_minutes) || 60,
+      msg_auto_delete_seconds: parseInt(form.msg_auto_delete_seconds) || 0,
       creator_id: user.id,
       is_active: true,
     }
@@ -264,7 +308,7 @@ export default function CommunityFormPage() {
     <DashboardLayout>
       <div className="max-w-2xl">
         <div className="mb-10">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start justify-between gap-7">
             <div>
               <h1 className="text-3xl font-black text-white tracking-tight">
                 {isEditing ? 'Edit Community' : 'Create Community'}
@@ -275,7 +319,7 @@ export default function CommunityFormPage() {
               <button
                 type="button"
                 onClick={runSetupCheck}
-                className="flex-shrink-0 inline-flex items-center gap-1.5 border border-white/[0.1] text-white/50 px-4 py-2 rounded-lg text-[12.5px] font-semibold hover:border-white/20 hover:text-white/70 transition-colors"
+                className="flex-shrink-0 inline-flex items-center gap-1.5 border border-white/[0.1] text-white/50 px-4 py-2 rounded-lg text-[14px] font-semibold hover:border-white/20 hover:text-white/70 transition-colors"
               >
                 📋 Test Setup
               </button>
@@ -283,65 +327,83 @@ export default function CommunityFormPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-6 mt-4 mb-8 border-b border-white/[0.05]">
-          <button
-            type="button"
-            onClick={() => setActiveTab('settings')}
-            className={`pb-4 text-[14px] font-bold transition-colors ${activeTab === 'settings' ? 'text-[#9FFF57] border-b-2 border-[#9FFF57]' : 'text-white/40 hover:text-white/70'}`}
-          >
-            Settings
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('automations')}
-            className={`pb-4 text-[14px] font-bold transition-colors ${activeTab === 'automations' ? 'text-[#9FFF57] border-b-2 border-[#9FFF57]' : 'text-white/40 hover:text-white/70'}`}
-          >
-            Automations
-          </button>
+        {/* ─── Wizard Progress Header ─── */}
+        <div className="mb-10 relative">
+          <div className="absolute top-7 left-0 right-0 h-0.5 bg-white/[0.05] -z-10 rounded-full" />
+          <div className="flex justify-between items-center relative z-10 w-full px-2">
+            {[
+              { num: 1, label: 'Platform' },
+              { num: 2, label: 'Setup' },
+              { num: 3, label: 'Plans' },
+              { num: 4, label: 'Automations' }
+            ].map(step => {
+              const isActive = currentStep === step.num
+              const isPast = currentStep > step.num
+              const isClickable = isEditing || isPast // Can only jump if editing or already completed
+
+              return (
+                <div key={step.num} className="flex flex-col items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={!isClickable}
+                    onClick={() => setCurrentStep(step.num)}
+                    className={`
+                      w-8 h-8 rounded-full flex items-center justify-center text-[14px] font-bold transition-all
+                      ${isActive ? 'bg-[#9FFF57] text-black shadow-[0_0_15px_rgba(159,255,87,0.3)]'
+                        : isPast ? 'bg-[#9FFF57]/20 text-[#9FFF57] border border-[#9FFF57]/30'
+                        : 'bg-[#111] text-white/30 border border-white/[0.1] hover:border-white/20'
+                      }
+                      ${!isClickable ? 'cursor-not-allowed' : 'cursor-pointer'}
+                    `}
+                  >
+                    {isPast ? <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg> : step.num}
+                  </button>
+                  <span className={`text-[14px] font-semibold tracking-wide uppercase transition-colors ${isActive ? 'text-white' : isPast ? 'text-[#9FFF57]/70' : 'text-white/30'}`}>
+                    {step.label}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form 
+          onSubmit={handleSubmit} 
+          onKeyDown={(e) => {
+            // Prevent Enter from submitting the form on steps 1-3
+            if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+              e.preventDefault()
+            }
+          }}
+          className="space-y-6 overflow-hidden"
+        >
 
-          {/* Settings Tab */}
-          <div className={activeTab === 'settings' ? 'space-y-6' : 'hidden'}>
-
-          {/* Community Details */}
-          <div className="bg-[#111] border border-white/[0.07] rounded-xl p-7 space-y-5">
-            <h2 className="text-[15px] font-bold text-white">Community Details</h2>
-
-            <div>
-              <label className="block text-[11px] font-bold text-white/45 mb-2 uppercase tracking-widest">Community Name *</label>
-              <input
-                type="text" name="name" required value={form.name} onChange={handleFormChange}
-                className="w-full bg-[#0a0a0a] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-white placeholder-white/20 focus:outline-none focus:border-[#9FFF57]/40 focus:ring-1 focus:ring-[#9FFF57]/15 transition-colors"
-                placeholder="e.g. Crypto Inner Circle"
-              />
-              {form.name && !isEditing && (
-                <p className="text-[11.5px] text-white/30 mt-2 font-mono">
-                  {window.location.origin}/join/{slug}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-bold text-white/45 mb-2 uppercase tracking-widest">Description</label>
-              <textarea
-                name="description" value={form.description} onChange={handleFormChange} rows={3}
-                className="w-full bg-[#0a0a0a] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-white placeholder-white/20 focus:outline-none focus:border-[#9FFF57]/40 focus:ring-1 focus:ring-[#9FFF57]/15 transition-colors resize-none"
-                placeholder="What will members get access to?"
-              />
-            </div>
+          {/* Step 1: Platform Selection */}
+          <div className={currentStep === 1 ? 'block animate-in fade-in slide-in-from-right-4 duration-300 space-y-6' : 'hidden'}>
+            <div className="bg-[#111] border border-white/[0.07] rounded-xl p-7 space-y-5">
+              <div>
+                <h2 className="text-[18px] font-black text-white">Choose your platform</h2>
+                <p className="text-[14px] text-white/40 mt-1">Select where your community will be hosted.</p>
+              </div>
 
             {/* ─── n8n-style Platform Picker ─── */}
             <div>
-              <label className="block text-[11px] font-bold text-white/40 mb-4 uppercase tracking-widest">Platform *</label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex items-center gap-3 mb-4">
+                <label className="block text-[14px] font-bold text-white/40 uppercase tracking-widest">Platform *</label>
+                {isEditing && (
+                  <span className="flex items-center gap-1.5 text-[10px] font-bold text-amber-400/80 bg-amber-400/10 border border-amber-400/20 px-2.5 py-1 rounded-full">
+                    <svg width="9" height="9" fill="currentColor" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                    Platform locked
+                  </span>
+                )}
+              </div>
+              <div className={`grid grid-cols-1 sm:grid-cols-2 gap-7 ${isEditing ? 'pointer-events-none opacity-70' : ''}`}>
 
                 {/* Telegram Card */}
                 <button
                   type="button"
-                  onClick={() => setPlatform('telegram')}
-                  className={`group relative overflow-hidden text-left rounded-2xl border-2 p-5 transition-all duration-300 ${
+                  onClick={() => !isEditing && setPlatform('telegram')}
+                  className={`group relative overflow-hidden text-left rounded-2xl border-2 p-7 transition-all duration-300 ${
                     form.platform === 'telegram'
                       ? 'border-[#229ED9] bg-[#229ED9]/[0.07] shadow-[0_0_30px_rgba(34,158,217,0.12)]'
                       : 'border-white/[0.06] bg-white/[0.02] opacity-60 hover:opacity-80 hover:border-white/[0.12]'
@@ -363,7 +425,7 @@ export default function CommunityFormPage() {
                         )}
                       </div>
                     </div>
-                    <p className="text-[12px] text-white/40 leading-relaxed">Bot auto-adds &amp; removes members. Fully automated, no phone number needed.</p>
+                    <p className="text-[14px] text-white/40 leading-relaxed">Bot auto-adds &amp; removes members. Fully automated, no phone number needed.</p>
                     <div className="mt-4 flex flex-wrap gap-1.5">
                       {['Instant delivery','Bot-managed','Reliable'].map(t => (
                         <span key={t} className="text-[10px] px-2 py-0.5 rounded-full bg-[#229ED9]/10 text-[#229ED9]/80 border border-[#229ED9]/15 font-medium">{t}</span>
@@ -375,8 +437,8 @@ export default function CommunityFormPage() {
                 {/* WhatsApp Card */}
                 <button
                   type="button"
-                  onClick={() => setPlatform('whatsapp')}
-                  className={`group relative overflow-hidden text-left rounded-2xl border-2 p-5 transition-all duration-300 ${
+                  onClick={() => !isEditing && setPlatform('whatsapp')}
+                  className={`group relative overflow-hidden text-left rounded-2xl border-2 p-7 transition-all duration-300 ${
                     form.platform === 'whatsapp'
                       ? 'border-[#25D366] bg-[#25D366]/[0.07] shadow-[0_0_30px_rgba(37,211,102,0.10)]'
                       : 'border-white/[0.06] bg-white/[0.02] opacity-60 hover:opacity-80 hover:border-white/[0.12]'
@@ -398,7 +460,7 @@ export default function CommunityFormPage() {
                         )}
                       </div>
                     </div>
-                    <p className="text-[12px] text-white/40 leading-relaxed">Via dedicated WhatsApp number. Managed via whatsapp-web.js on your server.</p>
+                    <p className="text-[14px] text-white/40 leading-relaxed">Via dedicated WhatsApp number. Managed via whatsapp-web.js on your server.</p>
                     <div className="mt-4 flex flex-wrap gap-1.5">
                       {['Requires number','Invite-based','Manual setup'].map(t => (
                         <span key={t} className="text-[10px] px-2 py-0.5 rounded-full bg-[#25D366]/10 text-[#25D366]/80 border border-[#25D366]/15 font-medium">{t}</span>
@@ -408,8 +470,39 @@ export default function CommunityFormPage() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
 
-          </div>{/* end Community Details card */}
+          {/* Step 2: Configuration */}
+          <div className={currentStep === 2 ? 'block animate-in fade-in slide-in-from-right-4 duration-300 space-y-6' : 'hidden'}>
+            
+            {/* Community Details */}
+            <div className="bg-[#111] border border-white/[0.07] rounded-xl p-7 space-y-5">
+              <h2 className="text-[15px] font-bold text-white mb-2">Community Profile</h2>
+
+              <div>
+                <label className="block text-[14px] font-bold text-white/45 mb-2 uppercase tracking-widest">Community Name *</label>
+                <input
+                  type="text" name="name" required={currentStep === 2} value={form.name} onChange={handleFormChange}
+                  className="w-full bg-[#0a0a0a] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-white placeholder-white/20 focus:outline-none focus:border-[#9FFF57]/40 focus:ring-1 focus:ring-[#9FFF57]/15 transition-colors"
+                  placeholder="e.g. Crypto Inner Circle"
+                />
+                {form.name && !isEditing && (
+                  <p className="text-[14px] text-white/30 mt-2 font-mono">
+                    {window.location.origin}/join/{slug}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-[14px] font-bold text-white/45 mb-2 uppercase tracking-widest">Description</label>
+                <textarea
+                  name="description" value={form.description} onChange={handleFormChange} rows={3}
+                  className="w-full bg-[#0a0a0a] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-white placeholder-white/20 focus:outline-none focus:border-[#9FFF57]/40 focus:ring-1 focus:ring-[#9FFF57]/15 transition-colors resize-none"
+                  placeholder="What will members get access to?"
+                />
+              </div>
+            </div>
 
           {/* ─── Telegram Setup Section ─── */}
           {form.platform === 'telegram' && (
@@ -427,22 +520,22 @@ export default function CommunityFormPage() {
                 </div>
                 <div>
                   <p className="text-[14px] font-black text-white">Telegram Group Setup</p>
-                  <p className="text-[11.5px] text-[#229ED9]/70">Connect your group in 2 steps</p>
+                  <p className="text-[14px] text-[#229ED9]/70">Connect your group in 2 steps</p>
                 </div>
               </div>
 
               <div className="px-7 py-6 space-y-6">
 
                 {/* Step 1 */}
-                <div className="flex gap-4">
-                  <div className="flex-shrink-0 w-7 h-7 rounded-full bg-[#229ED9]/20 border border-[#229ED9]/30 flex items-center justify-center text-[#229ED9] text-[12px] font-black">1</div>
+                <div className="flex gap-7">
+                  <div className="flex-shrink-0 w-7 h-7 rounded-full bg-[#229ED9]/20 border border-[#229ED9]/30 flex items-center justify-center text-[#229ED9] text-[14px] font-black">1</div>
                   <div className="flex-1">
-                    <p className="text-[13px] font-bold text-white mb-1">Add Membba Bot to your group as Admin</p>
-                    <p className="text-[12px] text-white/40 mb-3">Scan the QR or click the button to open Telegram and select your group. The bot will automatically send your Chat ID.</p>
+                    <p className="text-[14px] font-bold text-white mb-1">Add Membba Bot to your group as Admin</p>
+                    <p className="text-[14px] text-white/40 mb-3">Scan the QR or click the button to open Telegram and select your group. The bot will automatically send your Chat ID.</p>
                     <button
                       type="button"
                       onClick={openConnectQr}
-                      className="inline-flex items-center gap-2 bg-[#229ED9] text-white text-[13px] font-bold px-5 py-2.5 rounded-xl hover:bg-[#1a8fc4] transition-colors"
+                      className="inline-flex items-center gap-2 bg-[#229ED9] text-white text-[14px] font-bold px-5 py-2.5 rounded-xl hover:bg-[#1a8fc4] transition-colors"
                     >
                       <img src={telegramLogo} alt="" className="w-4 h-4 invert brightness-0" />
                       Connect via Bot
@@ -451,11 +544,11 @@ export default function CommunityFormPage() {
                 </div>
 
                 {/* Step 2 */}
-                <div className="flex gap-4">
-                  <div className="flex-shrink-0 w-7 h-7 rounded-full bg-[#229ED9]/20 border border-[#229ED9]/30 flex items-center justify-center text-[#229ED9] text-[12px] font-black">2</div>
+                <div className="flex gap-7">
+                  <div className="flex-shrink-0 w-7 h-7 rounded-full bg-[#229ED9]/20 border border-[#229ED9]/30 flex items-center justify-center text-[#229ED9] text-[14px] font-black">2</div>
                   <div className="flex-1">
-                    <p className="text-[13px] font-bold text-white mb-1">Paste your Group Chat ID</p>
-                    <p className="text-[12px] text-white/40 mb-3">The bot will post the ID to your group. Copy it here. It will self-destruct in 5 minutes.</p>
+                    <p className="text-[14px] font-bold text-white mb-1">Paste your Group Chat ID</p>
+                    <p className="text-[14px] text-white/40 mb-3">The bot will post the ID to your group. Copy it here. It will self-destruct in 5 minutes.</p>
                     <input
                       type="text"
                       name="telegram_chat_id"
@@ -487,25 +580,25 @@ export default function CommunityFormPage() {
                 </div>
                 <div>
                   <p className="text-[14px] font-black text-white">WhatsApp Group Setup</p>
-                  <p className="text-[11.5px] text-[#25D366]/70">Requires a dedicated WhatsApp number</p>
+                  <p className="text-[14px] text-[#25D366]/70">Requires a dedicated WhatsApp number</p>
                 </div>
               </div>
 
               <div className="px-7 py-6 space-y-6">
 
                 {/* Requirements notice */}
-                <div className="flex gap-3 bg-yellow-400/5 border border-yellow-400/15 rounded-xl p-4">
+                <div className="flex gap-3 bg-yellow-400/5 border border-yellow-400/15 rounded-xl p-7">
                   <span className="text-yellow-400 text-[16px] flex-shrink-0">⚠</span>
-                  <div className="text-[12px] text-white/50 space-y-1 leading-relaxed">
-                    <p className="text-yellow-400 font-bold text-[12.5px] mb-1.5">Requirements</p>
+                  <div className="text-[14px] text-white/50 space-y-1 leading-relaxed">
+                    <p className="text-yellow-400 font-bold text-[14px] mb-1.5">Requirements</p>
                     <p>Use a <span className="text-white/80">dedicated WhatsApp number</span> — never your personal number.</p>
-                    <p>Authenticate the number at <span className="text-white/60 font-mono text-[11px]">/api/whatsapp/qr</span> before continuing.</p>
+                    <p>Authenticate the number at <span className="text-white/60 font-mono text-[14px]">/api/whatsapp/qr</span> before continuing.</p>
                   </div>
                 </div>
 
                 {/* Group invite link */}
                 <div>
-                  <label className="block text-[11px] font-bold text-white/40 mb-2 uppercase tracking-widest">Group Invite Link *</label>
+                  <label className="block text-[14px] font-bold text-white/40 mb-2 uppercase tracking-widest">Group Invite Link *</label>
                   <input
                     type="url"
                     name="whatsapp_group_invite_link"
@@ -523,126 +616,234 @@ export default function CommunityFormPage() {
                       type="button"
                       onClick={handleRegisterWhatsAppGroup}
                       disabled={registeringGroup}
-                      className="inline-flex items-center gap-2 bg-[#25D366] text-white text-[13px] font-bold px-5 py-2.5 rounded-xl hover:bg-[#1da851] disabled:opacity-50 transition-colors"
+                      className="inline-flex items-center gap-2 bg-[#25D366] text-white text-[14px] font-bold px-5 py-2.5 rounded-xl hover:bg-[#1da851] disabled:opacity-50 transition-colors"
                     >
                       <img src={whatsappLogo} alt="" className="w-4 h-4 invert brightness-0" />
                       {registeringGroup ? 'Joining group...' : 'Register Group'}
                     </button>
-                    {waGroupId && <span className="text-[12.5px] text-[#9FFF57] font-semibold">✅ Registered ({waGroupId})</span>}
-                    {!waGroupId && <span className="text-[12.5px] text-yellow-400/70">⚠ Not yet registered</span>}
+                    {waGroupId && <span className="text-[14px] text-[#9FFF57] font-semibold">✅ Registered ({waGroupId})</span>}
+                    {!waGroupId && <span className="text-[14px] text-yellow-400/70">⚠ Not yet registered</span>}
                   </div>
                 ) : (
-                  <p className="text-[12px] text-white/30">Save the community first, then return here to register the group.</p>
+                  <p className="text-[14px] text-white/30">Save the community first, then return here to register the group.</p>
                 )}
 
               </div>
             </div>
           )}
 
-          {/* Existing Plans (edit mode) */}
+        </div>
+
+          {/* Step 3: Subscription Plans */}
+          <div className={currentStep === 3 ? 'block animate-in fade-in slide-in-from-right-4 duration-300 space-y-6' : 'hidden'}>
+
+            {/* Existing Plans (edit mode) */}
           {isEditing && existingPlans.length > 0 && (
-            <div className="bg-[#111] border border-white/[0.07] rounded-xl p-7">
-              <h2 className="text-[15px] font-bold text-white mb-5">Existing Plans</h2>
-              <div className="space-y-2">
-                {existingPlans.map(p => (
-                  <div key={p.id} className="flex items-center justify-between bg-white/[0.03] border border-white/[0.06] rounded-xl px-5 py-3.5">
-                    <div>
-                      <span className="font-semibold text-[14px] text-white">{p.name}</span>
-                      <span className="text-white/35 ml-3 text-[12.5px]">₦{p.price.toLocaleString()} · {formatDuration(p.duration_minutes)}</span>
-                    </div>
-                    <button type="button" onClick={() => handleDeleteExistingPlan(p.id)}
-                      className="text-[12px] text-red-400/70 hover:text-red-400 transition-colors font-medium">
+            <div className="bg-[#111] border border-white/[0.07] rounded-xl overflow-hidden">
+              {/* Header row */}
+              <div className="grid grid-cols-[1fr_120px_130px_80px] gap-0 border-b border-white/[0.07] px-6 py-3 bg-white/[0.02]">
+                <span className="text-[14px] font-bold text-white/30 uppercase tracking-widest">Plan Name</span>
+                <span className="text-[14px] font-bold text-white/30 uppercase tracking-widest">Price</span>
+                <span className="text-[14px] font-bold text-white/30 uppercase tracking-widest">Duration</span>
+                <span></span>
+              </div>
+              {existingPlans.map((p, idx) => (
+                <div
+                  key={p.id}
+                  className={`grid grid-cols-[1fr_120px_130px_80px] items-center gap-0 px-6 py-4 group transition-colors hover:bg-white/[0.025] ${
+                    idx < existingPlans.length - 1 ? 'border-b border-white/[0.06]' : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#9FFF57]/60 flex-shrink-0" />
+                    <span className="font-semibold text-[14px] text-white">{p.name}</span>
+                  </div>
+                  <span className="text-[14px] text-white/70 font-mono">₦{p.price.toLocaleString()}</span>
+                  <span className="text-[14px] text-white/50">{formatDuration(p.duration_minutes)}</span>
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteExistingPlan(p.id)}
+                      className="opacity-0 group-hover:opacity-100 text-[14px] text-red-400/70 hover:text-red-400 transition-all font-medium px-2 py-1 rounded-lg hover:bg-red-400/10"
+                    >
                       Remove
                     </button>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
           )}
 
           {/* Plan Builder */}
-          <div className="bg-[#111] border border-white/[0.07] rounded-xl p-7 space-y-5">
-            <div className="flex items-center justify-between">
+          <div className="bg-[#111] border border-white/[0.07] rounded-xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-7 pt-6 pb-4">
               <div>
                 <h2 className="text-[15px] font-bold text-white">{isEditing ? 'Add New Plans' : 'Subscription Plans'}</h2>
-                <p className="text-[12px] text-white/35 mt-1">
-                  e.g. <span className="font-mono text-white/50">2 minutes</span>, <span className="font-mono text-white/50">7 days</span>, <span className="font-mono text-white/50">30 days</span>, <span className="font-mono text-white/50">1 month</span>
-                </p>
+                <p className="text-[14px] text-white/35 mt-0.5">Each plan gives members timed access to your community.</p>
               </div>
-              <button type="button" onClick={addPlanRow}
-                className="text-[12.5px] border border-[#9FFF57]/25 text-[#9FFF57]/80 px-4 py-2 rounded-lg hover:bg-[#9FFF57]/5 hover:text-[#9FFF57] transition-all font-semibold">
-                + Add Plan
-              </button>
             </div>
 
-            {plans.map((plan, i) => (
-              <div key={i} className="border border-white/[0.07] bg-[#0a0a0a] rounded-xl p-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-[11px] font-bold text-white/40 uppercase tracking-widest">Plan {i + 1}</p>
-                  {plans.length > 1 && (
-                    <button type="button" onClick={() => removePlanRow(i)}
-                      className="text-[12px] text-red-400/60 hover:text-red-400 transition-colors">Remove</button>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[11px] font-bold text-white/40 mb-2 uppercase tracking-widest">Plan Name *</label>
-                    <input type="text" name="name" value={plan.name} onChange={e => handlePlanChange(i, e)}
-                      className="w-full bg-[#111] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-white placeholder-white/20 focus:outline-none focus:border-[#9FFF57]/40 focus:ring-1 focus:ring-[#9FFF57]/15 transition-colors"
-                      placeholder="Monthly Plan" />
+            {/* Plan Cards */}
+            <div className="divide-y divide-white/[0.05]">
+              {plans.map((plan, i) => {
+                const parsedMins = parseDurationToMinutes(plan.duration)
+                const durationPresets = [
+                  { value: '7 days',   label: '7 days' },
+                  { value: '14 days',  label: '14 days' },
+                  { value: '30 days',  label: '1 month' },
+                  { value: '90 days',  label: '3 months' },
+                  { value: '180 days', label: '6 months' },
+                  { value: '365 days', label: '1 year' },
+                  { value: 'custom',   label: '✏️ Custom…' },
+                ]
+                const isCustomDuration = plan.duration && !durationPresets.slice(0,-1).some(p => p.value === plan.duration)
+                const durationSelectValue = isCustomDuration ? 'custom' : (plan.duration || '')
+
+                return (
+                  <div key={i} className="px-7 py-6 group relative hover:bg-white/[0.015] transition-colors">
+                    {/* Top row: name + trash */}
+                    <div className="flex items-start justify-between gap-7 mb-5">
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          name="name"
+                          value={plan.name}
+                          onChange={e => handlePlanChange(i, e)}
+                          placeholder="Plan name e.g. Monthly Access"
+                          className="w-full bg-transparent text-[17px] font-bold text-white placeholder-white/20 outline-none border-0 focus:outline-none"
+                        />
+                        <div className="h-px bg-white/[0.07] mt-2 group-focus-within:bg-[#9FFF57]/30 transition-colors" />
+                      </div>
+                      {plans.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removePlanRow(i)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity mt-1 p-1.5 rounded-lg hover:bg-red-400/10 text-red-400/50 hover:text-red-400"
+                          title="Remove plan"
+                        >
+                          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Price + Duration grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-7 mb-4">
+                      {/* Price */}
+                      <div className="flex items-center gap-0 bg-white/[0.03] border border-white/[0.06] rounded-xl overflow-hidden focus-within:border-white/20 transition-colors">
+                        <span className="px-4 py-3.5 text-[15px] font-bold text-white/40 border-r border-white/[0.06] flex-shrink-0 select-none">₦</span>
+                        <input
+                          type="number"
+                          name="price"
+                          min="100"
+                          value={plan.price}
+                          onChange={e => handlePlanChange(i, e)}
+                          placeholder="5,000"
+                          className="flex-1 bg-transparent px-3.5 py-3.5 text-[15px] font-semibold text-white placeholder-white/20 outline-none [appearance:textfield]"
+                        />
+                      </div>
+
+                      {/* Duration */}
+                      <div className="space-y-2">
+                        <Select
+                          value={durationSelectValue}
+                          onChange={(val) => {
+                            if (val === 'custom') {
+                              handlePlanChange(i, { target: { name: 'duration', value: '' } })
+                            } else {
+                              handlePlanChange(i, { target: { name: 'duration', value: val } })
+                            }
+                          }}
+                          placeholder="Select duration…"
+                          options={durationPresets}
+                        />
+                        {/* Custom duration input appears when 'custom' is selected */}
+                        {isCustomDuration || durationSelectValue === 'custom' ? (
+                          <input
+                            type="text"
+                            name="duration"
+                            value={plan.duration}
+                            onChange={e => handlePlanChange(i, e)}
+                            placeholder="e.g. 2 minutes, 45 days"
+                            autoFocus
+                            className="w-full bg-white/[0.03] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-white placeholder-white/20 outline-none focus:border-[#9FFF57]/40 transition-colors font-mono"
+                          />
+                        ) : null}
+                        {plan.duration && parsedMins && (
+                          <p className="text-[14px] text-[#9FFF57]/80 flex items-center gap-1.5">
+                            <svg width="10" height="10" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+                            {formatDuration(parsedMins)}
+                          </p>
+                        )}
+                        {plan.duration && !parsedMins && (
+                          <p className="text-[14px] text-red-400/80 flex items-center gap-1.5">
+                            <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                            Invalid format
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Description */}
+                    <div className="mt-5">
+                      <label className="block text-[14px] font-semibold text-white/40 uppercase tracking-widest mb-2">
+                        Description <span className="text-white/20">(optional)</span>
+                      </label>
+                      <div className="relative">
+                        <textarea
+                          name="description"
+                          value={plan.description}
+                          onChange={e => handlePlanChange(i, e)}
+                          placeholder="Describe what members get access to with this plan…"
+                          maxLength={200}
+                          rows={3}
+                          className="w-full bg-white/[0.03] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-white placeholder-white/30 outline-none focus:border-[#9FFF57]/40 focus:ring-1 focus:ring-[#9FFF57]/15 transition-colors resize-none"
+                        />
+                        <div className="flex items-center justify-between mt-1.5 px-1">
+                          <p className="text-[14px] text-white/30">Helps members understand what they're subscribing to</p>
+                          <span className="text-[14px] text-white/25 font-mono">{plan.description.length}/200</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-white/40 mb-2 uppercase tracking-widest">Price (₦) *</label>
-                    <input type="number" name="price" min="100" value={plan.price} onChange={e => handlePlanChange(i, e)}
-                      className="w-full bg-[#111] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-white placeholder-white/20 focus:outline-none focus:border-[#9FFF57]/40 focus:ring-1 focus:ring-[#9FFF57]/15 transition-colors"
-                      placeholder="2000" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[11px] font-bold text-white/40 mb-2 uppercase tracking-widest">Duration *</label>
-                    <input type="text" name="duration" value={plan.duration} onChange={e => handlePlanChange(i, e)}
-                      className="w-full bg-[#111] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-white placeholder-white/20 focus:outline-none focus:border-[#9FFF57]/40 focus:ring-1 focus:ring-[#9FFF57]/15 transition-colors"
-                      placeholder="e.g. 30 days" />
-                    {plan.duration && (() => {
-                      const mins = parseDurationToMinutes(plan.duration)
-                      return mins
-                        ? <p className="text-[12px] text-[#9FFF57] mt-1.5 font-medium">✓ {formatDuration(mins)}</p>
-                        : <p className="text-[12px] text-red-400 mt-1.5">Invalid format</p>
-                    })()}
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-white/40 mb-2 uppercase tracking-widest">Description (optional)</label>
-                    <input type="text" name="description" value={plan.description} onChange={e => handlePlanChange(i, e)}
-                      className="w-full bg-[#111] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-white placeholder-white/20 focus:outline-none focus:border-[#9FFF57]/40 focus:ring-1 focus:ring-[#9FFF57]/15 transition-colors"
-                      placeholder="What's included" />
-                  </div>
-                </div>
-              </div>
-            ))}
+                )
+              })}
+            </div>
+
+            {/* Add a plan row */}
+            <button
+              type="button"
+              onClick={addPlanRow}
+              className="w-full flex items-center gap-3 px-7 py-5 border-t border-dashed border-white/[0.08] text-white/30 hover:text-white/60 hover:bg-white/[0.025] transition-all group"
+            >
+              <span className="w-5 h-5 rounded-md border border-current flex items-center justify-center text-[14px] leading-none group-hover:border-[#9FFF57]/50 group-hover:text-[#9FFF57]/70 transition-colors">+</span>
+              <span className="text-[14px] font-medium">Add a plan</span>
+            </button>
           </div>
 
-          </div>
+          </div>{/* end Step 3 */}
 
-          {/* Automations Tab */}
-          <div className={activeTab === 'automations' ? 'space-y-6' : 'hidden'}>
-            <div className="bg-[#111] border border-white/[0.07] rounded-xl p-7">
-              <div className="flex items-center justify-between mb-5">
-                <div>
+          {/* Step 4: Automations */}
+          <div className={currentStep === 4 ? 'block animate-in fade-in slide-in-from-right-4 duration-300 space-y-6' : 'hidden overflow-visible'}>
+            <div className="bg-[#111] border border-white/[0.07] rounded-xl p-7 overflow-visible">
+              <div className="flex items-start justify-between mb-5 gap-7">
+                <div className="flex-1">
                   <h2 className="text-[15px] font-bold text-white mb-1">Welcome Message</h2>
-                  <p className="text-[12px] text-white/40">Send an automated DM to new subscribers when they pay.</p>
+                  <p className="text-[14px] text-white/40">Send an automated DM to new subscribers when they pay.</p>
                 </div>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <span className="text-[12px] font-bold text-white/50">{form.welcome_message_enabled ? 'ON' : 'OFF'}</span>
+                <label className="flex items-center gap-3 cursor-pointer flex-shrink-0">
+                  <span className="text-[14px] font-bold text-white/50">{form.welcome_message_enabled ? 'ON' : 'OFF'}</span>
                   <input type="checkbox" name="welcome_message_enabled" checked={form.welcome_message_enabled} onChange={e => handleFormChange({target: {name: 'welcome_message_enabled', value: e.target.checked}})} className="sr-only peer" />
                   <div className="w-11 h-6 bg-white/[0.05] border border-white/[0.1] rounded-full peer peer-checked:bg-[#9FFF57]/20 peer-checked:border-[#9FFF57]/50 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white/40 peer-checked:after:bg-[#9FFF57] after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-[20px] relative"></div>
                 </label>
               </div>
 
               <div className={form.welcome_message_enabled ? 'mt-6 pt-6 border-t border-white/[0.05]' : 'hidden'}>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-7">
                   <div>
-                    <label className="block text-[11px] font-bold text-white/45 mb-2 uppercase tracking-widest">Message Template</label>
+                    <label className="block text-[14px] font-bold text-white/45 mb-2 uppercase tracking-widest">Message Template</label>
                     <textarea 
                       rows={6} 
                       name="welcome_message" 
@@ -651,12 +852,12 @@ export default function CommunityFormPage() {
                       placeholder="Welcome {name}..." 
                       className="w-full bg-[#0a0a0a] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-white focus:border-[#9FFF57]/40 outline-none resize-none leading-relaxed" 
                     />
-                    <p className="text-[12px] text-white/30 mt-3 leading-relaxed">
+                    <p className="text-[14px] text-white/30 mt-3 leading-relaxed">
                       Variables: <code className="bg-white/5 border border-white/[0.05] px-1.5 py-0.5 rounded text-[#9FFF57]">{"{name}"}</code> <code className="bg-white/5 border border-white/[0.05] px-1.5 py-0.5 rounded text-[#9FFF57]">{"{community}"}</code> <br className="hidden lg:block"/> <code className="bg-white/5 border border-white/[0.05] px-1.5 py-0.5 rounded text-[#9FFF57] mt-1 lg:mt-0 inline-block">{"{plan}"}</code> <code className="bg-white/5 border border-white/[0.05] px-1.5 py-0.5 rounded text-[#9FFF57]">{"{expires_on}"}</code>
                     </p>
                   </div>
-                  <div className="bg-[#0a0a0a] border border-white/[0.05] rounded-xl p-5 shadow-inner">
-                    <p className="text-[11px] font-bold text-white/20 mb-3 uppercase tracking-widest">Live Preview</p>
+                  <div className="bg-[#0a0a0a] border border-white/[0.05] rounded-xl p-7 shadow-inner">
+                    <p className="text-[14px] font-bold text-white/20 mb-3 uppercase tracking-widest">Live Preview</p>
                     <p className="text-[14px] text-white/70 whitespace-pre-wrap leading-relaxed">
                       {form.welcome_message
                         .replace(/{name}/g, "JohnDoe")
@@ -669,18 +870,101 @@ export default function CommunityFormPage() {
                 </div>
               </div>
             </div>
+
+          {/* Invite Link & Message Automation Settings */}
+          <div className="bg-[#111] border border-white/[0.07] rounded-xl p-7 space-y-6 overflow-visible">
+            <div>
+              <h2 className="text-[15px] font-bold text-white">Invite Link Settings</h2>
+              <p className="text-[14px] text-white/35 mt-1">Control how the bot delivers invite links to paying members.</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-7">
+              {/* Invite link expiry */}
+              <div>
+                <label className="block text-[14px] font-bold text-white/45 mb-2 uppercase tracking-widest">
+                  Invite Link Expires After
+                </label>
+                <Select
+                  value={form.invite_link_ttl_minutes}
+                  onChange={val => handleFormChange({ target: { name: 'invite_link_ttl_minutes', value: val } })}
+                  options={[
+                    { value: 0,    label: 'Never — link lasts forever' },
+                    { value: 15,   label: '15 minutes' },
+                    { value: 30,   label: '30 minutes' },
+                    { value: 60,   label: '1 hour (recommended)' },
+                    { value: 360,  label: '6 hours' },
+                    { value: 1440, label: '24 hours' },
+                    { value: 4320, label: '3 days' },
+                  ]}
+                />
+                <p className="text-[14px] text-white/25 mt-2 leading-relaxed">
+                  After this time, the invite link becomes invalid even if unused.
+                </p>
+              </div>
+
+              {/* Auto-delete DM */}
+              <div>
+                <label className="block text-[14px] font-bold text-white/45 mb-2 uppercase tracking-widest">
+                  Delete Bot Messages After
+                </label>
+                <Select
+                  value={form.msg_auto_delete_seconds}
+                  onChange={val => handleFormChange({ target: { name: 'msg_auto_delete_seconds', value: val } })}
+                  options={[
+                    { value: 0,    label: 'Never — keep messages' },
+                    { value: 60,   label: '1 minute' },
+                    { value: 120,  label: '2 minutes (recommended)' },
+                    { value: 300,  label: '5 minutes' },
+                    { value: 600,  label: '10 minutes' },
+                    { value: 1800, label: '30 minutes' },
+                    { value: 3600, label: '1 hour' },
+                  ]}
+                />
+                <p className="text-[14px] text-white/25 mt-2 leading-relaxed">
+                  The bot will delete its invite DMs after this delay. Keeps things tidy.
+                </p>
+              </div>
+            </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex gap-3 pt-2">
-            <button type="submit" disabled={loading}
-              className="bg-[#9FFF57] text-black px-7 py-3 rounded-xl text-[14px] font-bold hover:bg-[#b0ff6e] disabled:opacity-50 transition-colors">
-              {loading ? 'Saving...' : isEditing ? 'Save Changes' : 'Create Community'}
+          </div>{/* end Step 4 */}
+
+          {/* ─── Wizard Bottom Action Bar ─── */}
+          <div className="flex items-center justify-between pt-8 pb-4 mt-8 border-t border-white/[0.05]">
+            <button
+              type="button"
+              onClick={handlePrev}
+              disabled={currentStep === 1}
+              className={`px-5 py-2.5 rounded-xl text-[14px] font-semibold transition-colors ${currentStep === 1 ? 'opacity-0 pointer-events-none' : 'text-white/40 hover:text-white/80 hover:bg-white/[0.05]'}`}
+            >
+              ← Back
             </button>
-            <button type="button" onClick={() => navigate('/dashboard/communities')}
-              className="border border-white/[0.1] text-white/45 px-7 py-3 rounded-xl text-[14px] font-medium hover:border-white/20 hover:text-white/70 transition-colors">
-              Cancel
-            </button>
+            <div className="flex gap-2 sm:gap-3">
+              <button
+                type="button"
+                onClick={() => navigate('/dashboard/communities')}
+                className="px-4 border border-white/[0.1] sm:px-5 py-2.5 rounded-xl text-[14px] font-semibold text-white/40 hover:text-white/80 hover:border-white/20 transition-colors"
+               >
+                 Cancel
+               </button>
+              {currentStep < 4 ? (
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  className="bg-white/[0.12] text-white px-6 sm:px-8 py-2.5 rounded-xl text-[14px] font-semibold hover:bg-white/20 transition-all"
+                >
+                  Continue →
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="bg-[#9FFF57] text-black px-6 sm:px-8 py-2.5 rounded-xl text-[14px] font-bold hover:bg-[#b0ff6e] disabled:opacity-50 transition-all shadow-[0_0_15px_rgba(159,255,87,0.25)]"
+                >
+                  {loading ? 'Saving...' : isEditing ? 'Save Changes ✓' : 'Create Community ✓'}
+                </button>
+              )}
+            </div>
           </div>
         </form>
       </div>
@@ -692,7 +976,7 @@ export default function CommunityFormPage() {
           <div className="bg-[#111] border border-white/[0.1] rounded-2xl p-7 w-full max-w-md shadow-2xl relative">
             <button
               onClick={() => setSetupModal(null)}
-              className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors"
+              className="absolute top-7 right-4 text-white/40 hover:text-white transition-colors"
               disabled={setupModal.loading && (setupModal.checks || []).length < 2}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -705,8 +989,8 @@ export default function CommunityFormPage() {
                 <div key={c.id} className="flex items-start gap-3 animate-in fade-in slide-in-from-bottom-2 duration-500">
                   <span className="flex-shrink-0 mt-0.5 text-[16px]">{c.pass ? '✅' : '❌'}</span>
                   <div>
-                    <p className={`text-[13px] font-semibold ${c.pass ? 'text-white/70' : 'text-white'}`}>{c.label}</p>
-                    {!c.pass && <p className="text-[12px] text-white/35 mt-0.5 leading-relaxed">{c.hint}</p>}
+                    <p className={`text-[14px] font-semibold ${c.pass ? 'text-white/70' : 'text-white'}`}>{c.label}</p>
+                    {!c.pass && <p className="text-[14px] text-white/35 mt-0.5 leading-relaxed">{c.hint}</p>}
                   </div>
                 </div>
               ))}
@@ -718,13 +1002,13 @@ export default function CommunityFormPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
                   </svg>
-                  <p className="text-[13px] font-semibold text-white/50">Processing...</p>
+                  <p className="text-[14px] font-semibold text-white/50">Processing...</p>
                 </div>
               )}
             </div>
 
             {!setupModal.loading && (
-              <div className={`rounded-xl px-4 py-3 text-[13px] font-semibold text-center animate-in fade-in zoom-in-95 duration-500 ${setupModal.allPass ? 'bg-[#9FFF57]/10 text-[#9FFF57] border border-[#9FFF57]/20' : 'bg-yellow-400/10 text-yellow-400 border border-yellow-400/20'}`}>
+              <div className={`rounded-xl px-4 py-3 text-[14px] font-semibold text-center animate-in fade-in zoom-in-95 duration-500 ${setupModal.allPass ? 'bg-[#9FFF57]/10 text-[#9FFF57] border border-[#9FFF57]/20' : 'bg-yellow-400/10 text-yellow-400 border border-yellow-400/20'}`}>
                 {setupModal.allPass ? '🚀 All systems go — your community is live!' : '⚠️ Fix the issues above before marketing.'}
               </div>
             )}
@@ -738,7 +1022,7 @@ export default function CommunityFormPage() {
           <div className="bg-[#111] border border-white/[0.1] rounded-2xl p-8 w-full max-w-sm text-center shadow-2xl relative">
             <button
               onClick={() => setConnectQr(null)}
-              className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors"
+              className="absolute top-7 right-4 text-white/40 hover:text-white transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
@@ -747,7 +1031,7 @@ export default function CommunityFormPage() {
               <FaTelegram size={24} />
             </div>
             <h3 className="text-[17px] font-black text-white mb-2">Connect Telegram Group</h3>
-            <p className="text-[12.5px] text-white/40 mb-6 leading-relaxed px-2">
+            <p className="text-[14px] text-white/40 mb-6 leading-relaxed px-2">
               Scan this QR to add Membba Bot as an admin to your Telegram Group. It will reply with your Chat ID.
             </p>
             
@@ -755,7 +1039,7 @@ export default function CommunityFormPage() {
               <img src={connectQr.dataUrl} alt="Connect Telegram Bot" className="w-48 h-48" />
             </div>
 
-            <p className="text-[11.5px] font-bold text-white/30 uppercase tracking-widest mb-3" >OR CLICK DIRECTLY</p>
+            <p className="text-[14px] font-bold text-white/30 uppercase tracking-widest mb-3" >OR CLICK DIRECTLY</p>
             
             <a
               href={connectQr.deepLink}

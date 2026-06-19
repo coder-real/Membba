@@ -89,7 +89,7 @@ export default function LoginPage() {
           <img src="/green.svg" alt="Membba" className="h-7" />
           <span className={`font-bold tracking-tight ${dark ? "text-white" : "text-gray-900"}`}>Membba</span>
         </Link>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-7">
           <p className={`text-sm ${textMuted}`}>
             Don't have an account?{" "}
             <Link to="/register" className="text-[#9FFF57] hover:underline font-medium">

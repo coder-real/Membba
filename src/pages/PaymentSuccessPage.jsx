@@ -48,7 +48,7 @@ export default function PaymentSuccessPage() {
           <div className="absolute inset-0 rounded-full border-2 border-white/[0.06]" />
           <div className="absolute inset-0 rounded-full border-2 border-t-[#9FFF57] border-white/[0.06] animate-spin" />
         </div>
-        <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-white/25 mb-3">Processing</p>
+        <p className="text-[14px] font-bold tracking-[0.15em] uppercase text-white/25 mb-3">Processing</p>
         <h1 className="text-[22px] font-black text-white mb-3">Verifying your payment</h1>
         <p className="text-[14px] text-white/40 leading-relaxed">This usually takes just a moment.</p>
       </div>
@@ -60,12 +60,12 @@ export default function PaymentSuccessPage() {
 
       {/* Top bar */}
       <div className="border-b border-white/[0.05] px-6 py-4 flex items-center justify-between max-w-xl mx-auto">
-        <span className="text-[13px] font-black tracking-wider text-white/30 uppercase">Membba</span>
+        <span className="text-[14px] font-black tracking-wider text-white/30 uppercase">Membba</span>
         <div className="flex items-center gap-1.5 text-white/25">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
           </svg>
-          <span className="text-[11.5px] font-semibold">Secured by Paystack</span>
+          <span className="text-[14px] font-semibold">Secured by Paystack</span>
         </div>
       </div>
 
@@ -81,7 +81,7 @@ export default function PaymentSuccessPage() {
               </svg>
             </div>
 
-            <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#9FFF57]/60 mb-2">Payment Confirmed</p>
+            <p className="text-[14px] font-bold tracking-[0.15em] uppercase text-[#9FFF57]/60 mb-2">Payment Confirmed</p>
             <h1 className="text-[28px] font-black text-white leading-tight mb-3">
               {subscription?.communities?.name
                 ? `You're in, ${subscription.communities.name}!`
@@ -94,20 +94,20 @@ export default function PaymentSuccessPage() {
                 <div className="grid grid-cols-2 gap-y-3">
                   {subscription.communities?.name && (
                     <>
-                      <span className="text-[11.5px] text-white/35 font-semibold uppercase tracking-wider">Community</span>
-                      <span className="text-[13.5px] text-white font-semibold text-right">{subscription.communities.name}</span>
+                      <span className="text-[14px] text-white/35 font-semibold uppercase tracking-wider">Community</span>
+                      <span className="text-[14px] text-white font-semibold text-right">{subscription.communities.name}</span>
                     </>
                   )}
                   {subscription.expires_at && (
                     <>
-                      <span className="text-[11.5px] text-white/35 font-semibold uppercase tracking-wider">Access until</span>
-                      <span className="text-[13.5px] text-white font-semibold text-right">
+                      <span className="text-[14px] text-white/35 font-semibold uppercase tracking-wider">Access until</span>
+                      <span className="text-[14px] text-white font-semibold text-right">
                         {new Date(subscription.expires_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </span>
                     </>
                   )}
-                  <span className="text-[11.5px] text-white/35 font-semibold uppercase tracking-wider">Platform</span>
-                  <span className="text-[13.5px] font-semibold text-right" style={{ color: platColor }}>
+                  <span className="text-[14px] text-white/35 font-semibold uppercase tracking-wider">Platform</span>
+                  <span className="text-[14px] font-semibold text-right" style={{ color: platColor }}>
                     {platLabel}
                   </span>
                 </div>
@@ -128,14 +128,14 @@ export default function PaymentSuccessPage() {
                   Join {platLabel} Group
                 </a>
                 {!isWA && (
-                  <p className="text-center text-[12px] text-white/30">
+                  <p className="text-center text-[14px] text-white/30">
                     Link expires in 15 minutes. The bot may also DM you the same link.
                   </p>
                 )}
               </div>
             ) : (
               <>
-                <div className="border rounded-xl px-5 py-4 mb-6 text-[13.5px] leading-relaxed"
+                <div className="border rounded-xl px-5 py-4 mb-6 text-[14px] leading-relaxed"
                   style={{ borderColor: `${platColor}30`, backgroundColor: `${platColor}08` }}>
                   <p className="font-bold mb-1.5" style={{ color: platColor }}>
                     Next step: check your {platLabel}
@@ -147,7 +147,7 @@ export default function PaymentSuccessPage() {
                   ) : (
                     <div className="text-white/50 space-y-1">
                       <p>The bot will send you a join link on Telegram.</p>
-                      <p className="text-[12px] text-white/30">
+                      <p className="text-[14px] text-white/30">
                         Haven't received it? Make sure you've sent <span className="font-mono">/start</span> to <span className="font-mono">@membba_bot</span> first.
                       </p>
                     </div>
@@ -159,13 +159,13 @@ export default function PaymentSuccessPage() {
                   <div className="mb-6">
                     <button
                       onClick={() => setShowHelp(h => !h)}
-                      className="w-full flex items-center justify-between text-[12.5px] text-white/35 hover:text-white/55 transition-colors py-2"
+                      className="w-full flex items-center justify-between text-[14px] text-white/35 hover:text-white/55 transition-colors py-2"
                     >
                       <span>Didn't receive a link?</span>
                       <span>{showHelp ? '▲' : '▼'}</span>
                     </button>
                     {showHelp && (
-                      <div className="mt-2 bg-[#111] border border-white/[0.07] rounded-xl p-4 text-[12.5px] text-white/50 space-y-2 leading-relaxed">
+                      <div className="mt-2 bg-[#111] border border-white/[0.07] rounded-xl p-7 text-[14px] text-white/50 space-y-2 leading-relaxed">
                         <p>1. Open Telegram and search for <span className="font-mono text-white/70">@membba_bot</span></p>
                         <p>2. Send the command <span className="font-mono text-white/70">/start</span></p>
                         <p>3. Wait a moment — the bot will automatically send you the invite link.</p>
@@ -179,7 +179,7 @@ export default function PaymentSuccessPage() {
 
             {/* Reference */}
             <div className="border-t border-white/[0.05] pt-5">
-              <p className="text-[11.5px] text-white/25">
+              <p className="text-[14px] text-white/25">
                 Reference: <span className="font-mono text-white/35">{reference}</span>
               </p>
             </div>
@@ -195,7 +195,7 @@ export default function PaymentSuccessPage() {
               </svg>
             </div>
 
-            <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-red-400/60 mb-2">Payment Issue</p>
+            <p className="text-[14px] font-bold tracking-[0.15em] uppercase text-red-400/60 mb-2">Payment Issue</p>
             <h1 className="text-[26px] font-black text-white leading-tight mb-3">We couldn't verify your payment</h1>
             <p className="text-[14px] text-white/45 leading-relaxed mb-7">
               Don't worry — if your card was charged, your money is safe. Contact support with the reference below and we'll resolve it promptly.
@@ -204,8 +204,8 @@ export default function PaymentSuccessPage() {
             {reference && (
               <div className="bg-[#111] border border-white/[0.07] rounded-xl px-5 py-3.5 mb-7 flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[11px] text-white/30 uppercase tracking-wider font-semibold mb-1">Reference</p>
-                  <p className="font-mono text-[13.5px] text-white/70 break-all">{reference}</p>
+                  <p className="text-[14px] text-white/30 uppercase tracking-wider font-semibold mb-1">Reference</p>
+                  <p className="font-mono text-[14px] text-white/70 break-all">{reference}</p>
                 </div>
               </div>
             )}
@@ -216,7 +216,7 @@ export default function PaymentSuccessPage() {
                 Contact Support
               </a>
               <Link to="/"
-                className="text-center text-[13px] text-white/30 hover:text-white/50 transition-colors py-2">
+                className="text-center text-[14px] text-white/30 hover:text-white/50 transition-colors py-2">
                 Go back home
               </Link>
             </div>

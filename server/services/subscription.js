@@ -41,7 +41,7 @@ export async function createSubscription({
   // Fetch community for platform + config
   const { data: community, error: commErr } = await supabase
     .from('communities')
-    .select('platform, telegram_chat_id, whatsapp_group_id, whatsapp_group_invite_link, name, slug, welcome_message_enabled, welcome_message')
+    .select('platform, telegram_chat_id, whatsapp_group_id, whatsapp_group_invite_link, name, slug, welcome_message_enabled, welcome_message, invite_link_ttl_minutes, msg_auto_delete_seconds')
     .eq('id', communityId)
     .single()
 
@@ -94,6 +94,8 @@ export async function createSubscription({
           communityName: community.name,
           communitySlug: community.slug,
           customMessage,
+          inviteLinkTtlMinutes: community.invite_link_ttl_minutes ?? 60,
+          msgAutoDeleteSeconds: community.msg_auto_delete_seconds ?? 120,
         })
       } catch (err) {
         console.error('[subscription] telegram invite failed:', err.message)
