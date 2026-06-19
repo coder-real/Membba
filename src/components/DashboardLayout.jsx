@@ -213,13 +213,12 @@ export default function DashboardLayout({ children, pageTitle }) {
       {/* ── Mobile: Drawer ──────────────────────────────── */}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-50 w-64 flex flex-col
+          fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-[#111]
           border-r border-white/[0.06]
           transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)]
           lg:hidden
           ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
-        style={{ background: '#2b2d31' }}
       >
         <SidebarBody />
       </aside>
@@ -263,7 +262,7 @@ export default function DashboardLayout({ children, pageTitle }) {
 
         {/* ── Page content ───────────────────────────────── */}
         <main className="flex-1 overflow-y-auto">
-          <div className="w-full px-4 sm:px-6 lg:px-8 py-6 lg:py-8 page-enter" style={{ paddingBottom: 80 }}>
+          <div className="w-full px-4 sm:px-6 lg:px-8 py-6 lg:py-8 page-enter">
             {children}
           </div>
         </main>
