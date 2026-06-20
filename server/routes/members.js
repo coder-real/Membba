@@ -65,7 +65,7 @@ router.post('/:subscriptionId/remove', async (req, res) => {
 
     if (updateErr) throw updateErr
 
-    console.log(`[members/remove] manually removed sub ${subscriptionId} (userId:${userId})`)
+    console.log(`[members/remove] manually removed sub ${subscriptionId} (ID:${tgUserId || waPhone})`)
 
     return res.json({ success: true, message: 'Member removed successfully' })
   } catch (err) {
