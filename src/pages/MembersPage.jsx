@@ -35,8 +35,10 @@ export default function MembersPage() {
   const handleRemove = async (s) => {
     setRemoving(s.id)
     try {
-      const endpoint = s.telegram_user_id ? '/api/telegram/remove-member' : '/api/whatsapp/remove-member'
-      await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscriptionId: s.id }) })
+      await fetch(`${API_BASE}/api/members/${s.id}/remove`, { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+      })
       toast.success('Member removed')
       fetchSubs()
     } catch { toast.error('Failed to remove member') }
