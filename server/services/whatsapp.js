@@ -1,5 +1,5 @@
 import pkg from 'whatsapp-web.js'
-const { Client, RemoteAuth } = pkg
+const { Client, RemoteAuth, LocalAuth } = pkg
 import puppeteer from 'puppeteer'
 import qrcode from 'qrcode'
 import { supabase } from '../lib/supabase.js'
@@ -31,7 +31,7 @@ class SupabaseStore {
       .from('whatsapp_sessions')
       .select('session')
       .eq('id', session)
-      .maybeSingle()
+      .single()
     if (!data) return null
     return Buffer.from(data.session, 'base64')
   }
@@ -54,16 +54,43 @@ export function getWhatsAppQR() { return currentQR }
 
 export async function restartWhatsApp() {
   console.log('[whatsapp] restarting client...')
+  
+  // Track the PID so we can explicitly force-kill it later
+  // Windows sometimes leaves zombie Chrome processes holding filesystem locks.
+  const pidToKill = client?.pupBrowser?.process()?.pid
+  if (pidToKill) {
+    console.log(`[whatsapp-debug] tracking chromium PID: ${pidToKill} for cleanup`)
+  }
+
   if (client) {
+    console.log('[whatsapp-debug] calling client.destroy()...')
     try {
       await client.destroy()
+      console.log('[whatsapp-debug] client.destroy() completed')
     } catch (e) {
-      console.warn('[whatsapp] error terminating previous client:', e.message)
+      console.warn('[whatsapp-debug] error terminating previous client:', e.message)
     }
     client = null
   }
+
+  // Force-kill the process if it's still alive to release file locks on Windows
+  if (pidToKill) {
+    console.log(`[whatsapp-debug] asserting death of chromium PID: ${pidToKill}...`)
+    try {
+      process.kill(pidToKill, 'SIGKILL')
+      console.log(`[whatsapp-debug] sent SIGKILL to zombie chromium PID: ${pidToKill}`)
+    } catch (err) {
+      console.log(`[whatsapp-debug] chromium PID: ${pidToKill} was already dead`)
+    }
+  }
+
   status = 'initializing'
   currentQR = null
+
+  // Give Windows a brief moment to naturally release filesystem handles
+  console.log('[whatsapp-debug] allowing Windows 500ms to release file locks...')
+  await new Promise(r => setTimeout(r, 500))
+
   await initWhatsApp()
 }
 
@@ -87,11 +114,17 @@ export async function initWhatsApp() {
   }
   console.log('[whatsapp] using chrome at:', executablePath || 'default (system)')
 
+  // On Render (production), we must use RemoteAuth to persist session in Supabase.
+  // Locally (Windows), RemoteAuth causes EBUSY crashes when copying locked IndexedDB files.
+  const authStrategy = process.env.NODE_ENV === 'production'
+    ? new RemoteAuth({
+        store: new SupabaseStore(),
+        backupSyncIntervalMs: 300_000,
+      })
+    : new LocalAuth()
+
   client = new Client({
-    authStrategy: new RemoteAuth({
-      store: new SupabaseStore(),
-      backupSyncIntervalMs: 300_000,
-    }),
+    authStrategy,
     puppeteer: {
       headless: true,
       executablePath: executablePath || undefined,
@@ -308,13 +341,23 @@ export async function sendWhatsAppInvite(phone, inviteLink, communityName, commu
       console.log(`[whatsapp] Attempting to auto-add ${phone} to group ${groupId}...`)
       const res = await chat.addParticipants([participantId])
       
-      console.log(`[whatsapp] Successfully auto-added ${phone} to group!`)
-      addedDirectly = true
+      // whatsapp-web.js doesn't throw on privacy blocks, it returns an object like { "234...": { code: 403 } }
+      const addStatus = res && res[participantId]
+      if (addStatus && addStatus.code === 403) {
+        console.warn(`[whatsapp] Failed to auto-add ${phone} (Privacy restricted). Falling back to DM invite.`)
+        addedDirectly = false
+      } else if (res && typeof res === 'object' && Object.values(res).some(v => v !== 200)) {
+        console.warn(`[whatsapp] Failed to auto-add ${phone} (Unknown code). Falling back to DM invite.`)
+        addedDirectly = false
+      } else {
+        console.log(`[whatsapp] Successfully auto-added ${phone} to group!`)
+        addedDirectly = true
 
-      // Send a confirmation DM so they know why they were mysteriously added
-      const defaultWelcome = `🎉 Welcome! You have been automatically added to the WhatsApp Group for *${communityName}* by the admin.\n\nPlease check your chat list to start participating!`
-      const welcomeText = customMessage || defaultWelcome
-      await sendWhatsAppMessage(phone, welcomeText)
+        // Send a confirmation DM so they know why they were mysteriously added
+        const defaultWelcome = `🎉 Welcome! You have been automatically added to the WhatsApp Group for *${communityName}* by the admin.\n\nPlease check your chat list to start participating!`
+        const welcomeText = customMessage || defaultWelcome
+        await sendWhatsAppMessage(phone, welcomeText)
+      }
 
     } catch (err) {
       console.warn(`[whatsapp] Failed to auto-add ${phone}:`, err.message)
@@ -333,7 +376,7 @@ export async function sendWhatsAppInvite(phone, inviteLink, communityName, commu
 
     // Revoke and refresh the group link if possible to prevent sharing
     if (groupId && communityId && inviteLink) {
-      await revokeAndRefreshGroupLink(groupId, communityId, inviteLink)
+      await revokeAndRefreshGroupLink(groupId, communityId)
     }
   }
 }

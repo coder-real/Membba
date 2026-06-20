@@ -11,6 +11,16 @@ import { startPolling } from './services/botPoller.js'
 import { registerWebhook } from './services/botWebhook.js'
 import { initWhatsApp } from './services/whatsapp.js'
 
+// ── Global Error Catchers to prevent crashes ──────────────────────────────
+// Prevents the entire Node server from crashing if whatsapp-web.js throws
+// synchronous EBUSY file-lock errors on Windows during session cleanup.
+process.on('uncaughtException', err => {
+  console.error('[fatal] uncaught exception prevented crash:', err.message)
+})
+process.on('unhandledRejection', reason => {
+  console.error('[fatal] unhandled rejection prevented crash:', reason)
+})
+
 // .env is loaded via --env-file flag in the npm scripts (see package.json)
 
 const app = express()
