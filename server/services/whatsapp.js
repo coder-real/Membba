@@ -12,10 +12,11 @@ import { supabase } from '../lib/supabase.js'
 // ── Status & state ────────────────────────────────────────────────────────────
 // 'initializing' | 'needs_scan' | 'needs_pairing_code' | 'syncing' | 'connected' | 'reconnecting'
 let status = 'initializing'
-let currentQRDataUrl = null   // base64 PNG for the frontend
-let pairingCode = null        // 8-digit code for phone-number login
+let currentQRDataUrl = null
+let pairingCode = null
 let sock = null
-let connectionOptions = {}    // saved so reconnects use the same options
+let connectionOptions = {}
+let isConnecting = false  // Lock — prevents overlapping initWhatsApp() calls
 
 // ── Phone whitelist — skip auto-kick for members we just added ────────────────
 const phoneWhitelist = new Map() // phone → expiry timestamp
@@ -76,11 +77,25 @@ async function drainPendingInvites() {
  * @param {string}  opts.phoneNumber     — E.164 number (digits only) for pairing code
  */
 export async function initWhatsApp(opts = {}) {
-  connectionOptions = opts     // persist for auto-reconnects
+  // ── Connection lock — bail out if already connecting ──────────────────────
+  if (isConnecting) {
+    console.log('[whatsapp] connection attempt already in progress — skipping')
+    return
+  }
+  isConnecting = true
+  connectionOptions = opts
   const { usePairingCode = false, phoneNumber = null } = opts
 
-  // Baileys stores session in a local folder — on Render mount a persistent disk here
-  const AUTH_DIR = process.env.BAILEYS_AUTH_DIR || './baileys_auth'
+  // ── Kill previous socket cleanly before creating a new one ────────────────
+  if (sock) {
+    try {
+      sock.ev.removeAllListeners()  // stop old listeners from firing on the new socket
+      sock.end(undefined)
+    } catch { /* ignore */ }
+    sock = null
+  }
+
+  try {
   const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR)
 
   const { version } = await fetchLatestBaileysVersion()
@@ -102,11 +117,14 @@ export async function initWhatsApp(opts = {}) {
     syncFullHistory: false,               // don't pull message history (saves RAM)
   })
 
-  // Persist credentials whenever they change (key rotations, etc.)
-  sock.ev.on('creds.update', saveCreds)
+    // Persist credentials whenever they change
+    sock.ev.on('creds.update', saveCreds)
 
-  // ── Connection state machine ─────────────────────────────────────────────
-  sock.ev.on('connection.update', async update => {
+    // ── Release the lock as soon as the socket is wired up ──────────────────
+    isConnecting = false
+
+    // ── Connection state machine ─────────────────────────────────────────────
+    sock.ev.on('connection.update', async update => {
     const { connection, lastDisconnect, qr } = update
 
     // QR code path
@@ -147,16 +165,15 @@ export async function initWhatsApp(opts = {}) {
         ? lastDisconnect.error.output?.statusCode
         : null
 
-      const shouldLogOut = statusCode === DisconnectReason.loggedOut
+      const didLogOut = statusCode === DisconnectReason.loggedOut
 
-      if (shouldLogOut) {
-        // Permanent logout — user explicitly logged out on their phone
+      if (didLogOut) {
+        // Permanent logout — don't auto-restart. User must explicitly reconnect
+        // via the dashboard. Auto-restarting on logout creates an infinite loop.
         status = 'needs_scan'
         currentQRDataUrl = null
         pairingCode = null
-        console.warn('[whatsapp] logged out — will show QR for re-auth')
-        // Re-init fresh (no saved creds so a QR will appear)
-        setTimeout(() => initWhatsApp(), 2000)
+        console.warn('[whatsapp] logged out — waiting for manual reconnect')
       } else {
         status = 'reconnecting'
         console.warn(`[whatsapp] disconnected (${statusCode}) — reconnecting in 5s...`)
@@ -227,6 +244,10 @@ export async function initWhatsApp(opts = {}) {
       }
     }
   })
+  } catch (err) {
+    isConnecting = false
+    console.error('[whatsapp] initWhatsApp failed:', err.message)
+  }
 }
 
 // ── Restart ───────────────────────────────────────────────────────────────────
