@@ -96,7 +96,8 @@ export async function initWhatsApp(opts = {}) {
   }
 
   try {
-  const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR)
+    const AUTH_DIR = process.env.BAILEYS_AUTH_DIR || './baileys_auth'
+    const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR)
 
   const { version } = await fetchLatestBaileysVersion()
   console.log(`[whatsapp] Baileys v${version.join('.')} — starting...`)
