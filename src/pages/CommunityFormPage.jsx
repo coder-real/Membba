@@ -117,7 +117,7 @@ export default function CommunityFormPage() {
   const runSetupCheck = async () => {
     setSetupModal({ loading: true, checks: [] })
     try {
-      const res = await fetch(`/api/telegram/check-setup/${id}`)
+      const res = await fetch(`${API_BASE}/api/telegram/check-setup/${id}`)
       const data = await res.json()
       
       // Animate checks appearing one by one

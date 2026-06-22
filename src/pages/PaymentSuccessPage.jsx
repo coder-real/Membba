@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { FaTelegram, FaWhatsapp } from 'react-icons/fa'
+import API_BASE from '../lib/api'
 
 function Spinner() {
   return (
@@ -23,7 +24,7 @@ export default function PaymentSuccessPage() {
 
   const verifyPayment = async () => {
     try {
-      const res  = await fetch(`/api/payments/verify/${reference}`)
+      const res  = await fetch(`${API_BASE}/api/payments/verify/${reference}`)
       const data = await res.json()
       if (data.success) {
         setStatus('success')

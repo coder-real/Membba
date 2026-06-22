@@ -2,6 +2,8 @@ import pkg from 'whatsapp-web.js'
 const { Client, RemoteAuth, LocalAuth } = pkg
 import puppeteer from 'puppeteer'
 import qrcode from 'qrcode'
+import fs from 'fs'
+import path from 'path'
 import { supabase } from '../lib/supabase.js'
 
 // ── Supabase-backed session store for RemoteAuth ──────────────────────────
@@ -45,6 +47,25 @@ let currentQR = null
 let status = 'initializing' // 'initializing' | 'awaiting_qr' | 'authenticated'
 let client = null
 
+// ── Phone whitelist for auto-added members (prevents kick-on-join) ────────
+// Phones registered here are skipped by the group_join auto-kick for 90s.
+const phoneWhitelist = new Map() // phone → expiry timestamp
+
+export function whitelistPhone(phone) {
+  phoneWhitelist.set(phone, Date.now() + 90_000)
+  console.log(`[whatsapp] whitelisted ${phone} for 90s`)
+}
+
+function isPhoneWhitelisted(phone) {
+  const expiry = phoneWhitelist.get(phone)
+  if (!expiry) return false
+  if (Date.now() > expiry) {
+    phoneWhitelist.delete(phone)
+    return false
+  }
+  return true
+}
+
 // Random delay — reduces WhatsApp ban risk
 const delay = ms => new Promise(r => setTimeout(r, ms))
 const randomDelay = () => delay(Math.random() * 3000 + 1000) // 1–4 seconds
@@ -52,44 +73,83 @@ const randomDelay = () => delay(Math.random() * 3000 + 1000) // 1–4 seconds
 export function getWhatsAppStatus() { return status }
 export function getWhatsAppQR() { return currentQR }
 
+// ── Retry/backoff helper for Windows file-lock errors ────────────────────
+// Retries an async operation up to `maxAttempts` times when it fails with
+// EBUSY or EPERM (Windows locks files held by Chrome/IndexedDB).
+async function withRetry(fn, { maxAttempts = 5, baseDelayMs = 500, label = 'op' } = {}) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn()
+    } catch (err) {
+      const isLock = err.code === 'EBUSY' || err.code === 'EPERM' || err.code === 'ENOTEMPTY'
+      if (!isLock || attempt === maxAttempts) {
+        console.warn(`[whatsapp] ${label} failed after ${attempt} attempt(s):`, err.message)
+        return // swallow — cleanup failures must never crash the server
+      }
+      const wait = baseDelayMs * 2 ** (attempt - 1) // 500, 1000, 2000, 4000 …
+      console.warn(`[whatsapp] ${label} attempt ${attempt} got ${err.code} — retrying in ${wait}ms`)
+      await delay(wait)
+    }
+  }
+}
+
+// ── Delete local .wwebjs_auth session folder with retry/backoff ───────────
+async function deleteLocalAuthDir() {
+  const authDir = path.resolve('.wwebjs_auth')
+  await withRetry(
+    () => fs.promises.rm(authDir, { recursive: true, force: true }),
+    { label: 'deleteLocalAuthDir', maxAttempts: 6, baseDelayMs: 800 }
+  )
+  console.log('[whatsapp] .wwebjs_auth cleaned up (or was absent)')
+}
+
+// ── Force-kill a Chromium PID to release Windows file locks ──────────────
+function killChromePid(pid) {
+  if (!pid) return
+  console.log(`[whatsapp] sending SIGKILL to Chrome PID ${pid}`)
+  try {
+    process.kill(pid, 'SIGKILL')
+    console.log(`[whatsapp] Chrome PID ${pid} killed`)
+  } catch {
+    console.log(`[whatsapp] Chrome PID ${pid} was already dead`)
+  }
+}
+
 export async function restartWhatsApp() {
   console.log('[whatsapp] restarting client...')
-  
-  // Track the PID so we can explicitly force-kill it later
-  // Windows sometimes leaves zombie Chrome processes holding filesystem locks.
-  const pidToKill = client?.pupBrowser?.process()?.pid
-  if (pidToKill) {
-    console.log(`[whatsapp-debug] tracking chromium PID: ${pidToKill} for cleanup`)
+
+  // Capture Chrome PID BEFORE destroy() so we can force-kill it afterward
+  const chromePid = client?.pupBrowser?.process()?.pid
+  if (chromePid) {
+    console.log(`[whatsapp] captured Chrome PID ${chromePid} for cleanup`)
   }
 
   if (client) {
-    console.log('[whatsapp-debug] calling client.destroy()...')
+    console.log('[whatsapp] awaiting client.destroy()...')
     try {
       await client.destroy()
-      console.log('[whatsapp-debug] client.destroy() completed')
+      console.log('[whatsapp] client.destroy() completed')
     } catch (e) {
-      console.warn('[whatsapp-debug] error terminating previous client:', e.message)
+      console.warn('[whatsapp] client.destroy() error (non-fatal):', e.message)
     }
     client = null
   }
 
-  // Force-kill the process if it's still alive to release file locks on Windows
-  if (pidToKill) {
-    console.log(`[whatsapp-debug] asserting death of chromium PID: ${pidToKill}...`)
-    try {
-      process.kill(pidToKill, 'SIGKILL')
-      console.log(`[whatsapp-debug] sent SIGKILL to zombie chromium PID: ${pidToKill}`)
-    } catch (err) {
-      console.log(`[whatsapp-debug] chromium PID: ${pidToKill} was already dead`)
-    }
-  }
+  // Force-kill Chrome AFTER destroy() so Puppeteer gets a chance to clean up
+  // but Chrome can't hold filesystem locks any longer.
+  killChromePid(chromePid)
 
   status = 'initializing'
   currentQR = null
 
-  // Give Windows a brief moment to naturally release filesystem handles
-  console.log('[whatsapp-debug] allowing Windows 500ms to release file locks...')
-  await new Promise(r => setTimeout(r, 500))
+  // Allow Windows extra time to release NTFS handles after the kill
+  console.log('[whatsapp] waiting 1 500ms for Windows to release file locks...')
+  await delay(1500)
+
+  // In local dev, clean up leftover LocalAuth session files with retry/backoff
+  if (process.env.NODE_ENV !== 'production') {
+    await deleteLocalAuthDir()
+  }
 
   await initWhatsApp()
 }
@@ -183,11 +243,22 @@ export async function initWhatsApp() {
     setTimeout(() => restartWhatsApp(), 3000)
   })
 
+  // ── Disconnected: must be an async handler to fully await cleanup ─────
+  // Using a plain arrow → setTimeout was fire-and-forget; now we use an
+  // IIFE so the handler itself is async and destroy() is properly awaited.
   client.on('disconnected', reason => {
     status = 'initializing'
     console.warn('[whatsapp] disconnected:', reason)
-    // Auto-restart on unexpected disconnection
-    setTimeout(() => restartWhatsApp(), 5000)
+    // Schedule restart in a properly-awaited async IIFE
+    ;(async () => {
+      await delay(5000) // give WhatsApp a moment before restarting
+      try {
+        await restartWhatsApp()
+      } catch (err) {
+        // uncaughtException will catch this but log it here too for clarity
+        console.error('[whatsapp] restartWhatsApp() threw unexpectedly:', err.message)
+      }
+    })()
   })
 
   // ── Auto-kick non-subscribers on group join ─────────────────────────────
@@ -218,6 +289,13 @@ export async function initWhatsApp() {
     }
 
     const phone = joinedId.replace('@c.us', '')
+
+    // Skip the kick if this phone was whitelisted by sendWhatsAppInvite()
+    if (isPhoneWhitelisted(phone)) {
+      console.log(`[whatsapp] ${phone} is whitelisted — skipping auto-kick`)
+      return
+    }
+
     console.log(`[whatsapp] ${phone} joined group ${groupId} — checking subscription...`)
 
     // Check if they have an active subscription for this group
@@ -341,13 +419,16 @@ export async function sendWhatsAppInvite(phone, inviteLink, communityName, commu
       console.log(`[whatsapp] Attempting to auto-add ${phone} to group ${groupId}...`)
       const res = await chat.addParticipants([participantId])
       
-      // whatsapp-web.js doesn't throw on privacy blocks, it returns an object like { "234...": { code: 403 } }
+      // whatsapp-web.js returns { "234...": { code: 200, invite_V4: ... } } on success
+      // or { "234...": { code: 403 } } on privacy block — NOT the raw number 200.
       const addStatus = res && res[participantId]
-      if (addStatus && addStatus.code === 403) {
+      const addCode = addStatus?.code
+      console.log(`[whatsapp] addParticipants raw code for ${phone}:`, addCode, JSON.stringify(addStatus))
+      if (addCode === 403) {
         console.warn(`[whatsapp] Failed to auto-add ${phone} (Privacy restricted). Falling back to DM invite.`)
         addedDirectly = false
-      } else if (res && typeof res === 'object' && Object.values(res).some(v => v !== 200)) {
-        console.warn(`[whatsapp] Failed to auto-add ${phone} (Unknown code). Falling back to DM invite.`)
+      } else if (addCode !== 200) {
+        console.warn(`[whatsapp] Failed to auto-add ${phone} (code ${addCode}). Falling back to DM invite.`)
         addedDirectly = false
       } else {
         console.log(`[whatsapp] Successfully auto-added ${phone} to group!`)

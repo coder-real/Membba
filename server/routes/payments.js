@@ -85,6 +85,11 @@ router.post('/initialize', async (req, res) => {
 // CRITICAL: verify signature — skip and anyone can fake a payment.
 // ─────────────────────────────────────────────────────
 router.post('/webhook', async (req, res) => {
+  // Log immediately — confirms Render is receiving the event (before HMAC check)
+  let peekEvent
+  try { peekEvent = JSON.parse(req.body.toString()) } catch { peekEvent = null }
+  console.log('[webhook] hit:', peekEvent?.event || '(unparseable)', '| ref:', peekEvent?.data?.reference || 'n/a', '| ip:', req.ip)
+
   const signature = req.headers['x-paystack-signature']
   const rawBody = req.body // express.raw() Buffer
 

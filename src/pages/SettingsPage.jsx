@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import DashboardLayout from "../components/DashboardLayout";
 import toast from "react-hot-toast";
 import { supabase } from "../lib/supabase";
+import API_BASE from "../lib/api";
 
 const TABS = [
   { id: 'account', label: 'My account' },
@@ -23,55 +24,95 @@ export default function SettingsPage() {
   const [waQR, setWaQR] = useState(null);
   const [showQRModal, setShowQRModal] = useState(false);
   const [restarting, setRestarting] = useState(false);
-  const pollRef = useRef(null);
+  const pollRef = useRef(null);         // QR modal interval id
+  const statusIntervalRef = useRef(null); // background status interval id
+  const statusBackoffRef = useRef(6000);  // current background poll interval ms
+  const qrBackoffRef = useRef(4000);      // current QR poll interval ms
+
+  // ── Background status poll with exponential backoff on failure ────────
+  // Normal cadence: every 6 s. On network error: backs off up to 30 s.
+  // Resets to 6 s as soon as the backend responds again.
+  const scheduleStatusPoll = (intervalMs) => {
+    clearInterval(statusIntervalRef.current);
+    statusIntervalRef.current = setInterval(fetchWaStatus, intervalMs);
+  };
 
   useEffect(() => {
     fetchWaStatus();
-    const interval = setInterval(fetchWaStatus, 6000);
-    return () => clearInterval(interval);
+    scheduleStatusPoll(6000);
+    return () => clearInterval(statusIntervalRef.current);
   }, []);
 
   const fetchWaStatus = async () => {
     try {
-      const res = await fetch("/api/whatsapp/status");
+      const res = await fetch(`${API_BASE}/api/whatsapp/status`);
       const data = await res.json();
       setWaStatus(data.status);
+      // Backend is reachable — reset cadence to 6 s
+      if (statusBackoffRef.current !== 6000) {
+        statusBackoffRef.current = 6000;
+        scheduleStatusPoll(6000);
+      }
     } catch {
       setWaStatus("error");
+      // Backend unreachable (restarting) — back off, cap at 30 s
+      const next = Math.min(statusBackoffRef.current * 2, 30000);
+      statusBackoffRef.current = next;
+      scheduleStatusPoll(next);
     }
+  };
+
+  // ── QR modal poll with exponential backoff on failure ────────────────
+  const scheduleQRPoll = (intervalMs) => {
+    clearInterval(pollRef.current);
+    pollRef.current = setInterval(fetchQR, intervalMs);
   };
 
   const fetchQR = async () => {
     try {
-      const res = await fetch("/api/whatsapp/qr-data");
+      const res = await fetch(`${API_BASE}/api/whatsapp/qr-data`);
       const data = await res.json();
       setWaQR(data.qr || null);
       setWaStatus(data.status);
+      // Backend reachable — reset QR poll cadence to 4 s
+      if (qrBackoffRef.current !== 4000) {
+        qrBackoffRef.current = 4000;
+        scheduleQRPoll(4000);
+      }
       if (data.status === "authenticated") {
         setShowQRModal(false);
         clearInterval(pollRef.current);
         toast.success("WhatsApp connected! ✅");
       }
-    } catch {}
+    } catch {
+      // Backend restarting — back off exponentially, cap at 32 s
+      const next = Math.min(qrBackoffRef.current * 2, 32000);
+      qrBackoffRef.current = next;
+      scheduleQRPoll(next);
+    }
   };
 
   const openQRModal = () => {
+    qrBackoffRef.current = 4000;
     setShowQRModal(true);
     fetchQR();
-    pollRef.current = setInterval(fetchQR, 4000);
+    scheduleQRPoll(4000);
   };
 
   const closeQRModal = () => {
     setShowQRModal(false);
     clearInterval(pollRef.current);
+    qrBackoffRef.current = 4000;
   };
 
   const handleRestart = async () => {
     setRestarting(true);
     try {
-      await fetch("/api/whatsapp/restart", { method: "POST" });
+      await fetch(`${API_BASE}/api/whatsapp/restart`, { method: "POST" });
       toast.success("Restart signal sent");
-      await fetchWaStatus();
+      // Back off immediately after restart — server needs time to come back up
+      statusBackoffRef.current = 12000;
+      scheduleStatusPoll(12000);
     } catch {
       toast.error("Restart failed");
     }

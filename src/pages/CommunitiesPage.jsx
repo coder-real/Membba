@@ -8,6 +8,7 @@ import QRCode from 'qrcode'
 import { FaTelegram, FaWhatsapp } from 'react-icons/fa'
 import { HiOutlineLink, HiOutlinePencilSquare, HiOutlineTrash, HiOutlinePlusCircle, HiOutlineUsers } from 'react-icons/hi2'
 import Skeleton from '../components/ui/Skeleton'
+import API_BASE from '../lib/api'
 
 const formatDuration = (minutes) => {
   if (!minutes) return '—'
@@ -53,7 +54,7 @@ export default function CommunitiesPage() {
     const telegramComms = (data || []).filter(c => !c.platform || c.platform === 'telegram')
     const checks = await Promise.allSettled(
       telegramComms.map(c =>
-        fetch(`/api/telegram/check-admin/${c.telegram_chat_id}`)
+        fetch(`${API_BASE}/api/telegram/check-admin/${c.telegram_chat_id}`)
           .then(r => r.json())
           .then(d => ({ id: c.id, isAdmin: d.isAdmin }))
       )

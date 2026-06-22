@@ -7,7 +7,7 @@ import membersRouter from './routes/members.js'
 import whatsappRouter from './routes/whatsapp.js'
 import telegramRouter from './routes/telegram.js'
 import { processExpiredSubscriptions } from './services/subscription.js'
-import { startPolling } from './services/botPoller.js'
+import { startPolling, stopPolling } from './services/botPoller.js'
 import { registerWebhook } from './services/botWebhook.js'
 import { initWhatsApp } from './services/whatsapp.js'
 
@@ -20,6 +20,17 @@ process.on('uncaughtException', err => {
 process.on('unhandledRejection', reason => {
   console.error('[fatal] unhandled rejection prevented crash:', reason)
 })
+
+// ── Graceful shutdown — stop Telegram poller before exit ──────────────────
+// Prevents 409 Conflict on next startup by ensuring the old getUpdates
+// long-poll loop is stopped before Node process terminates.
+const shutdown = (signal) => {
+  console.log(`[server] ${signal} received — stopping Telegram poller and exiting`)
+  stopPolling()
+  process.exit(0)
+}
+process.on('SIGINT',  () => shutdown('SIGINT'))   // Ctrl+C in terminal
+process.on('SIGTERM', () => shutdown('SIGTERM'))  // Render / Docker stop
 
 // .env is loaded via --env-file flag in the npm scripts (see package.json)
 
