@@ -2,25 +2,55 @@ import express from 'express'
 import { supabase } from '../lib/supabase.js'
 import {
   getWhatsAppStatus,
+  getWhatsAppQR,
+  getPairingCode,
   getQRImage,
   joinGroup,
   restartWhatsApp,
+  initWhatsApp,
 } from '../services/whatsapp.js'
 
 const router = express.Router()
 
-// ─────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 // GET /api/whatsapp/status
-// Returns current bot status: initializing | awaiting_qr | authenticated
-// ─────────────────────────────────────────────────────
+// Returns: { status, qr, pairingCode }
+// Status: 'initializing' | 'needs_scan' | 'needs_pairing_code' | 'syncing' | 'connected' | 'reconnecting'
+// ─────────────────────────────────────────────────────────────────────────────
 router.get('/status', (_req, res) => {
-  res.json({ status: getWhatsAppStatus() })
+  res.json({
+    status:      getWhatsAppStatus(),
+    qr:          getWhatsAppQR() || null,
+    pairingCode: getPairingCode() || null,
+  })
 })
 
-// ─────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/whatsapp/connect
+// Body: { method: 'qr' | 'pairing_code', phoneNumber?: string }
+// Starts the connection using the chosen auth method.
+// ─────────────────────────────────────────────────────────────────────────────
+router.post('/connect', async (req, res) => {
+  const { method, phoneNumber } = req.body || {}
+  const usePairingCode = method === 'pairing_code'
+
+  if (usePairingCode && !phoneNumber) {
+    return res.status(400).json({ message: 'phoneNumber is required for pairing_code method' })
+  }
+
+  try {
+    await restartWhatsApp()                                     // clean up any existing socket
+    await initWhatsApp({ usePairingCode, phoneNumber })
+    res.json({ ok: true, method })
+  } catch (err) {
+    console.error('[whatsapp/connect] error:', err.message)
+    res.status(500).json({ message: 'Failed to start WhatsApp connection' })
+  }
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
 // POST /api/whatsapp/restart
-// Terminates and reinitializes the WhatsApp client.
-// ─────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 router.post('/restart', async (_req, res) => {
   try {
     await restartWhatsApp()
@@ -31,27 +61,38 @@ router.post('/restart', async (_req, res) => {
   }
 })
 
-// ─────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 // GET /api/whatsapp/qr
-// Renders the QR code as an HTML page for browser scanning.
-// Protect with a secret in production: /api/whatsapp/qr?secret=YOUR_SECRET
-// ─────────────────────────────────────────────────────
+// Browser-friendly HTML QR page — supports new statuses
+// ─────────────────────────────────────────────────────────────────────────────
 router.get('/qr', async (req, res) => {
-  const status = getWhatsAppStatus()
+  const s = getWhatsAppStatus()
 
-  if (status === 'authenticated') {
+  if (s === 'connected') {
     return res.send(`
       <html><body style="font-family:sans-serif;text-align:center;padding:40px">
-        <h2>✅ WhatsApp Bot Authenticated</h2>
+        <h2>✅ WhatsApp Bot Connected</h2>
         <p>The bot is online and ready. No QR scan needed.</p>
       </body></html>
     `)
   }
 
-  if (status === 'initializing') {
+  if (s === 'needs_pairing_code') {
+    const code = getPairingCode()
     return res.send(`
       <html><body style="font-family:sans-serif;text-align:center;padding:40px">
-        <h2>⏳ Initializing...</h2>
+        <h2>📱 Enter Pairing Code in WhatsApp</h2>
+        <p style="font-size:36px;letter-spacing:8px;font-weight:bold">${code || '...'}</p>
+        <p>Open WhatsApp → Linked Devices → Link a Device → Enter this code</p>
+        <script>setTimeout(() => location.reload(), 5000)</script>
+      </body></html>
+    `)
+  }
+
+  if (s === 'initializing' || s === 'reconnecting') {
+    return res.send(`
+      <html><body style="font-family:sans-serif;text-align:center;padding:40px">
+        <h2>⏳ ${s === 'reconnecting' ? 'Reconnecting…' : 'Initializing…'}</h2>
         <p>The WhatsApp client is starting up. Refresh in a few seconds.</p>
         <script>setTimeout(() => location.reload(), 3000)</script>
       </body></html>
@@ -87,25 +128,22 @@ router.get('/qr', async (req, res) => {
   `)
 })
 
-// ─────────────────────────────────────────────────────
-// GET /api/whatsapp/qr-data
-// Returns JSON with status and base64 QR data
-// ─────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/whatsapp/qr-data   — JSON for the React SettingsPage
+// ─────────────────────────────────────────────────────────────────────────────
 router.get('/qr-data', async (_req, res) => {
-  const status = getWhatsAppStatus()
-  if (status === 'authenticated') {
-    return res.json({ status, qr: null })
-  }
-  const qrDataUrl = await getQRImage()
-  res.json({ status, qr: qrDataUrl || null })
+  const s = getWhatsAppStatus()
+  res.json({
+    status:      s,
+    qr:          getWhatsAppQR() || null,
+    pairingCode: getPairingCode() || null,
+  })
 })
 
-// ─────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 // POST /api/whatsapp/join-group
-// Creator calls this after adding the bot to their group.
-// Bot joins the group and saves the group ID to the community.
 // Body: { invite_link, community_id }
-// ─────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 router.post('/join-group', async (req, res) => {
   const { invite_link, community_id } = req.body
 
@@ -119,7 +157,6 @@ router.post('/join-group', async (req, res) => {
   try {
     const groupId = await joinGroup(invite_link)
 
-    // Save to community if community_id provided
     if (community_id && groupId) {
       await supabase
         .from('communities')

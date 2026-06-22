@@ -22,12 +22,16 @@ export default function SettingsPage() {
   // WhatsApp Status
   const [waStatus, setWaStatus] = useState("initializing");
   const [waQR, setWaQR] = useState(null);
+  const [waPairingCode, setWaPairingCode] = useState(null);
+  const [connectMethod, setConnectMethod] = useState("qr");  // 'qr' | 'pairing_code'
+  const [phoneInput, setPhoneInput] = useState("");
+  const [connecting, setConnecting] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [restarting, setRestarting] = useState(false);
-  const pollRef = useRef(null);         // QR modal interval id
-  const statusIntervalRef = useRef(null); // background status interval id
-  const statusBackoffRef = useRef(6000);  // current background poll interval ms
-  const qrBackoffRef = useRef(4000);      // current QR poll interval ms
+  const pollRef = useRef(null);
+  const statusIntervalRef = useRef(null);
+  const statusBackoffRef = useRef(6000);
+  const qrBackoffRef = useRef(4000);
 
   // ── Background status poll with exponential backoff on failure ────────
   // Normal cadence: every 6 s. On network error: backs off up to 30 s.
@@ -73,13 +77,14 @@ export default function SettingsPage() {
       const res = await fetch(`${API_BASE}/api/whatsapp/qr-data`);
       const data = await res.json();
       setWaQR(data.qr || null);
+      setWaPairingCode(data.pairingCode || null);
       setWaStatus(data.status);
       // Backend reachable — reset QR poll cadence to 4 s
       if (qrBackoffRef.current !== 4000) {
         qrBackoffRef.current = 4000;
         scheduleQRPoll(4000);
       }
-      if (data.status === "authenticated") {
+      if (data.status === "connected") {
         setShowQRModal(false);
         clearInterval(pollRef.current);
         toast.success("WhatsApp connected! ✅");
@@ -110,13 +115,35 @@ export default function SettingsPage() {
     try {
       await fetch(`${API_BASE}/api/whatsapp/restart`, { method: "POST" });
       toast.success("Restart signal sent");
-      // Back off immediately after restart — server needs time to come back up
       statusBackoffRef.current = 12000;
       scheduleStatusPoll(12000);
     } catch {
       toast.error("Restart failed");
     }
     setRestarting(false);
+  };
+
+  const handleConnect = async () => {
+    if (connectMethod === 'pairing_code' && !phoneInput.trim()) {
+      toast.error('Enter your WhatsApp phone number first');
+      return;
+    }
+    setConnecting(true);
+    try {
+      await fetch(`${API_BASE}/api/whatsapp/connect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          method: connectMethod,
+          phoneNumber: phoneInput.replace(/\D/g, ''),
+        }),
+      });
+      // Start polling for result
+      openQRModal();
+    } catch {
+      toast.error('Failed to start WhatsApp connection');
+    }
+    setConnecting(false);
   };
 
   const handleUpdateProfile = async (e) => {
@@ -265,31 +292,83 @@ export default function SettingsPage() {
 
               {/* WhatsApp Bot */}
               <div className="bg-[#111] border border-white/[0.02] rounded-[8px] p-7 shadow-sm">
+                {/* Header with status badge */}
                 <div className="flex items-center justify-between mb-2">
                   <h2 className="text-[15px] font-bold text-[#f2f3f5]">WhatsApp Bot</h2>
-                  <span className={`flex items-center gap-1.5 text-[14px] font-semibold ${waStatus === 'authenticated' ? 'text-[#9FFF57]' : waStatus === 'awaiting_qr' ? 'text-yellow-400' : 'text-red-400'}`}>
-                    <span className={`w-2 h-2 rounded-full ${waStatus === 'authenticated' ? 'bg-[#9FFF57]' : waStatus === 'awaiting_qr' ? 'bg-yellow-400' : 'bg-red-400'}`}></span>
-                    {waStatus === 'authenticated' ? 'Connected' : waStatus === 'awaiting_qr' ? 'Needs Scan' : 'Offline'}
+                  <span className={`flex items-center gap-1.5 text-[13px] font-semibold capitalize ${
+                    waStatus === 'connected'     ? 'text-[#9FFF57]' :
+                    waStatus === 'syncing'       ? 'text-[#229ED9]' :
+                    waStatus === 'reconnecting'  ? 'text-yellow-400' :
+                    waStatus === 'needs_scan' || waStatus === 'needs_pairing_code'
+                                                ? 'text-yellow-400' : 'text-red-400'
+                  }`}>
+                    <span className={`w-2 h-2 rounded-full ${
+                      waStatus === 'connected'     ? 'bg-[#9FFF57] animate-pulse' :
+                      waStatus === 'syncing'       ? 'bg-[#229ED9]' :
+                      waStatus === 'reconnecting'  ? 'bg-yellow-400 animate-pulse' :
+                      waStatus === 'needs_scan' || waStatus === 'needs_pairing_code'
+                                                  ? 'bg-yellow-400' : 'bg-red-400'
+                    }`} />
+                    {waStatus === 'connected'    ? 'Connected' :
+                     waStatus === 'syncing'      ? 'Syncing…' :
+                     waStatus === 'reconnecting' ? 'Reconnecting…' :
+                     waStatus === 'needs_scan'   ? 'Needs Scan' :
+                     waStatus === 'needs_pairing_code' ? 'Enter Pairing Code' : 'Offline'}
                   </span>
                 </div>
-                <p className="text-[14px] text-[#96989d] mb-4">
-                  The WhatsApp client runs on a dedicated number linked to this server. Scan the QR code below to authenticate it.
+
+                <p className="text-[14px] text-[#96989d] mb-5">
+                  The WhatsApp client runs on a dedicated number. Choose how to authenticate:
                 </p>
+
+                {/* Method Toggle */}
+                {waStatus !== 'connected' && (
+                  <div className="mb-5">
+                    <div className="flex gap-2 mb-4">
+                      {['qr', 'pairing_code'].map(m => (
+                        <button
+                          key={m}
+                          onClick={() => setConnectMethod(m)}
+                          className={`px-3 py-1.5 rounded-[4px] text-[13px] font-semibold transition-colors ${
+                            connectMethod === m
+                              ? 'bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/40'
+                              : 'bg-white/[0.04] text-[#96989d] border border-white/[0.07] hover:text-[#dbdee1]'
+                          }`}
+                        >
+                          {m === 'qr' ? '📷 Scan QR' : '📱 Phone Number'}
+                        </button>
+                      ))}
+                    </div>
+
+                    {connectMethod === 'pairing_code' && (
+                      <input
+                        type="tel"
+                        value={phoneInput}
+                        onChange={e => setPhoneInput(e.target.value)}
+                        placeholder="e.g. 2348012345678 (with country code, no +)"
+                        className="w-full bg-[#1e1f22] border border-white/[0.08] rounded-[4px] px-3.5 py-2.5 text-[14px] text-[#dbdee1] placeholder-[#72767d] focus:outline-none focus:border-white/20 mb-3"
+                      />
+                    )}
+                  </div>
+                )}
+
+                {/* Action buttons */}
                 <div className="flex flex-wrap gap-2.5">
-                  {waStatus !== "authenticated" && (
+                  {waStatus !== 'connected' && (
                     <button
-                      onClick={openQRModal}
-                      className="inline-flex items-center gap-2 border border-[#25D366]/50 text-[#25D366] px-4 py-2 rounded-[4px] text-[14px] font-medium hover:bg-[#25D366]/5 transition-colors"
+                      onClick={handleConnect}
+                      disabled={connecting}
+                      className="inline-flex items-center gap-2 border border-[#25D366]/50 text-[#25D366] px-4 py-2 rounded-[4px] text-[14px] font-medium hover:bg-[#25D366]/5 disabled:opacity-50 transition-colors"
                     >
-                      Connect WhatsApp
+                      {connecting ? 'Starting…' : connectMethod === 'qr' ? 'Connect via QR' : 'Get Pairing Code'}
                     </button>
                   )}
-                  {waStatus === "authenticated" && (
+                  {waStatus === 'connected' && (
                     <button
                       onClick={openQRModal}
                       className="inline-flex items-center gap-2 border border-white/[0.1] text-[#b5bac1] px-4 py-2 rounded-[4px] text-[14px] font-medium hover:bg-white/[0.02] transition-colors"
                     >
-                      View QR Code
+                      View Status
                     </button>
                   )}
                   <button
@@ -297,7 +376,7 @@ export default function SettingsPage() {
                     disabled={restarting}
                     className="inline-flex items-center gap-2 border border-white/[0.1] text-[#b5bac1] px-4 py-2 rounded-[4px] text-[14px] font-medium hover:bg-white/[0.02] disabled:opacity-50 transition-colors"
                   >
-                    {restarting ? "Restarting..." : "↺ Restart Client"}
+                    {restarting ? 'Restarting...' : '↺ Restart Client'}
                   </button>
                 </div>
               </div>
@@ -306,7 +385,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* QR Modal */}
+      {/* Connect Modal — shows QR or pairing code depending on method and status */}
       {showQRModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
           <div className="bg-[#0a0a0a] border border-white/[0.1] rounded-[8px] p-8 pt-10 w-full max-w-sm text-center shadow-2xl relative">
@@ -319,32 +398,48 @@ export default function SettingsPage() {
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
             </button>
-            <h3 className="text-[18px] font-bold text-[#f2f3f5] mb-1">
-              Connect WhatsApp
-            </h3>
-            <p className="text-[14px] text-[#96989d] mb-6">
-              Open WhatsApp → Linked Devices → Link a Device → scan this QR
-            </p>
-            {waStatus === "authenticated" ? (
+
+            <h3 className="text-[18px] font-bold text-[#f2f3f5] mb-1">Connect WhatsApp</h3>
+
+            {waStatus === 'connected' ? (
               <div className="py-8">
-                <p className="text-[32px] mb-2">✅</p>
-                <p className="text-[15px] font-bold text-[#9FFF57]">
-                  Connected!
+                <p className="text-[40px] mb-3">✅</p>
+                <p className="text-[16px] font-bold text-[#9FFF57]">Connected!</p>
+                <p className="text-[14px] text-[#96989d] mt-1">The bot is online and ready.</p>
+              </div>
+            ) : waStatus === 'syncing' ? (
+              <div className="py-8 flex flex-col items-center gap-3">
+                <svg className="animate-spin text-[#229ED9]" xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <p className="text-[#dbdee1] font-semibold">Syncing…</p>
+                <p className="text-[14px] text-[#96989d]">Keep WhatsApp open on your phone.</p>
+              </div>
+            ) : waStatus === 'needs_pairing_code' && waPairingCode ? (
+              <div className="py-6">
+                <p className="text-[14px] text-[#96989d] mb-4">
+                  Open WhatsApp → Linked Devices → Link a Device → Enter this code:
                 </p>
+                <p className="text-[38px] font-black tracking-[0.15em] text-white mb-4">{waPairingCode}</p>
+                <p className="text-[13px] text-[#72767d]">Code refreshes automatically if unused.</p>
               </div>
             ) : waQR ? (
-              <img
-                src={waQR}
-                alt="WhatsApp QR"
-                className="w-56 h-56 mx-auto rounded-[8px] border border-white/[0.06] mb-2"
-              />
+              <>
+                <p className="text-[14px] text-[#96989d] mb-4">Open WhatsApp → Linked Devices → Link a Device → scan this QR</p>
+                <img
+                  src={waQR}
+                  alt="WhatsApp QR"
+                  className="w-56 h-56 mx-auto rounded-[8px] border border-white/[0.06] mb-2"
+                />
+              </>
             ) : (
               <div className="py-10 flex flex-col items-center gap-3">
                 <svg className="animate-spin text-[#25D366]" xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                 </svg>
-                <p className="text-[#96989d] text-[14px]">Generating QR code…</p>
+                <p className="text-[#96989d] text-[14px]">Starting connection…</p>
               </div>
             )}
           </div>

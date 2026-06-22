@@ -1,54 +1,23 @@
-import pkg from 'whatsapp-web.js'
-const { Client, RemoteAuth, LocalAuth } = pkg
-import puppeteer from 'puppeteer'
+import makeWASocket, {
+  useMultiFileAuthState,
+  DisconnectReason,
+  makeCacheableSignalKeyStore,
+  fetchLatestBaileysVersion,
+} from '@whiskeysockets/baileys'
+import { Boom } from '@hapi/boom'
+import pino from 'pino'
 import qrcode from 'qrcode'
-import fs from 'fs'
-import path from 'path'
 import { supabase } from '../lib/supabase.js'
 
-// ── Supabase-backed session store for RemoteAuth ──────────────────────────
-// whatsapp-web.js calls save/extract/delete with { session, data }
-// where `data` is a Buffer (zip of the .wwebjs_auth folder).
-class SupabaseStore {
-  async sessionExists({ session }) {
-    const { data } = await supabase
-      .from('whatsapp_sessions')
-      .select('id')
-      .eq('id', session)
-      .maybeSingle()
-    return !!data
-  }
+// ── Status & state ────────────────────────────────────────────────────────────
+// 'initializing' | 'needs_scan' | 'needs_pairing_code' | 'syncing' | 'connected' | 'reconnecting'
+let status = 'initializing'
+let currentQRDataUrl = null   // base64 PNG for the frontend
+let pairingCode = null        // 8-digit code for phone-number login
+let sock = null
+let connectionOptions = {}    // saved so reconnects use the same options
 
-  async save({ session, data }) {
-    const encoded = Buffer.isBuffer(data) ? data.toString('base64') : data
-    await supabase.from('whatsapp_sessions').upsert({
-      id: session,
-      session: encoded,
-      updated_at: new Date().toISOString(),
-    })
-  }
-
-  async extract({ session }) {
-    const { data } = await supabase
-      .from('whatsapp_sessions')
-      .select('session')
-      .eq('id', session)
-      .single()
-    if (!data) return null
-    return Buffer.from(data.session, 'base64')
-  }
-
-  async delete({ session }) {
-    await supabase.from('whatsapp_sessions').delete().eq('id', session)
-  }
-}
-
-let currentQR = null
-let status = 'initializing' // 'initializing' | 'needs_scan' | 'syncing' | 'connected'
-let client = null
-
-// ── Phone whitelist for auto-added members (prevents kick-on-join) ────────
-// Phones registered here are skipped by the group_join auto-kick for 90s.
+// ── Phone whitelist — skip auto-kick for members we just added ────────────────
 const phoneWhitelist = new Map() // phone → expiry timestamp
 
 export function whitelistPhone(phone) {
@@ -59,452 +28,28 @@ export function whitelistPhone(phone) {
 function isPhoneWhitelisted(phone) {
   const expiry = phoneWhitelist.get(phone)
   if (!expiry) return false
-  if (Date.now() > expiry) {
-    phoneWhitelist.delete(phone)
-    return false
-  }
+  if (Date.now() > expiry) { phoneWhitelist.delete(phone); return false }
   return true
 }
 
-// Random delay — reduces WhatsApp ban risk
+// ── Helpers ───────────────────────────────────────────────────────────────────
 const delay = ms => new Promise(r => setTimeout(r, ms))
-const randomDelay = () => delay(Math.random() * 3000 + 1000) // 1–4 seconds
+const randomDelay = () => delay(Math.random() * 2000 + 500) // 0.5–2.5 s
 
 export function getWhatsAppStatus() { return status }
-export function getWhatsAppQR() { return currentQR }
+export function getWhatsAppQR()     { return currentQRDataUrl }
+export function getPairingCode()    { return pairingCode }
 
-// ── Retry/backoff helper for Windows file-lock errors ────────────────────
-// Retries an async operation up to `maxAttempts` times when it fails with
-// EBUSY or EPERM (Windows locks files held by Chrome/IndexedDB).
-async function withRetry(fn, { maxAttempts = 5, baseDelayMs = 500, label = 'op' } = {}) {
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      return await fn()
-    } catch (err) {
-      const isLock = err.code === 'EBUSY' || err.code === 'EPERM' || err.code === 'ENOTEMPTY'
-      if (!isLock || attempt === maxAttempts) {
-        console.warn(`[whatsapp] ${label} failed after ${attempt} attempt(s):`, err.message)
-        return // swallow — cleanup failures must never crash the server
-      }
-      const wait = baseDelayMs * 2 ** (attempt - 1) // 500, 1000, 2000, 4000 …
-      console.warn(`[whatsapp] ${label} attempt ${attempt} got ${err.code} — retrying in ${wait}ms`)
-      await delay(wait)
-    }
-  }
-}
-
-// ── Delete local .wwebjs_auth session folder with retry/backoff ───────────
-async function deleteLocalAuthDir() {
-  const authDir = path.resolve('.wwebjs_auth')
-  await withRetry(
-    () => fs.promises.rm(authDir, { recursive: true, force: true }),
-    { label: 'deleteLocalAuthDir', maxAttempts: 6, baseDelayMs: 800 }
-  )
-  console.log('[whatsapp] .wwebjs_auth cleaned up (or was absent)')
-}
-
-// ── Force-kill a Chromium PID to release Windows file locks ──────────────
-function killChromePid(pid) {
-  if (!pid) return
-  console.log(`[whatsapp] sending SIGKILL to Chrome PID ${pid}`)
-  try {
-    process.kill(pid, 'SIGKILL')
-    console.log(`[whatsapp] Chrome PID ${pid} killed`)
-  } catch {
-    console.log(`[whatsapp] Chrome PID ${pid} was already dead`)
-  }
-}
-
-export async function restartWhatsApp() {
-  console.log('[whatsapp] restarting client...')
-
-  // Capture Chrome PID BEFORE destroy() so we can force-kill it afterward
-  const chromePid = client?.pupBrowser?.process()?.pid
-  if (chromePid) {
-    console.log(`[whatsapp] captured Chrome PID ${chromePid} for cleanup`)
-  }
-
-  if (client) {
-    console.log('[whatsapp] awaiting client.destroy()...')
-    try {
-      client.removeAllListeners() // Layer 2: Prevent duplicate listeners on restart loop
-      await client.destroy()
-      console.log('[whatsapp] client.destroy() completed')
-    } catch (e) {
-      console.warn('[whatsapp] client.destroy() error (non-fatal):', e.message)
-    }
-    client = null
-  }
-
-  // Force-kill Chrome AFTER destroy() so Puppeteer gets a chance to clean up
-  // but Chrome can't hold filesystem locks any longer.
-  killChromePid(chromePid)
-
-  status = 'initializing'
-  currentQR = null
-
-  // Allow Windows extra time to release NTFS handles after the kill
-  console.log('[whatsapp] waiting 1 500ms for Windows to release file locks...')
-  await delay(1500)
-
-  // In local dev, clean up leftover LocalAuth session files with retry/backoff
-  if (process.env.NODE_ENV !== 'production') {
-    await deleteLocalAuthDir()
-  }
-
-  await initWhatsApp()
-}
-
-/**
- * Initialize the WhatsApp client.
- * Session is persisted to Supabase via RemoteAuth — survives Render redeploys.
- * On first run: shows QR to scan. After that: auto-restores from Supabase.
- */
-export async function initWhatsApp() {
-  // whatsapp-web.js bundles its own puppeteer (v146) which looks for a different
-  // Chrome version than what we install. We explicitly pass our standalone puppeteer's
-  // executablePath so both use the same binary (downloaded via .puppeteerrc.cjs).
-  let executablePath
-  try {
-    executablePath = puppeteer.executablePath()
-    if (executablePath && typeof executablePath.then === 'function') {
-      executablePath = await executablePath
-    }
-  } catch {
-    executablePath = undefined
-  }
-  console.log('[whatsapp] using chrome at:', executablePath || 'default (system)')
-
-  // On Render (production), we must use RemoteAuth to persist session in Supabase.
-  // Locally (Windows), RemoteAuth causes EBUSY crashes when copying locked IndexedDB files.
-  const authStrategy = process.env.NODE_ENV === 'production'
-    ? new RemoteAuth({
-        store: new SupabaseStore(),
-        backupSyncIntervalMs: 300_000,
-      })
-    : new LocalAuth()
-
-  client = new Client({
-    authStrategy,
-    puppeteer: {
-      headless: true,
-      executablePath: executablePath || undefined,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',       // use /tmp instead of /dev/shm (crucial on Render)
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',                   // prevents extra chrome helper processes
-        '--single-process',              // run Chrome in a single process (saves ~100MB)
-        '--disable-gpu',
-        '--disable-extensions',
-        '--disable-software-rasterizer', // Aggressive memory flag
-        '--disable-background-networking',
-        '--disable-default-apps',
-        '--disable-sync',
-        '--disable-translate',
-        '--hide-scrollbars',
-        '--metrics-recording-only',
-        '--mute-audio',
-        '--safebrowsing-disable-auto-update',
-        '--js-flags=--max-old-space-size=256', // cap V8 heap at 256MB
-      ],
-    },
-  })
-
-  client.on('qr', qr => {
-    currentQR = qr
-    status = 'needs_scan' // Layer 4: Reflect exact state
-    console.log('[whatsapp] QR ready — visit /api/whatsapp/qr to scan')
-  })
-
-  client.on('authenticated', () => {
-    currentQR = null
-    status = 'syncing' // Layer 4
-    console.log('[whatsapp] authenticated ✅, syncing messages...')
-  })
-
-  client.on('ready', async () => {
-    status = 'connected' // Layer 4
-    console.log('[whatsapp] client ready — bot is online')
-    // Layer 3: Drain queued invites
-    await drainPendingInvites()
-  })
-
-  client.on('auth_failure', async msg => {
-    status = 'needs_scan'
-    currentQR = null
-    console.error('[whatsapp] auth failure — clearing stale session and restarting for fresh QR:', msg)
-    // Wipe the stored session so RemoteAuth won't try to restore it again
-    try {
-      await supabase.from('whatsapp_sessions').delete().neq('id', '__placeholder__')
-      console.log('[whatsapp] stale sessions cleared from Supabase')
-    } catch (e) {
-      console.warn('[whatsapp] could not clear sessions:', e.message)
-    }
-    // Wait a moment then restart so a new QR is generated
-    setTimeout(() => restartWhatsApp(), 3000)
-  })
-
-  // ── Disconnected: must be an async handler to fully await cleanup ─────
-  // Using a plain arrow → setTimeout was fire-and-forget; now we use an
-  // IIFE so the handler itself is async and destroy() is properly awaited.
-  client.on('disconnected', reason => {
-    status = 'initializing'
-    console.warn('[whatsapp] disconnected:', reason)
-    // Schedule restart in a properly-awaited async IIFE
-    ;(async () => {
-      await delay(5000) // give WhatsApp a moment before restarting
-      try {
-        await restartWhatsApp()
-      } catch (err) {
-        // uncaughtException will catch this but log it here too for clarity
-        console.error('[whatsapp] restartWhatsApp() threw unexpectedly:', err.message)
-      }
-    })()
-  })
-
-  // ── Auto-kick non-subscribers on group join ─────────────────────────────
-  // Fires whenever ANY participant joins a group the bot is in.
-  // If they don't have an active subscription → remove them immediately.
-  client.on('group_join', async notification => {
-    const groupId = notification.chatId
-    const joinedId = notification.id?.participant // "2348012345678@c.us"
-
-    if (!joinedId) return
-
-    // Ignore the bot joining its own group (handled separately)
-    const me = client.info?.wid?._serialized
-    if (joinedId === me) {
-      console.log('[whatsapp] bot joined group:', groupId)
-      // Save group ID to unregistered WhatsApp community if needed
-      const { data: communities } = await supabase
-        .from('communities')
-        .select('id, name')
-        .eq('platform', 'whatsapp')
-        .is('whatsapp_group_id', null)
-      if (communities?.length) {
-        const latest = communities[0]
-        await supabase.from('communities').update({ whatsapp_group_id: groupId }).eq('id', latest.id)
-        console.log(`[whatsapp] saved group ${groupId} to community "${latest.name}"`)
-      }
-      return
-    }
-
-    const phone = joinedId.replace('@c.us', '')
-
-    // Skip the kick if this phone was whitelisted by sendWhatsAppInvite()
-    if (isPhoneWhitelisted(phone)) {
-      console.log(`[whatsapp] ${phone} is whitelisted — skipping auto-kick`)
-      return
-    }
-
-    console.log(`[whatsapp] ${phone} joined group ${groupId} — checking subscription...`)
-
-    // Check if they have an active subscription for this group
-    const { data: sub } = await supabase
-      .from('subscriptions')
-      .select('id')
-      .eq('whatsapp_phone', phone)
-      .eq('status', 'active')
-      .in('community_id', (
-        // Sub-select: communities that have this group ID
-        await supabase
-          .from('communities')
-          .select('id')
-          .eq('whatsapp_group_id', groupId)
-          .then(r => r.data?.map(c => c.id) || [])
-      ))
-      .maybeSingle()
-
-    if (!sub) {
-      // Not a paying subscriber — remove immediately
-      console.warn(`[whatsapp] non-subscriber ${phone} joined group ${groupId} — kicking`)
-      try {
-        const chat = await client.getChatById(groupId)
-        await chat.removeParticipants([joinedId])
-        // Optionally message them explaining why
-        await client.sendMessage(joinedId,
-          `⛔ You've been removed from this group because you don't have an active subscription.\n\nJoin here to pay and get access.`
-        )
-        console.log(`[whatsapp] kicked non-subscriber ${phone}`)
-      } catch (err) {
-        console.error(`[whatsapp] failed to kick non-subscriber ${phone}:`, err.message)
-      }
-    } else {
-      console.log(`[whatsapp] ${phone} is a valid subscriber ✅`)
-    }
-  })
-
-  try {
-    await client.initialize()
-  } catch (err) {
-    console.error('[whatsapp] initialize error:', err.message)
-  }
-}
-
-/**
- * Join a WhatsApp group via invite link.
- * Returns the group's internal ID.
- */
-export async function joinGroup(inviteLink) {
-  if (!client || status !== 'authenticated') {
-    throw new Error('WhatsApp client not ready — scan the QR code first')
-  }
-  const code = inviteLink.split('chat.whatsapp.com/')[1]?.split(/[?#]/)[0]
-  if (!code) throw new Error('Invalid WhatsApp invite link')
-
-  const groupId = await client.acceptInvite(code)
-  console.log('[whatsapp] joined group:', groupId)
-  return groupId
-}
-
-/**
- * Send a WhatsApp DM to a phone number.
- */
-export async function sendWhatsAppMessage(phone, text) {
-  if (!client || status !== 'authenticated') {
-    console.warn('[whatsapp] client not ready, skipping message to', phone)
-    return
-  }
-  const chatId = `${phone}@c.us`
-  try {
-    await randomDelay()
-    await client.sendMessage(chatId, text)
-    console.log(`[whatsapp] message sent to ${phone}`)
-  } catch (err) {
-    console.error(`[whatsapp] sendMessage to ${phone} failed:`, err.message)
-    throw err
-  }
-}
-
-/**
- * Revoke the current group invite link and generate + save a fresh one.
- * Called after every subscriber invite to prevent link sharing.
- */
-async function revokeAndRefreshGroupLink(groupId, communityId) {
-  try {
-    const chat = await client.getChatById(groupId)
-    await chat.revokeInvite()                      // old link dies instantly
-    const newCode = await chat.getInviteCode()     // get fresh code
-    const newLink = `https://chat.whatsapp.com/${newCode}`
-
-    // Save the new link to the community so the next subscriber gets the fresh one
-    await supabase
-      .from('communities')
-      .update({ whatsapp_group_invite_link: newLink })
-      .eq('id', communityId)
-
-    console.log(`[whatsapp] invite link rotated for community ${communityId}`)
-    return newLink
-  } catch (err) {
-    // Non-fatal — subscriber already received their link
-    console.error('[whatsapp] failed to revoke/refresh invite link:', err.message)
-  }
-}
-
-/**
- * Send invite link to a new subscriber, then immediately rotate the group link.
- * communityId is required to save the new link after rotation.
- */
-export async function sendWhatsAppInvite(phone, inviteLink, communityName, communityId, groupId, customMessage) {
-  let addedDirectly = false
-
-  if (groupId && client && status === 'authenticated') {
-    try {
-      const chat = await client.getChatById(groupId)
-      const participantId = `${phone}@c.us`
-
-      // Register in whitelist BEFORE adding — the group_join event fires
-      // asynchronously and the @lid mapping may differ from the real phone.
-      // This 90-second window lets group_join skip the kick for this member.
-      whitelistPhone(phone)
-      console.log(`[whatsapp] Attempting to auto-add ${phone} to group ${groupId}...`)
-      const res = await chat.addParticipants([participantId])
-      
-      // whatsapp-web.js returns { "234...": { code: 200, invite_V4: ... } } on success
-      // or { "234...": { code: 403 } } on privacy block — NOT the raw number 200.
-      const addStatus = res && res[participantId]
-      const addCode = addStatus?.code
-      console.log(`[whatsapp] addParticipants raw code for ${phone}:`, addCode, JSON.stringify(addStatus))
-      if (addCode === 403) {
-        console.warn(`[whatsapp] Failed to auto-add ${phone} (Privacy restricted). Falling back to DM invite.`)
-        addedDirectly = false
-      } else if (addCode !== 200) {
-        console.warn(`[whatsapp] Failed to auto-add ${phone} (code ${addCode}). Falling back to DM invite.`)
-        addedDirectly = false
-      } else {
-        console.log(`[whatsapp] Successfully auto-added ${phone} to group!`)
-        addedDirectly = true
-
-        // Send a confirmation DM so they know why they were mysteriously added
-        const defaultWelcome = `🎉 Welcome! You have been automatically added to the WhatsApp Group for *${communityName}* by the admin.\n\nPlease check your chat list to start participating!`
-        const welcomeText = customMessage || defaultWelcome
-        await sendWhatsAppMessage(phone, welcomeText)
-      }
-
-    } catch (err) {
-      console.warn(`[whatsapp] Failed to auto-add ${phone}:`, err.message)
-    }
-  }
-
-  if (addedDirectly) {
-    // We don't need to send the invite link or refresh it
-    return
-  } else {
-    // Fallback: If their privacy settings block being added, send the invite link via DM
-    const defaultWelcome = `🎉 Welcome! Join the *${communityName}* community here:`
-    const welcomeText = customMessage || defaultWelcome
-    const text = `${welcomeText}\n\n${inviteLink}\n\n_Note: Save this number to your contacts if the link is not clickable._`
-    await sendWhatsAppMessage(phone, text)
-
-    // Revoke and refresh the group link if possible to prevent sharing
-    if (groupId && communityId && inviteLink) {
-      await revokeAndRefreshGroupLink(groupId, communityId)
-    }
-  }
-}
-
-/**
- * Remove a subscriber from a WhatsApp group.
- */
-export async function removeWhatsAppMember(groupId, phone) {
-  if (!client || status !== 'connected') {
-    throw new Error('WhatsApp client not ready')
-  }
-  const participantId = `${phone}@c.us`
-  try {
-    const chat = await client.getChatById(groupId)
-    await chat.removeParticipants([participantId])
-    console.log(`[whatsapp] removed ${phone} from group ${groupId}`)
-  } catch (err) {
-    console.error(`[whatsapp] removeParticipants failed:`, err.message)
-    throw err
-  }
-}
-
-/**
- * Generate QR code image as data URL for browser scanning.
- */
-export async function getQRImage() {
-  if (!currentQR) return null
-  return await qrcode.toDataURL(currentQR)
-}
-
-// ── Layer 3: Pending Invites Drain ──────────────────────────────────────────
+// ── Pending invite drain (called on every 'connected') ────────────────────────
 async function drainPendingInvites() {
-  console.log('[whatsapp] Draining pending invites queue...')
   const { data: pending, error } = await supabase
     .from('whatsapp_pending_invites')
     .select('*')
     .order('created_at', { ascending: true })
 
-  if (error || !pending?.length) {
-    return
-  }
+  if (error || !pending?.length) return
 
-  console.log(`[whatsapp] Found ${pending.length} pending invites to process.`)
+  console.log(`[whatsapp] draining ${pending.length} pending invite(s)`)
   for (const invite of pending) {
     try {
       await sendWhatsAppInvite(
@@ -513,13 +58,326 @@ async function drainPendingInvites() {
         invite.community_name,
         invite.community_id,
         invite.group_id,
-        invite.custom_message
+        invite.custom_message,
       )
-      // Delete from queue after success
       await supabase.from('whatsapp_pending_invites').delete().eq('id', invite.id)
-      console.log(`[whatsapp] Drained invite for ${invite.phone}`)
+      console.log(`[whatsapp] drained invite for ${invite.phone}`)
     } catch (err) {
-      console.error(`[whatsapp] Failed to process queued invite for ${invite.phone}:`, err.message)
+      console.error(`[whatsapp] failed to drain invite for ${invite.phone}:`, err.message)
     }
   }
+}
+
+// ── Core connection ───────────────────────────────────────────────────────────
+/**
+ * Start (or restart) the Baileys WebSocket connection.
+ * @param {object} opts
+ * @param {boolean} opts.usePairingCode  — skip QR, use phone-number pairing instead
+ * @param {string}  opts.phoneNumber     — E.164 number (digits only) for pairing code
+ */
+export async function initWhatsApp(opts = {}) {
+  connectionOptions = opts     // persist for auto-reconnects
+  const { usePairingCode = false, phoneNumber = null } = opts
+
+  // Baileys stores session in a local folder — on Render mount a persistent disk here
+  const AUTH_DIR = process.env.BAILEYS_AUTH_DIR || './baileys_auth'
+  const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR)
+
+  const { version } = await fetchLatestBaileysVersion()
+  console.log(`[whatsapp] Baileys v${version.join('.')} — starting...`)
+
+  sock = makeWASocket({
+    version,
+    auth: {
+      creds: state.creds,
+      keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' })),
+    },
+    logger: pino({ level: 'silent' }),     // suppress noisy Baileys output
+    printQRInTerminal: false,
+    browser: ['Membba', 'Chrome', '126.0'], // appear as a normal browser session
+    connectTimeoutMs: 30_000,
+    defaultQueryTimeoutMs: 60_000,
+    keepAliveIntervalMs: 25_000,
+    markOnlineOnConnect: false,            // don't show "online" in WhatsApp UI
+    syncFullHistory: false,               // don't pull message history (saves RAM)
+  })
+
+  // Persist credentials whenever they change (key rotations, etc.)
+  sock.ev.on('creds.update', saveCreds)
+
+  // ── Connection state machine ─────────────────────────────────────────────
+  sock.ev.on('connection.update', async update => {
+    const { connection, lastDisconnect, qr } = update
+
+    // QR code path
+    if (qr && !usePairingCode) {
+      try {
+        currentQRDataUrl = await qrcode.toDataURL(qr)
+      } catch { currentQRDataUrl = null }
+      status = 'needs_scan'
+      console.log('[whatsapp] QR ready — visit /api/whatsapp/qr to scan')
+    }
+
+    // Pairing code path — requested once after socket is open but not yet registered
+    if (
+      usePairingCode && phoneNumber &&
+      !sock.authState.creds.registered &&
+      connection !== 'open'
+    ) {
+      try {
+        const code = await sock.requestPairingCode(phoneNumber.replace(/\D/g, ''))
+        pairingCode = code
+        status = 'needs_pairing_code'
+        console.log('[whatsapp] pairing code ready:', pairingCode)
+      } catch (err) {
+        console.error('[whatsapp] pairing code request failed:', err.message)
+      }
+    }
+
+    if (connection === 'open') {
+      status = 'connected'
+      currentQRDataUrl = null
+      pairingCode = null
+      console.log('[whatsapp] client ready — bot is online')
+      await drainPendingInvites()
+    }
+
+    if (connection === 'close') {
+      const statusCode = (lastDisconnect?.error instanceof Boom)
+        ? lastDisconnect.error.output?.statusCode
+        : null
+
+      const shouldLogOut = statusCode === DisconnectReason.loggedOut
+
+      if (shouldLogOut) {
+        // Permanent logout — user explicitly logged out on their phone
+        status = 'needs_scan'
+        currentQRDataUrl = null
+        pairingCode = null
+        console.warn('[whatsapp] logged out — will show QR for re-auth')
+        // Re-init fresh (no saved creds so a QR will appear)
+        setTimeout(() => initWhatsApp(), 2000)
+      } else {
+        status = 'reconnecting'
+        console.warn(`[whatsapp] disconnected (${statusCode}) — reconnecting in 5s...`)
+        setTimeout(() => initWhatsApp(connectionOptions), 5000)
+      }
+    }
+  })
+
+  // ── Group participant auto-kick (replaces group_join event) -─────────────
+  sock.ev.on('group-participants.update', async ({ id: groupId, participants, action }) => {
+    if (action !== 'add') return
+
+    for (const jid of participants) {
+      // Ignore bot's own join
+      if (jid === sock.user?.id) {
+        console.log('[whatsapp] bot joined group:', groupId)
+        // Attempt to associate with an unregistered community
+        const { data: communities } = await supabase
+          .from('communities')
+          .select('id, name')
+          .eq('platform', 'whatsapp')
+          .is('whatsapp_group_id', null)
+        if (communities?.length) {
+          const latest = communities[0]
+          await supabase.from('communities').update({ whatsapp_group_id: groupId }).eq('id', latest.id)
+          console.log(`[whatsapp] saved group ${groupId} to community "${latest.name}"`)
+        }
+        continue
+      }
+
+      const phone = jid.split('@')[0]
+      if (isPhoneWhitelisted(phone)) {
+        console.log(`[whatsapp] ${phone} is whitelisted — skipping auto-kick`)
+        continue
+      }
+
+      console.log(`[whatsapp] ${phone} joined group ${groupId} — checking subscription...`)
+
+      // Sub-select communities with this group ID
+      const { data: communityRows } = await supabase
+        .from('communities')
+        .select('id')
+        .eq('whatsapp_group_id', groupId)
+
+      const communityIds = communityRows?.map(c => c.id) || []
+
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('id')
+        .eq('whatsapp_phone', phone)
+        .eq('status', 'active')
+        .in('community_id', communityIds)
+        .maybeSingle()
+
+      if (!sub) {
+        console.warn(`[whatsapp] non-subscriber ${phone} joined ${groupId} — kicking`)
+        try {
+          await sock.groupParticipantsUpdate(groupId, [jid], 'remove')
+          await sock.sendMessage(jid, {
+            text: `⛔ You've been removed — you don't have an active subscription.\n\nJoin & pay here to get access.`,
+          })
+          console.log(`[whatsapp] kicked non-subscriber ${phone}`)
+        } catch (err) {
+          console.error(`[whatsapp] failed to kick ${phone}:`, err.message)
+        }
+      } else {
+        console.log(`[whatsapp] ${phone} is a valid subscriber ✅`)
+      }
+    }
+  })
+}
+
+// ── Restart ───────────────────────────────────────────────────────────────────
+export async function restartWhatsApp() {
+  console.log('[whatsapp] restarting client...')
+  status = 'initializing'
+  currentQRDataUrl = null
+  pairingCode = null
+
+  if (sock) {
+    try {
+      sock.ev.removeAllListeners()
+      sock.end(undefined)
+    } catch { /* ignore */ }
+    sock = null
+  }
+
+  await delay(1000)
+  await initWhatsApp(connectionOptions)
+}
+
+// ── Send a DM ────────────────────────────────────────────────────────────────
+export async function sendWhatsAppMessage(phone, text) {
+  if (!sock || status !== 'connected') {
+    console.warn('[whatsapp] client not ready, skipping message to', phone)
+    return
+  }
+  const jid = `${phone}@s.whatsapp.net`
+  try {
+    await randomDelay()
+    await sock.sendMessage(jid, { text })
+    console.log(`[whatsapp] message sent to ${phone}`)
+  } catch (err) {
+    console.error(`[whatsapp] sendMessage to ${phone} failed:`, err.message)
+    throw err
+  }
+}
+
+// ── Join a group via invite link ──────────────────────────────────────────────
+export async function joinGroup(inviteLink) {
+  if (!sock || status !== 'connected') {
+    throw new Error('WhatsApp client not ready — scan the QR code first')
+  }
+  const code = inviteLink.split('chat.whatsapp.com/')[1]?.split(/[?#]/)[0]
+  if (!code) throw new Error('Invalid WhatsApp invite link')
+
+  const result = await sock.groupAcceptInvite(code)
+  console.log('[whatsapp] joined group:', result)
+  return result  // returns the group JID/ID
+}
+
+// ── Revoke and refresh group invite link ─────────────────────────────────────
+async function revokeAndRefreshGroupLink(groupId, communityId) {
+  try {
+    await sock.groupRevokeInvite(groupId)
+    const newCode = await sock.groupInviteCode(groupId)
+    const newLink = `https://chat.whatsapp.com/${newCode}`
+
+    await supabase
+      .from('communities')
+      .update({ whatsapp_group_invite_link: newLink })
+      .eq('id', communityId)
+
+    console.log(`[whatsapp] invite link rotated for community ${communityId}`)
+    return newLink
+  } catch (err) {
+    console.error('[whatsapp] failed to revoke/refresh invite link:', err.message)
+  }
+}
+
+// ── Send invite to a new subscriber ──────────────────────────────────────────
+export async function sendWhatsAppInvite(phone, inviteLink, communityName, communityId, groupId, customMessage) {
+  let addedDirectly = false
+  const userJid = `${phone}@s.whatsapp.net`
+
+  if (groupId && sock && status === 'connected') {
+    try {
+      console.log(`[whatsapp] attempting to auto-add ${phone} to group ${groupId}...`)
+
+      // Whitelist BEFORE adding so the group-participants auto-kick skips them
+      whitelistPhone(phone)
+
+      const result = await sock.groupParticipantsUpdate(groupId, [userJid], 'add')
+      const addCode = result?.[0]?.status
+      console.log(`[whatsapp] groupParticipantsUpdate code for ${phone}:`, addCode, JSON.stringify(result?.[0]))
+
+      if (addCode === '200') {
+        addedDirectly = true
+        console.log(`[whatsapp] successfully auto-added ${phone} to group!`)
+
+        // Send custom welcome message as DM
+        const welcome = customMessage
+          || `👋 Welcome to *${communityName}*! You've been added to the group.`
+        await sendWhatsAppMessage(phone, welcome)
+
+        // Rotate invite link so it can't be shared
+        await revokeAndRefreshGroupLink(groupId, communityId)
+
+      } else if (addCode === '403') {
+        console.warn(`[whatsapp] privacy block for ${phone} — falling back to DM invite`)
+      } else {
+        console.warn(`[whatsapp] unexpected status ${addCode} for ${phone} — falling back to DM invite`)
+      }
+    } catch (err) {
+      console.error(`[whatsapp] groupParticipantsUpdate error for ${phone}:`, err.message)
+    }
+  }
+
+  // ── DM Invite fallback ────────────────────────────────────────────────────
+  if (!addedDirectly) {
+    try {
+      // Get a fresh invite code directly from the group (more reliable than stored link)
+      let finalLink = inviteLink
+      if (groupId && sock && status === 'connected') {
+        try {
+          const code = await sock.groupInviteCode(groupId)
+          finalLink = `https://chat.whatsapp.com/${code}`
+        } catch {
+          // stick with stored link
+        }
+      }
+
+      const dmText = customMessage
+        ? `${customMessage}\n\n👇 Tap to join:\n${finalLink}`
+        : `👋 Welcome to *${communityName}*!\n\nTap this link to join:\n${finalLink}\n\n⚠️ This link is personal — don't share it.`
+
+      await sendWhatsAppMessage(phone, dmText)
+      console.log(`[whatsapp] DM invite sent to ${phone}`)
+    } catch (err) {
+      console.error(`[whatsapp] DM invite failed for ${phone}:`, err.message)
+      throw err
+    }
+  }
+}
+
+// ── Remove a subscriber from a group ─────────────────────────────────────────
+export async function removeWhatsAppMember(groupId, phone) {
+  if (!sock || status !== 'connected') {
+    throw new Error('WhatsApp client not ready')
+  }
+  const userJid = `${phone}@s.whatsapp.net`
+  try {
+    await sock.groupParticipantsUpdate(groupId, [userJid], 'remove')
+    console.log(`[whatsapp] removed ${phone} from group ${groupId}`)
+  } catch (err) {
+    console.error(`[whatsapp] remove participant failed:`, err.message)
+    throw err
+  }
+}
+
+// ── QR image for browser (backwards-compat) ────────────────────────────────
+export async function getQRImage() {
+  return currentQRDataUrl || null
 }
