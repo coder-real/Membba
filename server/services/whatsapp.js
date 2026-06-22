@@ -20,10 +20,17 @@ let isConnecting = false  // Lock — prevents overlapping initWhatsApp() calls
 
 // ── Phone whitelist — skip auto-kick for members we just added ────────────────
 const phoneWhitelist = new Map() // phone → expiry timestamp
+const lidToPhoneMap = new Map()  // lid → phone string
 
 export function whitelistPhone(phone) {
   phoneWhitelist.set(phone, Date.now() + 90_000)
   console.log(`[whatsapp] whitelisted ${phone} for 90s`)
+}
+
+export function mapLidToPhone(lid, phone) {
+  lidToPhoneMap.set(lid, phone)
+  // Keep it for a day just in case (optional, we only need it briefly)
+  setTimeout(() => lidToPhoneMap.delete(lid), 86400000)
 }
 
 function isPhoneWhitelisted(phone) {
@@ -205,7 +212,18 @@ export async function initWhatsApp(opts = {}) {
         continue
       }
 
-      const phone = jid.split('@')[0]
+      // Wait a moment so that if this was an auto-add, the `groupParticipantsUpdate` 
+      // result has time to populate `lidToPhoneMap`
+      await delay(3000)
+
+      let phone = jid.split('@')[0]
+
+      // If this is an @lid, see if we mapped it back to a phone number
+      if (jid.includes('@lid') && lidToPhoneMap.has(jid)) {
+        phone = lidToPhoneMap.get(jid)
+        console.log(`[whatsapp] resolved LID ${jid} -> phone ${phone}`)
+      }
+
       if (isPhoneWhitelisted(phone)) {
         console.log(`[whatsapp] ${phone} is whitelisted — skipping auto-kick`)
         continue
@@ -332,12 +350,19 @@ export async function sendWhatsAppInvite(phone, inviteLink, communityName, commu
       whitelistPhone(phone)
 
       const result = await sock.groupParticipantsUpdate(groupId, [userJid], 'add')
-      const addCode = result?.[0]?.status
-      console.log(`[whatsapp] groupParticipantsUpdate code for ${phone}:`, addCode, JSON.stringify(result?.[0]))
+      const addedParticipant = result?.[0]
+      const addCode = addedParticipant?.status
+      console.log(`[whatsapp] groupParticipantsUpdate code for ${phone}:`, addCode, JSON.stringify(addedParticipant))
 
       if (addCode === '200') {
         addedDirectly = true
         console.log(`[whatsapp] successfully auto-added ${phone} to group!`)
+        
+        // WhatsApp assigns an @lid when adding users. Save this mapping so the 
+        // group-participants.update handler knows who this is.
+        if (addedParticipant?.jid && addedParticipant.jid.includes('@lid')) {
+          mapLidToPhone(addedParticipant.jid, phone)
+        }
 
         // Send custom welcome message as DM
         const welcome = customMessage
