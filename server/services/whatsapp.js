@@ -44,7 +44,7 @@ class SupabaseStore {
 }
 
 let currentQR = null
-let status = 'initializing' // 'initializing' | 'awaiting_qr' | 'authenticated'
+let status = 'initializing' // 'initializing' | 'needs_scan' | 'syncing' | 'connected'
 let client = null
 
 // ── Phone whitelist for auto-added members (prevents kick-on-join) ────────
@@ -127,6 +127,7 @@ export async function restartWhatsApp() {
   if (client) {
     console.log('[whatsapp] awaiting client.destroy()...')
     try {
+      client.removeAllListeners() // Layer 2: Prevent duplicate listeners on restart loop
       await client.destroy()
       console.log('[whatsapp] client.destroy() completed')
     } catch (e) {
@@ -198,6 +199,7 @@ export async function initWhatsApp() {
         '--single-process',              // run Chrome in a single process (saves ~100MB)
         '--disable-gpu',
         '--disable-extensions',
+        '--disable-software-rasterizer', // Aggressive memory flag
         '--disable-background-networking',
         '--disable-default-apps',
         '--disable-sync',
@@ -213,23 +215,25 @@ export async function initWhatsApp() {
 
   client.on('qr', qr => {
     currentQR = qr
-    status = 'awaiting_qr'
+    status = 'needs_scan' // Layer 4: Reflect exact state
     console.log('[whatsapp] QR ready — visit /api/whatsapp/qr to scan')
   })
 
   client.on('authenticated', () => {
     currentQR = null
-    status = 'authenticated'
-    console.log('[whatsapp] authenticated ✅')
+    status = 'syncing' // Layer 4
+    console.log('[whatsapp] authenticated ✅, syncing messages...')
   })
 
-  client.on('ready', () => {
-    status = 'authenticated'
+  client.on('ready', async () => {
+    status = 'connected' // Layer 4
     console.log('[whatsapp] client ready — bot is online')
+    // Layer 3: Drain queued invites
+    await drainPendingInvites()
   })
 
   client.on('auth_failure', async msg => {
-    status = 'awaiting_qr'
+    status = 'needs_scan'
     currentQR = null
     console.error('[whatsapp] auth failure — clearing stale session and restarting for fresh QR:', msg)
     // Wipe the stored session so RemoteAuth won't try to restore it again
@@ -466,7 +470,7 @@ export async function sendWhatsAppInvite(phone, inviteLink, communityName, commu
  * Remove a subscriber from a WhatsApp group.
  */
 export async function removeWhatsAppMember(groupId, phone) {
-  if (!client || status !== 'authenticated') {
+  if (!client || status !== 'connected') {
     throw new Error('WhatsApp client not ready')
   }
   const participantId = `${phone}@c.us`
@@ -486,4 +490,36 @@ export async function removeWhatsAppMember(groupId, phone) {
 export async function getQRImage() {
   if (!currentQR) return null
   return await qrcode.toDataURL(currentQR)
+}
+
+// ── Layer 3: Pending Invites Drain ──────────────────────────────────────────
+async function drainPendingInvites() {
+  console.log('[whatsapp] Draining pending invites queue...')
+  const { data: pending, error } = await supabase
+    .from('whatsapp_pending_invites')
+    .select('*')
+    .order('created_at', { ascending: true })
+
+  if (error || !pending?.length) {
+    return
+  }
+
+  console.log(`[whatsapp] Found ${pending.length} pending invites to process.`)
+  for (const invite of pending) {
+    try {
+      await sendWhatsAppInvite(
+        invite.phone,
+        invite.invite_link,
+        invite.community_name,
+        invite.community_id,
+        invite.group_id,
+        invite.custom_message
+      )
+      // Delete from queue after success
+      await supabase.from('whatsapp_pending_invites').delete().eq('id', invite.id)
+      console.log(`[whatsapp] Drained invite for ${invite.phone}`)
+    } catch (err) {
+      console.error(`[whatsapp] Failed to process queued invite for ${invite.phone}:`, err.message)
+    }
+  }
 }

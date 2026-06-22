@@ -108,8 +108,16 @@ export async function createSubscription({
     console.log(`\n[subscription] Platform is WhatsApp. Checking requirements for auto-add/invite...`)
     console.log(`[subscription] whatsapp_phone: ${whatsappPhone || false}, group_id: ${community.whatsapp_group_id || false}`)
     if (whatsappPhone && community.whatsapp_group_id) {
-      if (getWhatsAppStatus() !== 'authenticated') {
-        console.warn('[subscription] WhatsApp client not ready — invite skipped. Subscriber will need manual invite.')
+      if (getWhatsAppStatus() !== 'connected') {
+        console.warn('[subscription] WhatsApp client not ready — saving to pending queue.')
+        await supabase.from('whatsapp_pending_invites').insert({
+          phone: whatsappPhone,
+          invite_link: community.whatsapp_group_invite_link,
+          community_name: community.name,
+          community_id: communityId,
+          group_id: community.whatsapp_group_id,
+          custom_message: customMessage
+        })
       } else {
         try {
           await sendWhatsAppInvite(
@@ -172,7 +180,7 @@ export async function processExpiredSubscriptions() {
         const phone = sub.whatsapp_phone
 
         if (groupId && phone) {
-          if (getWhatsAppStatus() === 'authenticated') {
+          if (getWhatsAppStatus() === 'connected') {
             await removeWhatsAppMember(groupId, phone)
             await sendWhatsAppMessage(phone,
               `⏰ Your membership to *${communityName}* has expired.\n\nRenew here: ${joinUrl}`
