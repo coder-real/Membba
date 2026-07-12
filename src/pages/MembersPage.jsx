@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import API_BASE from '../lib/api'
 import { useAuth } from '../context/AuthContext'
-import DashboardLayout from '../components/DashboardLayout'
+
 import Avatar from '../components/Avatar'
 import Skeleton from '../components/ui/Skeleton'
 import toast from 'react-hot-toast'
@@ -75,18 +75,18 @@ export default function MembersPage() {
       </span>
     )
     return (
-      <span className="inline-flex items-center gap-1.5 bg-white/[0.05] border border-white/[0.05] px-2 py-0.5 rounded-[4px] text-[14px] font-bold text-[#96989d]">
+      <span className="inline-flex items-center gap-1.5 bg-white/[0.05] border border-white/[0.05] px-2 py-0.5 rounded-[4px] text-[14px] font-bold text-gray-500 dark:text-[#96989d]">
         <span className="w-1.5 h-1.5 rounded-full bg-[#4f545c]" /> Cancelled
       </span>
     )
   }
 
   return (
-    <DashboardLayout pageTitle="Members">
+    <>
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-[24px] font-black text-[#f2f3f5] tracking-tight">Members</h1>
-        <p className="text-[14px] text-[#b5bac1] mt-1">All subscribers across your communities</p>
+        <h1 className="text-[24px] font-black text-gray-900 dark:text-[#f2f3f5] tracking-tight">Members</h1>
+        <p className="text-[14px] text-gray-600 dark:text-[#b5bac1] mt-1">All subscribers across your communities</p>
       </div>
 
       {/* Pill Tab Filter */}
@@ -97,19 +97,19 @@ export default function MembersPage() {
             onClick={() => setTab(t)}
             className={`px-3 py-1.5 rounded-[4px] text-[14px] font-medium transition-all capitalize ${
               tab === t
-                ? 'bg-white/[0.08] text-[#f2f3f5]'
-                : 'text-[#96989d] hover:text-[#dbdee1] hover:bg-white/[0.03]'
+                ? 'bg-white/[0.08] text-gray-900 dark:text-[#f2f3f5]'
+                : 'text-gray-500 dark:text-[#96989d] hover:text-gray-800 dark:text-[#dbdee1] hover:bg-white/[0.03]'
             }`}
           >
             {t.charAt(0).toUpperCase() + t.slice(1)}
-            <span className={`ml-1.5 text-[14px] ${tab === t ? 'text-[#f2f3f5]/50' : 'text-[#72767d]'}`}>
+            <span className={`ml-1.5 text-[14px] ${tab === t ? 'text-gray-900 dark:text-[#f2f3f5]/50' : 'text-gray-500 dark:text-[#72767d]'}`}>
               {counts[t]}
             </span>
           </button>
         ))}
       </div>
 
-      <div className="bg-[#111] rounded-[8px] shadow-sm border border-white/[0.02] overflow-hidden">
+      <div className="bg-white dark:bg-[#111] rounded-[8px] shadow-sm border border-gray-200 dark:border-white/10 overflow-hidden">
         {loading ? (
           <div className="p-7 space-y-4">
             <Skeleton width="w-full" height="h-6" />
@@ -118,10 +118,10 @@ export default function MembersPage() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-16 text-center px-6">
-            <p className="text-[14px] font-semibold text-[#f2f3f5] mb-1">
+            <p className="text-[14px] font-semibold text-gray-900 dark:text-[#f2f3f5] mb-1">
               No {tab !== 'all' ? tab : ''} members
             </p>
-            <p className="text-[14px] text-[#96989d]">
+            <p className="text-[14px] text-gray-500 dark:text-[#96989d]">
               {tab === 'all' ? 'Members will appear here when they subscribe.' : `No members with "${tab}" status.`}
             </p>
           </div>
@@ -131,9 +131,9 @@ export default function MembersPage() {
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full min-w-[760px]">
                 <thead>
-                  <tr className="border-b border-white/[0.04]">
+                  <tr className="border-b border-gray-200 dark:border-white/10">
                     {['Member', 'Community / Plan', 'Platform ID', 'Started', 'Expires', 'Status', 'Actions'].map(h => (
-                      <th key={h} className="px-5 py-3.5 text-left text-[14px] font-bold text-[#b5bac1] uppercase tracking-[0.8px]">{h}</th>
+                      <th key={h} className="px-5 py-3.5 text-left text-[14px] font-bold text-gray-600 dark:text-[#b5bac1] uppercase tracking-[0.8px]">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -143,16 +143,16 @@ export default function MembersPage() {
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-2.5">
                           <Avatar name={s.email} size={24} />
-                          <span className="text-[14px] font-semibold text-[#f2f3f5] max-w-[150px] truncate">{s.email}</span>
+                          <span className="text-[14px] font-semibold text-gray-900 dark:text-[#f2f3f5] max-w-[150px] truncate">{s.email}</span>
                         </div>
                       </td>
                       <td className="px-5 py-3.5">
-                        <span className="text-[14px] text-[#dbdee1]">{s.communities?.name}</span>
-                        {s.plans?.name && <span className="text-[#96989d] ml-2 text-[14px]">· {s.plans.name}</span>}
+                        <span className="text-[14px] text-gray-800 dark:text-[#dbdee1]">{s.communities?.name}</span>
+                        {s.plans?.name && <span className="text-gray-500 dark:text-[#96989d] ml-2 text-[14px]">· {s.plans.name}</span>}
                       </td>
-                      <td className="px-5 py-3.5 font-mono text-[14px] text-[#96989d]">{s.telegram_user_id || s.whatsapp_phone || '—'}</td>
-                      <td className="px-5 py-3.5 text-[14px] text-[#96989d]">{new Date(s.started_at).toLocaleDateString()}</td>
-                      <td className="px-5 py-3.5 text-[14px] text-[#96989d]">{new Date(s.expires_at).toLocaleDateString()}</td>
+                      <td className="px-5 py-3.5 font-mono text-[14px] text-gray-500 dark:text-[#96989d]">{s.telegram_user_id || s.whatsapp_phone || '—'}</td>
+                      <td className="px-5 py-3.5 text-[14px] text-gray-500 dark:text-[#96989d]">{new Date(s.started_at).toLocaleDateString()}</td>
+                      <td className="px-5 py-3.5 text-[14px] text-gray-500 dark:text-[#96989d]">{new Date(s.expires_at).toLocaleDateString()}</td>
                       <td className="px-5 py-3.5"><Pill status={s.status} /></td>
                       <td className="px-5 py-3.5">
                         {s.status === 'active' ? (
@@ -176,7 +176,7 @@ export default function MembersPage() {
                               </button>
                             )}
                           </div>
-                        ) : <span className="text-[14px] text-[#72767d]">—</span>}
+                        ) : <span className="text-[14px] text-gray-500 dark:text-[#72767d]">—</span>}
                       </td>
                     </tr>
                   ))}
@@ -191,15 +191,15 @@ export default function MembersPage() {
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <Avatar name={s.email} size={24} />
-                      <p className="text-[14px] text-[#f2f3f5] font-semibold truncate">{s.email}</p>
+                      <p className="text-[14px] text-gray-900 dark:text-[#f2f3f5] font-semibold truncate">{s.email}</p>
                     </div>
                     <Pill status={s.status} />
                   </div>
-                  <p className="text-[14px] text-[#dbdee1] mb-1.5 ml-[34px]">
-                    {s.communities?.name}{s.plans?.name && <span className="text-[#96989d]"> · {s.plans.name}</span>}
+                  <p className="text-[14px] text-gray-800 dark:text-[#dbdee1] mb-1.5 ml-[34px]">
+                    {s.communities?.name}{s.plans?.name && <span className="text-gray-500 dark:text-[#96989d]"> · {s.plans.name}</span>}
                   </p>
                   <div className="flex items-center justify-between gap-2 flex-wrap ml-[34px]">
-                    <p className="text-[14px] text-[#96989d]">Expires {new Date(s.expires_at).toLocaleDateString()}</p>
+                    <p className="text-[14px] text-gray-500 dark:text-[#96989d]">Expires {new Date(s.expires_at).toLocaleDateString()}</p>
                     {s.status === 'active' && (
                       <div className="flex gap-2">
                         <button
@@ -227,6 +227,6 @@ export default function MembersPage() {
           </>
         )}
       </div>
-    </DashboardLayout>
+    </>
   )
 }

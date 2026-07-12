@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
-import DashboardLayout from "../components/DashboardLayout";
+;
 import toast from "react-hot-toast";
 import { supabase } from "../lib/supabase";
 import API_BASE from "../lib/api";
@@ -156,17 +156,17 @@ export default function SettingsPage() {
   };
 
   const inputCls =
-    "w-full bg-[#1e1f22] border border-transparent rounded-[4px] px-3.5 py-2.5 text-[14px] text-[#dbdee1] placeholder-[#72767d] focus:outline-none focus:border-white/[0.05] focus:bg-[#111] transition-all";
+    "w-full bg-gray-100 dark:bg-[#1e1f22] border border-transparent rounded-[4px] px-3.5 py-2.5 text-[14px] text-gray-800 dark:text-[#dbdee1] placeholder-[#72767d] focus:outline-none focus:border-white/[0.05] focus:bg-white dark:bg-[#111] transition-all";
   const labelCls =
-    "block text-[14px] font-bold text-[#b5bac1] mb-2 uppercase tracking-wide";
+    "block text-[14px] font-bold text-gray-600 dark:text-[#b5bac1] mb-2 uppercase tracking-wide";
 
   return (
-    <DashboardLayout pageTitle="Settings">
+    <>
       <div className="mb-6">
-        <h1 className="text-[24px] font-black text-[#f2f3f5] tracking-tight">
+        <h1 className="text-[24px] font-black text-gray-900 dark:text-[#f2f3f5] tracking-tight">
           Settings
         </h1>
-        <p className="text-[14px] text-[#b5bac1] mt-1">
+        <p className="text-[14px] text-gray-600 dark:text-[#b5bac1] mt-1">
           Manage your account and preferences
         </p>
       </div>
@@ -181,8 +181,8 @@ export default function SettingsPage() {
               onClick={() => setActiveTab(tab.id)}
               className={`text-left px-3 py-2 rounded-[4px] text-[14px] font-medium transition-colors ${
                 activeTab === tab.id
-                  ? (tab.isDanger ? 'bg-red-500/10 text-red-400' : 'bg-white/[0.06] text-[#dbdee1]')
-                  : (tab.isDanger ? 'text-red-400 hover:bg-red-500/5' : 'text-[#96989d] hover:bg-white/[0.02] hover:text-[#dbdee1]')
+                  ? (tab.isDanger ? 'bg-red-500/10 text-red-400' : 'bg-white/[0.06] text-gray-800 dark:text-[#dbdee1]')
+                  : (tab.isDanger ? 'text-red-400 hover:bg-red-500/5' : 'text-gray-500 dark:text-[#96989d] hover:bg-white/[0.02] hover:text-gray-800 dark:text-[#dbdee1]')
               }`}
             >
               {tab.label}
@@ -193,8 +193,8 @@ export default function SettingsPage() {
         {/* Right Content */}
         <div className="flex-1 w-full max-w-2xl">
           {activeTab === 'account' && (
-            <div className="bg-[#111] rounded-[8px] p-7 shadow-sm border border-white/[0.02]">
-              <h2 className="text-[15px] font-bold text-[#f2f3f5] mb-6 border-b border-white/[0.06] pb-3">Profile</h2>
+            <div className="bg-white dark:bg-[#111] rounded-[8px] p-7 shadow-sm border border-gray-200 dark:border-white/10">
+              <h2 className="text-[15px] font-bold text-gray-900 dark:text-[#f2f3f5] mb-6 border-b border-gray-200 dark:border-white/10 pb-3">Profile</h2>
               <form onSubmit={handleUpdateProfile} className="space-y-5">
                 <div>
                   <label className={labelCls}>DISPLAY NAME</label>
@@ -212,7 +212,7 @@ export default function SettingsPage() {
                     type="email"
                     value={user?.email}
                     disabled
-                    className="w-full bg-[#1e1f22] border border-transparent opacity-60 rounded-[4px] px-3.5 py-2.5 text-[14px] text-[#dbdee1] cursor-not-allowed"
+                    className="w-full bg-gray-100 dark:bg-[#1e1f22] border border-transparent opacity-60 rounded-[4px] px-3.5 py-2.5 text-[14px] text-gray-800 dark:text-[#dbdee1] cursor-not-allowed"
                   />
                 </div>
                 <div>
@@ -227,7 +227,7 @@ export default function SettingsPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="bg-[#2da059] hover:bg-[#208b49] text-white px-4 py-2 rounded-[4px] text-[14px] font-medium transition-colors disabled:opacity-50"
+                    className="bg-[#2da059] hover:bg-[#208b49] text-black dark:text-white px-4 py-2 rounded-[4px] text-[14px] font-medium transition-colors disabled:opacity-50"
                   >
                     {loading ? "Saving..." : "Save changes"}
                   </button>
@@ -237,13 +237,13 @@ export default function SettingsPage() {
           )}
 
           {activeTab === 'danger' && (
-            <div className="bg-[#111] rounded-[8px] p-7 shadow-sm border border-red-500/20">
+            <div className="bg-white dark:bg-[#111] rounded-[8px] p-7 shadow-sm border border-red-500/20">
               <h2 className="text-[15px] font-bold text-red-400 mb-2">Danger zone</h2>
-              <p className="text-[14px] text-[#96989d] mb-5">
+              <p className="text-[14px] text-gray-500 dark:text-[#96989d] mb-5">
                 Deleting your account is permanent and cannot be undone. All communities, members, and payment data will be lost.
               </p>
               <button
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-[4px] text-[14px] font-medium transition-colors"
+                className="bg-red-500 hover:bg-red-600 text-black dark:text-white px-4 py-2 rounded-[4px] text-[14px] font-medium transition-colors"
                 onClick={() => toast.error('This action is disabled in the prototype')}
               >
                 Delete my account
@@ -252,7 +252,7 @@ export default function SettingsPage() {
           )}
 
           {(activeTab === 'billing' || activeTab === 'notifications') && (
-            <div className="text-[#96989d] text-[14px] py-10 px-4 text-center bg-[#111] rounded-[8px] border border-white/[0.02]">
+            <div className="text-gray-500 dark:text-[#96989d] text-[14px] py-10 px-4 text-center bg-white dark:bg-[#111] rounded-[8px] border border-gray-200 dark:border-white/10">
               Settings for {TABS.find(t=>t.id===activeTab)?.label.toLowerCase()} are coming soon.
             </div>
           )}
@@ -260,25 +260,25 @@ export default function SettingsPage() {
           {activeTab === 'integrations' && (
             <div className="space-y-6">
               {/* Paystack */}
-              <div className="bg-[#111] border border-white/[0.02] rounded-[8px] p-7 shadow-sm">
-                <h2 className="text-[15px] font-bold text-[#f2f3f5] mb-2">
+              <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-[8px] p-7 shadow-sm">
+                <h2 className="text-[15px] font-bold text-gray-900 dark:text-[#f2f3f5] mb-2">
                   Paystack Integration
                 </h2>
-                <p className="text-[14px] text-[#96989d] mb-4">
+                <p className="text-[14px] text-gray-500 dark:text-[#96989d] mb-4">
                   Your Paystack secret key is managed server-side via environment variables.
                 </p>
-                <div className="bg-[#1e1f22] rounded-[4px] px-3.5 py-2.5 text-[14px] font-mono text-[#72767d] tracking-wider">
+                <div className="bg-gray-100 dark:bg-[#1e1f22] rounded-[4px] px-3.5 py-2.5 text-[14px] font-mono text-gray-500 dark:text-[#72767d] tracking-wider">
                   sk_live_••••••••••••••••••••••••
                 </div>
               </div>
 
               {/* Telegram Bot */}
-              <div className="bg-[#111] border border-white/[0.02] rounded-[8px] p-7 shadow-sm">
-                <h2 className="text-[15px] font-bold text-[#f2f3f5] mb-2">
+              <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-[8px] p-7 shadow-sm">
+                <h2 className="text-[15px] font-bold text-gray-900 dark:text-[#f2f3f5] mb-2">
                   Telegram Bot
                 </h2>
-                <p className="text-[14px] text-[#96989d] mb-4">
-                  Add <span className="font-mono bg-white/[0.06] px-1.5 py-0.5 rounded text-[#dbdee1]">@membba_bot</span> to your Telegram group and make it an admin.
+                <p className="text-[14px] text-gray-500 dark:text-[#96989d] mb-4">
+                  Add <span className="font-mono bg-white/[0.06] px-1.5 py-0.5 rounded text-gray-800 dark:text-[#dbdee1]">@membba_bot</span> to your Telegram group and make it an admin.
                 </p>
                 <a
                   href="https://t.me/membba_bot"
@@ -291,10 +291,10 @@ export default function SettingsPage() {
               </div>
 
               {/* WhatsApp Bot */}
-              <div className="bg-[#111] border border-white/[0.02] rounded-[8px] p-7 shadow-sm">
+              <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-[8px] p-7 shadow-sm">
                 {/* Header with status badge */}
                 <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-[15px] font-bold text-[#f2f3f5]">WhatsApp Bot</h2>
+                  <h2 className="text-[15px] font-bold text-gray-900 dark:text-[#f2f3f5]">WhatsApp Bot</h2>
                   <span className={`flex items-center gap-1.5 text-[13px] font-semibold capitalize ${
                     waStatus === 'connected'     ? 'text-[#9FFF57]' :
                     waStatus === 'syncing'       ? 'text-[#229ED9]' :
@@ -317,7 +317,7 @@ export default function SettingsPage() {
                   </span>
                 </div>
 
-                <p className="text-[14px] text-[#96989d] mb-5">
+                <p className="text-[14px] text-gray-500 dark:text-[#96989d] mb-5">
                   The WhatsApp client runs on a dedicated number. Choose how to authenticate:
                 </p>
 
@@ -332,7 +332,7 @@ export default function SettingsPage() {
                           className={`px-3 py-1.5 rounded-[4px] text-[13px] font-semibold transition-colors ${
                             connectMethod === m
                               ? 'bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/40'
-                              : 'bg-white/[0.04] text-[#96989d] border border-white/[0.07] hover:text-[#dbdee1]'
+                              : 'bg-white/[0.04] text-gray-500 dark:text-[#96989d] border border-white/[0.07] hover:text-gray-800 dark:text-[#dbdee1]'
                           }`}
                         >
                           {m === 'qr' ? '📷 Scan QR' : '📱 Phone Number'}
@@ -346,7 +346,7 @@ export default function SettingsPage() {
                         value={phoneInput}
                         onChange={e => setPhoneInput(e.target.value)}
                         placeholder="e.g. 2348012345678 (with country code, no +)"
-                        className="w-full bg-[#1e1f22] border border-white/[0.08] rounded-[4px] px-3.5 py-2.5 text-[14px] text-[#dbdee1] placeholder-[#72767d] focus:outline-none focus:border-white/20 mb-3"
+                        className="w-full bg-gray-100 dark:bg-[#1e1f22] border border-gray-200 dark:border-white/10 rounded-[4px] px-3.5 py-2.5 text-[14px] text-gray-800 dark:text-[#dbdee1] placeholder-[#72767d] focus:outline-none focus:border-white/20 mb-3"
                       />
                     )}
                   </div>
@@ -366,7 +366,7 @@ export default function SettingsPage() {
                   {waStatus === 'connected' && (
                     <button
                       onClick={openQRModal}
-                      className="inline-flex items-center gap-2 border border-white/[0.1] text-[#b5bac1] px-4 py-2 rounded-[4px] text-[14px] font-medium hover:bg-white/[0.02] transition-colors"
+                      className="inline-flex items-center gap-2 border border-white/[0.1] text-gray-600 dark:text-[#b5bac1] px-4 py-2 rounded-[4px] text-[14px] font-medium hover:bg-white/[0.02] transition-colors"
                     >
                       View Status
                     </button>
@@ -374,7 +374,7 @@ export default function SettingsPage() {
                   <button
                     onClick={handleRestart}
                     disabled={restarting}
-                    className="inline-flex items-center gap-2 border border-white/[0.1] text-[#b5bac1] px-4 py-2 rounded-[4px] text-[14px] font-medium hover:bg-white/[0.02] disabled:opacity-50 transition-colors"
+                    className="inline-flex items-center gap-2 border border-white/[0.1] text-gray-600 dark:text-[#b5bac1] px-4 py-2 rounded-[4px] text-[14px] font-medium hover:bg-white/[0.02] disabled:opacity-50 transition-colors"
                   >
                     {restarting ? 'Restarting...' : '↺ Restart Client'}
                   </button>
@@ -388,10 +388,10 @@ export default function SettingsPage() {
       {/* Connect Modal — shows QR or pairing code depending on method and status */}
       {showQRModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-[#0a0a0a] border border-white/[0.1] rounded-[8px] p-8 pt-10 w-full max-w-sm text-center shadow-2xl relative">
+          <div className="bg-gray-50 dark:bg-[#0a0a0a] border border-white/[0.1] rounded-[8px] p-8 pt-10 w-full max-w-sm text-center shadow-2xl relative">
             <button
               onClick={closeQRModal}
-              className="absolute top-7 right-4 text-[#96989d] hover:text-[#dbdee1] transition-colors"
+              className="absolute top-7 right-4 text-gray-500 dark:text-[#96989d] hover:text-gray-800 dark:text-[#dbdee1] transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -399,13 +399,13 @@ export default function SettingsPage() {
               </svg>
             </button>
 
-            <h3 className="text-[18px] font-bold text-[#f2f3f5] mb-1">Connect WhatsApp</h3>
+            <h3 className="text-[18px] font-bold text-gray-900 dark:text-[#f2f3f5] mb-1">Connect WhatsApp</h3>
 
             {waStatus === 'connected' ? (
               <div className="py-8">
                 <p className="text-[40px] mb-3">✅</p>
                 <p className="text-[16px] font-bold text-[#9FFF57]">Connected!</p>
-                <p className="text-[14px] text-[#96989d] mt-1">The bot is online and ready.</p>
+                <p className="text-[14px] text-gray-500 dark:text-[#96989d] mt-1">The bot is online and ready.</p>
               </div>
             ) : waStatus === 'syncing' ? (
               <div className="py-8 flex flex-col items-center gap-3">
@@ -413,24 +413,24 @@ export default function SettingsPage() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                 </svg>
-                <p className="text-[#dbdee1] font-semibold">Syncing…</p>
-                <p className="text-[14px] text-[#96989d]">Keep WhatsApp open on your phone.</p>
+                <p className="text-gray-800 dark:text-[#dbdee1] font-semibold">Syncing…</p>
+                <p className="text-[14px] text-gray-500 dark:text-[#96989d]">Keep WhatsApp open on your phone.</p>
               </div>
             ) : waStatus === 'needs_pairing_code' && waPairingCode ? (
               <div className="py-6">
-                <p className="text-[14px] text-[#96989d] mb-4">
+                <p className="text-[14px] text-gray-500 dark:text-[#96989d] mb-4">
                   Open WhatsApp → Linked Devices → Link a Device → Enter this code:
                 </p>
-                <p className="text-[38px] font-black tracking-[0.15em] text-white mb-4">{waPairingCode}</p>
-                <p className="text-[13px] text-[#72767d]">Code refreshes automatically if unused.</p>
+                <p className="text-[38px] font-black tracking-[0.15em] text-black dark:text-white mb-4">{waPairingCode}</p>
+                <p className="text-[13px] text-gray-500 dark:text-[#72767d]">Code refreshes automatically if unused.</p>
               </div>
             ) : waQR ? (
               <>
-                <p className="text-[14px] text-[#96989d] mb-4">Open WhatsApp → Linked Devices → Link a Device → scan this QR</p>
+                <p className="text-[14px] text-gray-500 dark:text-[#96989d] mb-4">Open WhatsApp → Linked Devices → Link a Device → scan this QR</p>
                 <img
                   src={waQR}
                   alt="WhatsApp QR"
-                  className="w-56 h-56 mx-auto rounded-[8px] border border-white/[0.06] mb-2"
+                  className="w-56 h-56 mx-auto rounded-[8px] border border-gray-200 dark:border-white/10 mb-2"
                 />
               </>
             ) : (
@@ -439,12 +439,12 @@ export default function SettingsPage() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                 </svg>
-                <p className="text-[#96989d] text-[14px]">Starting connection…</p>
+                <p className="text-gray-500 dark:text-[#96989d] text-[14px]">Starting connection…</p>
               </div>
             )}
           </div>
         </div>
       )}
-    </DashboardLayout>
+    </>
   );
 }

@@ -5,7 +5,7 @@ import API_BASE from '../lib/api'
 
 function Spinner() {
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] flex items-center justify-center">
       <div className="w-7 h-7 rounded-full border-2 border-white/10 border-t-white/40 animate-spin" />
     </div>
   )
@@ -43,26 +43,26 @@ export default function PaymentSuccessPage() {
   const platLabel   = isWA ? 'WhatsApp' : 'Telegram'
 
   if (status === 'verifying') return (
-    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-6" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] flex items-center justify-center px-6" style={{ fontFamily: "'Inter', sans-serif" }}>
       <div className="text-center max-w-sm w-full">
         <div className="w-14 h-14 mx-auto mb-8 relative">
-          <div className="absolute inset-0 rounded-full border-2 border-white/[0.06]" />
-          <div className="absolute inset-0 rounded-full border-2 border-t-[#9FFF57] border-white/[0.06] animate-spin" />
+          <div className="absolute inset-0 rounded-full border-2 border-gray-200 dark:border-white/10" />
+          <div className="absolute inset-0 rounded-full border-2 border-t-[#9FFF57] border-gray-200 dark:border-white/10 animate-spin" />
         </div>
-        <p className="text-[14px] font-bold tracking-[0.15em] uppercase text-white/25 mb-3">Processing</p>
-        <h1 className="text-[22px] font-black text-white mb-3">Verifying your payment</h1>
-        <p className="text-[14px] text-white/40 leading-relaxed">This usually takes just a moment.</p>
+        <p className="text-[14px] font-bold tracking-[0.15em] uppercase text-black dark:text-white/25 mb-3">Processing</p>
+        <h1 className="text-[22px] font-black text-black dark:text-white mb-3">Verifying your payment</h1>
+        <p className="text-[14px] text-black dark:text-white/40 leading-relaxed">This usually takes just a moment.</p>
       </div>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a]" style={{ fontFamily: "'Inter', sans-serif" }}>
 
       {/* Top bar */}
       <div className="border-b border-white/[0.05] px-6 py-4 flex items-center justify-between max-w-xl mx-auto">
-        <span className="text-[14px] font-black tracking-wider text-white/30 uppercase">Membba</span>
-        <div className="flex items-center gap-1.5 text-white/25">
+        <span className="text-[14px] font-black tracking-wider text-black dark:text-white/30 uppercase">Membba</span>
+        <div className="flex items-center gap-1.5 text-black dark:text-white/25">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
           </svg>
@@ -83,7 +83,7 @@ export default function PaymentSuccessPage() {
             </div>
 
             <p className="text-[14px] font-bold tracking-[0.15em] uppercase text-[#9FFF57]/60 mb-2">Payment Confirmed</p>
-            <h1 className="text-[28px] font-black text-white leading-tight mb-3">
+            <h1 className="text-[28px] font-black text-black dark:text-white leading-tight mb-3">
               {subscription?.communities?.name
                 ? `You're in, ${subscription.communities.name}!`
                 : "You're all set!"}
@@ -91,23 +91,23 @@ export default function PaymentSuccessPage() {
 
             {/* Subscription summary */}
             {subscription && (
-              <div className="border border-white/[0.07] bg-[#111] rounded-xl px-5 py-4 mb-7 mt-5">
+              <div className="border border-white/[0.07] bg-white dark:bg-[#111] rounded-xl px-5 py-4 mb-7 mt-5">
                 <div className="grid grid-cols-2 gap-y-3">
                   {subscription.communities?.name && (
                     <>
-                      <span className="text-[14px] text-white/35 font-semibold uppercase tracking-wider">Community</span>
-                      <span className="text-[14px] text-white font-semibold text-right">{subscription.communities.name}</span>
+                      <span className="text-[14px] text-black dark:text-white/35 font-semibold uppercase tracking-wider">Community</span>
+                      <span className="text-[14px] text-black dark:text-white font-semibold text-right">{subscription.communities.name}</span>
                     </>
                   )}
                   {subscription.expires_at && (
                     <>
-                      <span className="text-[14px] text-white/35 font-semibold uppercase tracking-wider">Access until</span>
-                      <span className="text-[14px] text-white font-semibold text-right">
+                      <span className="text-[14px] text-black dark:text-white/35 font-semibold uppercase tracking-wider">Access until</span>
+                      <span className="text-[14px] text-black dark:text-white font-semibold text-right">
                         {new Date(subscription.expires_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </span>
                     </>
                   )}
-                  <span className="text-[14px] text-white/35 font-semibold uppercase tracking-wider">Platform</span>
+                  <span className="text-[14px] text-black dark:text-white/35 font-semibold uppercase tracking-wider">Platform</span>
                   <span className="text-[14px] font-semibold text-right" style={{ color: platColor }}>
                     {platLabel}
                   </span>
@@ -122,14 +122,14 @@ export default function PaymentSuccessPage() {
                   href={inviteLink}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center justify-center gap-3 w-full py-4 rounded-xl font-black text-[15px] text-white transition-all active:scale-[0.99]"
+                  className="flex items-center justify-center gap-3 w-full py-4 rounded-xl font-black text-[15px] text-black dark:text-white transition-all active:scale-[0.99]"
                   style={{ backgroundColor: platColor }}
                 >
                   <PlatIcon size={20} />
                   Join {platLabel} Group
                 </a>
                 {!isWA && (
-                  <p className="text-center text-[14px] text-white/30">
+                  <p className="text-center text-[14px] text-black dark:text-white/30">
                     Link expires in 15 minutes. The bot may also DM you the same link.
                   </p>
                 )}
@@ -142,13 +142,13 @@ export default function PaymentSuccessPage() {
                     Next step: check your {platLabel}
                   </p>
                   {isWA ? (
-                    <p className="text-white/50">
+                    <p className="text-black dark:text-white/50">
                       We're sending your group invite link to the WhatsApp number you provided.
                     </p>
                   ) : (
-                    <div className="text-white/50 space-y-1">
+                    <div className="text-black dark:text-white/50 space-y-1">
                       <p>The bot will send you a join link on Telegram.</p>
-                      <p className="text-[14px] text-white/30">
+                      <p className="text-[14px] text-black dark:text-white/30">
                         Haven't received it? Make sure you've sent <span className="font-mono">/start</span> to <span className="font-mono">@membba_bot</span> first.
                       </p>
                     </div>
@@ -160,17 +160,17 @@ export default function PaymentSuccessPage() {
                   <div className="mb-6">
                     <button
                       onClick={() => setShowHelp(h => !h)}
-                      className="w-full flex items-center justify-between text-[14px] text-white/35 hover:text-white/55 transition-colors py-2"
+                      className="w-full flex items-center justify-between text-[14px] text-black dark:text-white/35 hover:text-black dark:text-white/55 transition-colors py-2"
                     >
                       <span>Didn't receive a link?</span>
                       <span>{showHelp ? '▲' : '▼'}</span>
                     </button>
                     {showHelp && (
-                      <div className="mt-2 bg-[#111] border border-white/[0.07] rounded-xl p-7 text-[14px] text-white/50 space-y-2 leading-relaxed">
-                        <p>1. Open Telegram and search for <span className="font-mono text-white/70">@membba_bot</span></p>
-                        <p>2. Send the command <span className="font-mono text-white/70">/start</span></p>
+                      <div className="mt-2 bg-white dark:bg-[#111] border border-white/[0.07] rounded-xl p-7 text-[14px] text-black dark:text-white/50 space-y-2 leading-relaxed">
+                        <p>1. Open Telegram and search for <span className="font-mono text-black dark:text-white/70">@membba_bot</span></p>
+                        <p>2. Send the command <span className="font-mono text-black dark:text-white/70">/start</span></p>
                         <p>3. Wait a moment — the bot will automatically send you the invite link.</p>
-                        <p className="text-white/30">If it still doesn't arrive, contact your community admin.</p>
+                        <p className="text-black dark:text-white/30">If it still doesn't arrive, contact your community admin.</p>
                       </div>
                     )}
                   </div>
@@ -180,8 +180,8 @@ export default function PaymentSuccessPage() {
 
             {/* Reference */}
             <div className="border-t border-white/[0.05] pt-5">
-              <p className="text-[14px] text-white/25">
-                Reference: <span className="font-mono text-white/35">{reference}</span>
+              <p className="text-[14px] text-black dark:text-white/25">
+                Reference: <span className="font-mono text-black dark:text-white/35">{reference}</span>
               </p>
             </div>
           </div>
@@ -197,27 +197,27 @@ export default function PaymentSuccessPage() {
             </div>
 
             <p className="text-[14px] font-bold tracking-[0.15em] uppercase text-red-400/60 mb-2">Payment Issue</p>
-            <h1 className="text-[26px] font-black text-white leading-tight mb-3">We couldn't verify your payment</h1>
-            <p className="text-[14px] text-white/45 leading-relaxed mb-7">
+            <h1 className="text-[26px] font-black text-black dark:text-white leading-tight mb-3">We couldn't verify your payment</h1>
+            <p className="text-[14px] text-black dark:text-white/45 leading-relaxed mb-7">
               Don't worry — if your card was charged, your money is safe. Contact support with the reference below and we'll resolve it promptly.
             </p>
 
             {reference && (
-              <div className="bg-[#111] border border-white/[0.07] rounded-xl px-5 py-3.5 mb-7 flex items-center justify-between gap-3">
+              <div className="bg-white dark:bg-[#111] border border-white/[0.07] rounded-xl px-5 py-3.5 mb-7 flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[14px] text-white/30 uppercase tracking-wider font-semibold mb-1">Reference</p>
-                  <p className="font-mono text-[14px] text-white/70 break-all">{reference}</p>
+                  <p className="text-[14px] text-black dark:text-white/30 uppercase tracking-wider font-semibold mb-1">Reference</p>
+                  <p className="font-mono text-[14px] text-black dark:text-white/70 break-all">{reference}</p>
                 </div>
               </div>
             )}
 
             <div className="flex flex-col gap-3">
               <a href={`mailto:support@membba.com?subject=Payment%20Issue&body=Reference:%20${reference}`}
-                className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-bold text-[14px] bg-white/[0.06] text-white/70 hover:bg-white/[0.09] transition-colors border border-white/[0.07]">
+                className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-bold text-[14px] bg-white/[0.06] text-black dark:text-white/70 hover:bg-white/[0.09] transition-colors border border-white/[0.07]">
                 Contact Support
               </a>
               <Link to="/"
-                className="text-center text-[14px] text-white/30 hover:text-white/50 transition-colors py-2">
+                className="text-center text-[14px] text-black dark:text-white/30 hover:text-black dark:text-white/50 transition-colors py-2">
                 Go back home
               </Link>
             </div>

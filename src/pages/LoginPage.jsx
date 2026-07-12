@@ -37,16 +37,16 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  const bg = dark ? "bg-[#0a0a0a]" : "bg-gray-50";
-  const card = dark ? "bg-[#111] border-[#1e1e1e]" : "bg-white border-gray-200";
+  const bg = dark ? "bg-gray-50 dark:bg-[#0a0a0a]" : "bg-gray-50";
+  const card = dark ? "bg-white dark:bg-[#111] border-gray-200 dark:border-[#1e1e1e]" : "bg-white border-gray-200";
   const inputCls = dark
-    ? "bg-[#0a0a0a] border-[#2a2a2a] text-white placeholder-gray-600 focus:border-[#9FFF57]/50 focus:ring-[#9FFF57]/25"
+    ? "bg-gray-50 dark:bg-[#0a0a0a] border-[#2a2a2a] text-black dark:text-white placeholder-gray-600 focus:border-[#9FFF57]/50 focus:ring-[#9FFF57]/25"
     : "bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400 focus:border-[#7de040]/60 focus:ring-[#7de040]/20";
   const labelCls = dark ? "text-gray-400" : "text-gray-500";
   const textMuted = dark ? "text-gray-500" : "text-gray-500";
   const navBorder = dark ? "border-[#1a1a1a]" : "border-gray-200";
   const googleBtn = dark
-    ? "bg-[#1a1a1a] border-[#2a2a2a] text-white hover:bg-[#222] hover:border-[#333]"
+    ? "bg-[#1a1a1a] border-[#2a2a2a] text-black dark:text-white hover:bg-[#222] hover:border-[#333]"
     : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400";
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
@@ -87,7 +87,7 @@ export default function LoginPage() {
       <nav className={`relative z-10 flex items-center justify-between px-6 py-4 border-b ${navBorder}`}>
         <Link to="/" className="flex items-center gap-2">
           <img src="/green.svg" alt="Membba" className="h-7" />
-          <span className={`font-bold tracking-tight ${dark ? "text-white" : "text-gray-900"}`}>Membba</span>
+          <span className={`font-bold tracking-tight ${dark ? "text-black dark:text-white" : "text-gray-900"}`}>Membba</span>
         </Link>
         <div className="flex items-center gap-7">
           <p className={`text-sm ${textMuted}`}>
@@ -101,7 +101,7 @@ export default function LoginPage() {
             onClick={toggleTheme}
             aria-label="Toggle theme"
             className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
-              dark ? "bg-white/[0.07] hover:bg-white/[0.12] text-white/60" : "bg-gray-100 hover:bg-gray-200 text-gray-500"
+              dark ? "bg-white/[0.07] hover:bg-white/[0.12] text-black dark:text-white/60" : "bg-gray-100 hover:bg-gray-200 text-gray-500"
             }`}
           >
             {dark ? (
@@ -123,7 +123,7 @@ export default function LoginPage() {
                 <span className="w-1.5 h-1.5 rounded-full bg-[#9FFF57] animate-pulse inline-block" />
                 Creator Dashboard
               </div>
-              <h1 className={`text-2xl font-black mb-1 ${dark ? "text-white" : "text-gray-900"}`}>Welcome back</h1>
+              <h1 className={`text-2xl font-black mb-1 ${dark ? "text-black dark:text-white" : "text-gray-900"}`}>Welcome back</h1>
               <p className={`text-sm ${textMuted}`}>Login to manage your communities</p>
             </div>
 

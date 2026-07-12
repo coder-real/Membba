@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import DashboardLayout from '../components/DashboardLayout'
+
 import Select from '../components/Select'
 import toast from 'react-hot-toast'
 import QRCode from 'qrcode'
@@ -306,21 +306,21 @@ export default function CommunityFormPage() {
 
   return (
     <>
-    <DashboardLayout>
+    <>
       <div className="max-w-2xl">
         <div className="mb-10">
           <div className="flex items-start justify-between gap-7">
             <div>
-              <h1 className="text-3xl font-black text-white tracking-tight">
+              <h1 className="text-3xl font-black text-black dark:text-white tracking-tight">
                 {isEditing ? 'Edit Community' : 'Create Community'}
               </h1>
-              <p className="text-[14px] text-white/50 mt-1.5">Set up your paid community in a few steps</p>
+              <p className="text-[14px] text-black dark:text-white/50 mt-1.5">Set up your paid community in a few steps</p>
             </div>
             {isEditing && (
               <button
                 type="button"
                 onClick={runSetupCheck}
-                className="flex-shrink-0 inline-flex items-center gap-1.5 border border-white/[0.1] text-white/50 px-4 py-2 rounded-lg text-[14px] font-semibold hover:border-white/20 hover:text-white/70 transition-colors"
+                className="flex-shrink-0 inline-flex items-center gap-1.5 border border-white/[0.1] text-black dark:text-white/50 px-4 py-2 rounded-lg text-[14px] font-semibold hover:border-white/20 hover:text-black dark:text-white/70 transition-colors"
               >
                 📋 Test Setup
               </button>
@@ -352,14 +352,14 @@ export default function CommunityFormPage() {
                       w-8 h-8 rounded-full flex items-center justify-center text-[14px] font-bold transition-all
                       ${isActive ? 'bg-[#9FFF57] text-black shadow-[0_0_15px_rgba(159,255,87,0.3)]'
                         : isPast ? 'bg-[#9FFF57]/20 text-[#9FFF57] border border-[#9FFF57]/30'
-                        : 'bg-[#111] text-white/30 border border-white/[0.1] hover:border-white/20'
+                        : 'bg-white dark:bg-[#111] text-black dark:text-white/30 border border-white/[0.1] hover:border-white/20'
                       }
                       ${!isClickable ? 'cursor-not-allowed' : 'cursor-pointer'}
                     `}
                   >
                     {isPast ? <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg> : step.num}
                   </button>
-                  <span className={`text-[14px] font-semibold tracking-wide uppercase transition-colors ${isActive ? 'text-white' : isPast ? 'text-[#9FFF57]/70' : 'text-white/30'}`}>
+                  <span className={`text-[14px] font-semibold tracking-wide uppercase transition-colors ${isActive ? 'text-black dark:text-white' : isPast ? 'text-[#9FFF57]/70' : 'text-black dark:text-white/30'}`}>
                     {step.label}
                   </span>
                 </div>
@@ -381,16 +381,16 @@ export default function CommunityFormPage() {
 
           {/* Step 1: Platform Selection */}
           <div className={currentStep === 1 ? 'block animate-in fade-in slide-in-from-right-4 duration-300 space-y-6' : 'hidden'}>
-            <div className="bg-[#111] border border-white/[0.07] rounded-xl p-7 space-y-5">
+            <div className="bg-white dark:bg-[#111] border border-white/[0.07] rounded-xl p-7 space-y-5">
               <div>
-                <h2 className="text-[18px] font-black text-white">Choose your platform</h2>
-                <p className="text-[14px] text-white/40 mt-1">Select where your community will be hosted.</p>
+                <h2 className="text-[18px] font-black text-black dark:text-white">Choose your platform</h2>
+                <p className="text-[14px] text-black dark:text-white/40 mt-1">Select where your community will be hosted.</p>
               </div>
 
             {/* ─── n8n-style Platform Picker ─── */}
             <div>
               <div className="flex items-center gap-3 mb-4">
-                <label className="block text-[14px] font-bold text-white/40 uppercase tracking-widest">Platform *</label>
+                <label className="block text-[14px] font-bold text-black dark:text-white/40 uppercase tracking-widest">Platform *</label>
                 {isEditing && (
                   <span className="flex items-center gap-1.5 text-[10px] font-bold text-amber-400/80 bg-amber-400/10 border border-amber-400/20 px-2.5 py-1 rounded-full">
                     <svg width="9" height="9" fill="currentColor" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
@@ -407,7 +407,7 @@ export default function CommunityFormPage() {
                   className={`group relative overflow-hidden text-left rounded-2xl border-2 p-7 transition-all duration-300 ${
                     form.platform === 'telegram'
                       ? 'border-[#229ED9] bg-[#229ED9]/[0.07] shadow-[0_0_30px_rgba(34,158,217,0.12)]'
-                      : 'border-white/[0.06] bg-white/[0.02] opacity-60 hover:opacity-80 hover:border-white/[0.12]'
+                      : 'border-gray-200 dark:border-white/10 bg-white/[0.02] opacity-60 hover:opacity-80 hover:border-white/[0.12]'
                   }`}
                 >
                   {/* watermark logo */}
@@ -420,13 +420,13 @@ export default function CommunityFormPage() {
                         <img src={telegramLogo} alt="Telegram" className="w-6 h-6" />
                       </div>
                       <div>
-                        <p className="text-[14px] font-bold text-white">Telegram</p>
+                        <p className="text-[14px] font-bold text-black dark:text-white">Telegram</p>
                         {form.platform === 'telegram' && (
                           <span className="text-[10px] font-bold text-[#229ED9] uppercase tracking-widest">Selected</span>
                         )}
                       </div>
                     </div>
-                    <p className="text-[14px] text-white/40 leading-relaxed">Bot auto-adds &amp; removes members. Fully automated, no phone number needed.</p>
+                    <p className="text-[14px] text-black dark:text-white/40 leading-relaxed">Bot auto-adds &amp; removes members. Fully automated, no phone number needed.</p>
                     <div className="mt-4 flex flex-wrap gap-1.5">
                       {['Instant delivery','Bot-managed','Reliable'].map(t => (
                         <span key={t} className="text-[10px] px-2 py-0.5 rounded-full bg-[#229ED9]/10 text-[#229ED9]/80 border border-[#229ED9]/15 font-medium">{t}</span>
@@ -442,7 +442,7 @@ export default function CommunityFormPage() {
                   className={`group relative overflow-hidden text-left rounded-2xl border-2 p-7 transition-all duration-300 ${
                     form.platform === 'whatsapp'
                       ? 'border-[#25D366] bg-[#25D366]/[0.07] shadow-[0_0_30px_rgba(37,211,102,0.10)]'
-                      : 'border-white/[0.06] bg-white/[0.02] opacity-60 hover:opacity-80 hover:border-white/[0.12]'
+                      : 'border-gray-200 dark:border-white/10 bg-white/[0.02] opacity-60 hover:opacity-80 hover:border-white/[0.12]'
                   }`}
                 >
                   {/* watermark logo */}
@@ -455,13 +455,13 @@ export default function CommunityFormPage() {
                         <img src={whatsappLogo} alt="WhatsApp" className="w-6 h-6" />
                       </div>
                       <div>
-                        <p className="text-[14px] font-bold text-white">WhatsApp</p>
+                        <p className="text-[14px] font-bold text-black dark:text-white">WhatsApp</p>
                         {form.platform === 'whatsapp' && (
                           <span className="text-[10px] font-bold text-[#25D366] uppercase tracking-widest">Selected</span>
                         )}
                       </div>
                     </div>
-                    <p className="text-[14px] text-white/40 leading-relaxed">Via dedicated WhatsApp number. Managed via whatsapp-web.js on your server.</p>
+                    <p className="text-[14px] text-black dark:text-white/40 leading-relaxed">Via dedicated WhatsApp number. Managed via whatsapp-web.js on your server.</p>
                     <div className="mt-4 flex flex-wrap gap-1.5">
                       {['Requires number','Invite-based','Manual setup'].map(t => (
                         <span key={t} className="text-[10px] px-2 py-0.5 rounded-full bg-[#25D366]/10 text-[#25D366]/80 border border-[#25D366]/15 font-medium">{t}</span>
@@ -478,28 +478,28 @@ export default function CommunityFormPage() {
           <div className={currentStep === 2 ? 'block animate-in fade-in slide-in-from-right-4 duration-300 space-y-6' : 'hidden'}>
             
             {/* Community Details */}
-            <div className="bg-[#111] border border-white/[0.07] rounded-xl p-7 space-y-5">
-              <h2 className="text-[15px] font-bold text-white mb-2">Community Profile</h2>
+            <div className="bg-white dark:bg-[#111] border border-white/[0.07] rounded-xl p-7 space-y-5">
+              <h2 className="text-[15px] font-bold text-black dark:text-white mb-2">Community Profile</h2>
 
               <div>
-                <label className="block text-[14px] font-bold text-white/45 mb-2 uppercase tracking-widest">Community Name *</label>
+                <label className="block text-[14px] font-bold text-black dark:text-white/45 mb-2 uppercase tracking-widest">Community Name *</label>
                 <input
                   type="text" name="name" required={currentStep === 2} value={form.name} onChange={handleFormChange}
-                  className="w-full bg-[#0a0a0a] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-white placeholder-white/20 focus:outline-none focus:border-[#9FFF57]/40 focus:ring-1 focus:ring-[#9FFF57]/15 transition-colors"
+                  className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-black dark:text-white placeholder-white/20 focus:outline-none focus:border-[#9FFF57]/40 focus:ring-1 focus:ring-[#9FFF57]/15 transition-colors"
                   placeholder="e.g. Crypto Inner Circle"
                 />
                 {form.name && !isEditing && (
-                  <p className="text-[14px] text-white/30 mt-2 font-mono">
+                  <p className="text-[14px] text-black dark:text-white/30 mt-2 font-mono">
                     {window.location.origin}/join/{slug}
                   </p>
                 )}
               </div>
 
               <div>
-                <label className="block text-[14px] font-bold text-white/45 mb-2 uppercase tracking-widest">Description</label>
+                <label className="block text-[14px] font-bold text-black dark:text-white/45 mb-2 uppercase tracking-widest">Description</label>
                 <textarea
                   name="description" value={form.description} onChange={handleFormChange} rows={3}
-                  className="w-full bg-[#0a0a0a] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-white placeholder-white/20 focus:outline-none focus:border-[#9FFF57]/40 focus:ring-1 focus:ring-[#9FFF57]/15 transition-colors resize-none"
+                  className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-black dark:text-white placeholder-white/20 focus:outline-none focus:border-[#9FFF57]/40 focus:ring-1 focus:ring-[#9FFF57]/15 transition-colors resize-none"
                   placeholder="What will members get access to?"
                 />
               </div>
@@ -520,7 +520,7 @@ export default function CommunityFormPage() {
                   <img src={telegramLogo} alt="Telegram" className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-[14px] font-black text-white">Telegram Group Setup</p>
+                  <p className="text-[14px] font-black text-black dark:text-white">Telegram Group Setup</p>
                   <p className="text-[14px] text-[#229ED9]/70">Connect your group in 2 steps</p>
                 </div>
               </div>
@@ -531,12 +531,12 @@ export default function CommunityFormPage() {
                 <div className="flex gap-7">
                   <div className="flex-shrink-0 w-7 h-7 rounded-full bg-[#229ED9]/20 border border-[#229ED9]/30 flex items-center justify-center text-[#229ED9] text-[14px] font-black">1</div>
                   <div className="flex-1">
-                    <p className="text-[14px] font-bold text-white mb-1">Add Membba Bot to your group as Admin</p>
-                    <p className="text-[14px] text-white/40 mb-3">Scan the QR or click the button to open Telegram and select your group. The bot will automatically send your Chat ID.</p>
+                    <p className="text-[14px] font-bold text-black dark:text-white mb-1">Add Membba Bot to your group as Admin</p>
+                    <p className="text-[14px] text-black dark:text-white/40 mb-3">Scan the QR or click the button to open Telegram and select your group. The bot will automatically send your Chat ID.</p>
                     <button
                       type="button"
                       onClick={openConnectQr}
-                      className="inline-flex items-center gap-2 bg-[#229ED9] text-white text-[14px] font-bold px-5 py-2.5 rounded-xl hover:bg-[#1a8fc4] transition-colors"
+                      className="inline-flex items-center gap-2 bg-[#229ED9] text-black dark:text-white text-[14px] font-bold px-5 py-2.5 rounded-xl hover:bg-[#1a8fc4] transition-colors"
                     >
                       <img src={telegramLogo} alt="" className="w-4 h-4 invert brightness-0" />
                       Connect via Bot
@@ -548,14 +548,14 @@ export default function CommunityFormPage() {
                 <div className="flex gap-7">
                   <div className="flex-shrink-0 w-7 h-7 rounded-full bg-[#229ED9]/20 border border-[#229ED9]/30 flex items-center justify-center text-[#229ED9] text-[14px] font-black">2</div>
                   <div className="flex-1">
-                    <p className="text-[14px] font-bold text-white mb-1">Paste your Group Chat ID</p>
-                    <p className="text-[14px] text-white/40 mb-3">The bot will post the ID to your group. Copy it here. It will self-destruct in 5 minutes.</p>
+                    <p className="text-[14px] font-bold text-black dark:text-white mb-1">Paste your Group Chat ID</p>
+                    <p className="text-[14px] text-black dark:text-white/40 mb-3">The bot will post the ID to your group. Copy it here. It will self-destruct in 5 minutes.</p>
                     <input
                       type="text"
                       name="telegram_chat_id"
                       value={form.telegram_chat_id || ''}
                       onChange={handleFormChange}
-                      className="w-full bg-[#0a0a0a] border border-[#229ED9]/20 rounded-xl px-4 py-3 text-[14px] text-white placeholder-white/20 focus:outline-none focus:border-[#229ED9]/50 focus:ring-1 focus:ring-[#229ED9]/15 transition-colors font-mono"
+                      className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-[#229ED9]/20 rounded-xl px-4 py-3 text-[14px] text-black dark:text-white placeholder-white/20 focus:outline-none focus:border-[#229ED9]/50 focus:ring-1 focus:ring-[#229ED9]/15 transition-colors font-mono"
                       placeholder="e.g. -1001234567890"
                     />
                   </div>
@@ -580,7 +580,7 @@ export default function CommunityFormPage() {
                   <img src={whatsappLogo} alt="WhatsApp" className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-[14px] font-black text-white">WhatsApp Group Setup</p>
+                  <p className="text-[14px] font-black text-black dark:text-white">WhatsApp Group Setup</p>
                   <p className="text-[14px] text-[#25D366]/70">Requires a dedicated WhatsApp number</p>
                 </div>
               </div>
@@ -590,22 +590,22 @@ export default function CommunityFormPage() {
                 {/* Requirements notice */}
                 <div className="flex gap-3 bg-yellow-400/5 border border-yellow-400/15 rounded-xl p-7">
                   <span className="text-yellow-400 text-[16px] flex-shrink-0">⚠</span>
-                  <div className="text-[14px] text-white/50 space-y-1 leading-relaxed">
+                  <div className="text-[14px] text-black dark:text-white/50 space-y-1 leading-relaxed">
                     <p className="text-yellow-400 font-bold text-[14px] mb-1.5">Requirements</p>
-                    <p>Use a <span className="text-white/80">dedicated WhatsApp number</span> — never your personal number.</p>
-                    <p>Authenticate the number at <span className="text-white/60 font-mono text-[14px]">/api/whatsapp/qr</span> before continuing.</p>
+                    <p>Use a <span className="text-black dark:text-white/80">dedicated WhatsApp number</span> — never your personal number.</p>
+                    <p>Authenticate the number at <span className="text-black dark:text-white/60 font-mono text-[14px]">/api/whatsapp/qr</span> before continuing.</p>
                   </div>
                 </div>
 
                 {/* Group invite link */}
                 <div>
-                  <label className="block text-[14px] font-bold text-white/40 mb-2 uppercase tracking-widest">Group Invite Link *</label>
+                  <label className="block text-[14px] font-bold text-black dark:text-white/40 mb-2 uppercase tracking-widest">Group Invite Link *</label>
                   <input
                     type="url"
                     name="whatsapp_group_invite_link"
                     value={form.whatsapp_group_invite_link}
                     onChange={handleFormChange}
-                    className="w-full bg-[#0a0a0a] border border-[#25D366]/20 rounded-xl px-4 py-3 text-[14px] text-white placeholder-white/20 focus:outline-none focus:border-[#25D366]/50 focus:ring-1 focus:ring-[#25D366]/15 transition-colors"
+                    className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-[#25D366]/20 rounded-xl px-4 py-3 text-[14px] text-black dark:text-white placeholder-white/20 focus:outline-none focus:border-[#25D366]/50 focus:ring-1 focus:ring-[#25D366]/15 transition-colors"
                     placeholder="https://chat.whatsapp.com/xxxxxxxxxx"
                   />
                 </div>
@@ -617,7 +617,7 @@ export default function CommunityFormPage() {
                       type="button"
                       onClick={handleRegisterWhatsAppGroup}
                       disabled={registeringGroup}
-                      className="inline-flex items-center gap-2 bg-[#25D366] text-white text-[14px] font-bold px-5 py-2.5 rounded-xl hover:bg-[#1da851] disabled:opacity-50 transition-colors"
+                      className="inline-flex items-center gap-2 bg-[#25D366] text-black dark:text-white text-[14px] font-bold px-5 py-2.5 rounded-xl hover:bg-[#1da851] disabled:opacity-50 transition-colors"
                     >
                       <img src={whatsappLogo} alt="" className="w-4 h-4 invert brightness-0" />
                       {registeringGroup ? 'Joining group...' : 'Register Group'}
@@ -626,7 +626,7 @@ export default function CommunityFormPage() {
                     {!waGroupId && <span className="text-[14px] text-yellow-400/70">⚠ Not yet registered</span>}
                   </div>
                 ) : (
-                  <p className="text-[14px] text-white/30">Save the community first, then return here to register the group.</p>
+                  <p className="text-[14px] text-black dark:text-white/30">Save the community first, then return here to register the group.</p>
                 )}
 
               </div>
@@ -640,27 +640,27 @@ export default function CommunityFormPage() {
 
             {/* Existing Plans (edit mode) */}
           {isEditing && existingPlans.length > 0 && (
-            <div className="bg-[#111] border border-white/[0.07] rounded-xl overflow-hidden">
+            <div className="bg-white dark:bg-[#111] border border-white/[0.07] rounded-xl overflow-hidden">
               {/* Header row */}
               <div className="grid grid-cols-[1fr_120px_130px_80px] gap-0 border-b border-white/[0.07] px-6 py-3 bg-white/[0.02]">
-                <span className="text-[14px] font-bold text-white/30 uppercase tracking-widest">Plan Name</span>
-                <span className="text-[14px] font-bold text-white/30 uppercase tracking-widest">Price</span>
-                <span className="text-[14px] font-bold text-white/30 uppercase tracking-widest">Duration</span>
+                <span className="text-[14px] font-bold text-black dark:text-white/30 uppercase tracking-widest">Plan Name</span>
+                <span className="text-[14px] font-bold text-black dark:text-white/30 uppercase tracking-widest">Price</span>
+                <span className="text-[14px] font-bold text-black dark:text-white/30 uppercase tracking-widest">Duration</span>
                 <span></span>
               </div>
               {existingPlans.map((p, idx) => (
                 <div
                   key={p.id}
                   className={`grid grid-cols-[1fr_120px_130px_80px] items-center gap-0 px-6 py-4 group transition-colors hover:bg-white/[0.025] ${
-                    idx < existingPlans.length - 1 ? 'border-b border-white/[0.06]' : ''
+                    idx < existingPlans.length - 1 ? 'border-b border-gray-200 dark:border-white/10' : ''
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-1.5 h-1.5 rounded-full bg-[#9FFF57]/60 flex-shrink-0" />
-                    <span className="font-semibold text-[14px] text-white">{p.name}</span>
+                    <span className="font-semibold text-[14px] text-black dark:text-white">{p.name}</span>
                   </div>
-                  <span className="text-[14px] text-white/70 font-mono">₦{p.price.toLocaleString()}</span>
-                  <span className="text-[14px] text-white/50">{formatDuration(p.duration_minutes)}</span>
+                  <span className="text-[14px] text-black dark:text-white/70 font-mono">₦{p.price.toLocaleString()}</span>
+                  <span className="text-[14px] text-black dark:text-white/50">{formatDuration(p.duration_minutes)}</span>
                   <div className="flex justify-end">
                     <button
                       type="button"
@@ -676,12 +676,12 @@ export default function CommunityFormPage() {
           )}
 
           {/* Plan Builder */}
-          <div className="bg-[#111] border border-white/[0.07] rounded-xl overflow-hidden">
+          <div className="bg-white dark:bg-[#111] border border-white/[0.07] rounded-xl overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between px-7 pt-6 pb-4">
               <div>
-                <h2 className="text-[15px] font-bold text-white">{isEditing ? 'Add New Plans' : 'Subscription Plans'}</h2>
-                <p className="text-[14px] text-white/35 mt-0.5">Each plan gives members timed access to your community.</p>
+                <h2 className="text-[15px] font-bold text-black dark:text-white">{isEditing ? 'Add New Plans' : 'Subscription Plans'}</h2>
+                <p className="text-[14px] text-black dark:text-white/35 mt-0.5">Each plan gives members timed access to your community.</p>
               </div>
             </div>
 
@@ -712,7 +712,7 @@ export default function CommunityFormPage() {
                           value={plan.name}
                           onChange={e => handlePlanChange(i, e)}
                           placeholder="Plan name e.g. Monthly Access"
-                          className="w-full bg-transparent text-[17px] font-bold text-white placeholder-white/20 outline-none border-0 focus:outline-none"
+                          className="w-full bg-transparent text-[17px] font-bold text-black dark:text-white placeholder-white/20 outline-none border-0 focus:outline-none"
                         />
                         <div className="h-px bg-white/[0.07] mt-2 group-focus-within:bg-[#9FFF57]/30 transition-colors" />
                       </div>
@@ -733,8 +733,8 @@ export default function CommunityFormPage() {
                     {/* Price + Duration grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-7 mb-4">
                       {/* Price */}
-                      <div className="flex items-center gap-0 bg-white/[0.03] border border-white/[0.06] rounded-xl overflow-hidden focus-within:border-white/20 transition-colors">
-                        <span className="px-4 py-3.5 text-[15px] font-bold text-white/40 border-r border-white/[0.06] flex-shrink-0 select-none">₦</span>
+                      <div className="flex items-center gap-0 bg-white/[0.03] border border-gray-200 dark:border-white/10 rounded-xl overflow-hidden focus-within:border-white/20 transition-colors">
+                        <span className="px-4 py-3.5 text-[15px] font-bold text-black dark:text-white/40 border-r border-gray-200 dark:border-white/10 flex-shrink-0 select-none">₦</span>
                         <input
                           type="number"
                           name="price"
@@ -742,7 +742,7 @@ export default function CommunityFormPage() {
                           value={plan.price}
                           onChange={e => handlePlanChange(i, e)}
                           placeholder="5,000"
-                          className="flex-1 bg-transparent px-3.5 py-3.5 text-[15px] font-semibold text-white placeholder-white/20 outline-none [appearance:textfield]"
+                          className="flex-1 bg-transparent px-3.5 py-3.5 text-[15px] font-semibold text-black dark:text-white placeholder-white/20 outline-none [appearance:textfield]"
                         />
                       </div>
 
@@ -769,7 +769,7 @@ export default function CommunityFormPage() {
                             onChange={e => handlePlanChange(i, e)}
                             placeholder="e.g. 2 minutes, 45 days"
                             autoFocus
-                            className="w-full bg-white/[0.03] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-white placeholder-white/20 outline-none focus:border-[#9FFF57]/40 transition-colors font-mono"
+                            className="w-full bg-white/[0.03] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-black dark:text-white placeholder-white/20 outline-none focus:border-[#9FFF57]/40 transition-colors font-mono"
                           />
                         ) : null}
                         {plan.duration && parsedMins && (
@@ -789,8 +789,8 @@ export default function CommunityFormPage() {
 
                     {/* Description */}
                     <div className="mt-5">
-                      <label className="block text-[14px] font-semibold text-white/40 uppercase tracking-widest mb-2">
-                        Description <span className="text-white/20">(optional)</span>
+                      <label className="block text-[14px] font-semibold text-black dark:text-white/40 uppercase tracking-widest mb-2">
+                        Description <span className="text-black dark:text-white/20">(optional)</span>
                       </label>
                       <div className="relative">
                         <textarea
@@ -800,11 +800,11 @@ export default function CommunityFormPage() {
                           placeholder="Describe what members get access to with this plan…"
                           maxLength={200}
                           rows={3}
-                          className="w-full bg-white/[0.03] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-white placeholder-white/30 outline-none focus:border-[#9FFF57]/40 focus:ring-1 focus:ring-[#9FFF57]/15 transition-colors resize-none"
+                          className="w-full bg-white/[0.03] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-black dark:text-white placeholder-white/30 outline-none focus:border-[#9FFF57]/40 focus:ring-1 focus:ring-[#9FFF57]/15 transition-colors resize-none"
                         />
                         <div className="flex items-center justify-between mt-1.5 px-1">
-                          <p className="text-[14px] text-white/30">Helps members understand what they're subscribing to</p>
-                          <span className="text-[14px] text-white/25 font-mono">{plan.description.length}/200</span>
+                          <p className="text-[14px] text-black dark:text-white/30">Helps members understand what they're subscribing to</p>
+                          <span className="text-[14px] text-black dark:text-white/25 font-mono">{plan.description.length}/200</span>
                         </div>
                       </div>
                     </div>
@@ -817,7 +817,7 @@ export default function CommunityFormPage() {
             <button
               type="button"
               onClick={addPlanRow}
-              className="w-full flex items-center gap-3 px-7 py-5 border-t border-dashed border-white/[0.08] text-white/30 hover:text-white/60 hover:bg-white/[0.025] transition-all group"
+              className="w-full flex items-center gap-3 px-7 py-5 border-t border-dashed border-gray-200 dark:border-white/10 text-black dark:text-white/30 hover:text-black dark:text-white/60 hover:bg-white/[0.025] transition-all group"
             >
               <span className="w-5 h-5 rounded-md border border-current flex items-center justify-center text-[14px] leading-none group-hover:border-[#9FFF57]/50 group-hover:text-[#9FFF57]/70 transition-colors">+</span>
               <span className="text-[14px] font-medium">Add a plan</span>
@@ -828,14 +828,14 @@ export default function CommunityFormPage() {
 
           {/* Step 4: Automations */}
           <div className={currentStep === 4 ? 'block animate-in fade-in slide-in-from-right-4 duration-300 space-y-6' : 'hidden overflow-visible'}>
-            <div className="bg-[#111] border border-white/[0.07] rounded-xl p-7 overflow-visible">
+            <div className="bg-white dark:bg-[#111] border border-white/[0.07] rounded-xl p-7 overflow-visible">
               <div className="flex items-start justify-between mb-5 gap-7">
                 <div className="flex-1">
-                  <h2 className="text-[15px] font-bold text-white mb-1">Welcome Message</h2>
-                  <p className="text-[14px] text-white/40">Send an automated DM to new subscribers when they pay.</p>
+                  <h2 className="text-[15px] font-bold text-black dark:text-white mb-1">Welcome Message</h2>
+                  <p className="text-[14px] text-black dark:text-white/40">Send an automated DM to new subscribers when they pay.</p>
                 </div>
                 <label className="flex items-center gap-3 cursor-pointer flex-shrink-0">
-                  <span className="text-[14px] font-bold text-white/50">{form.welcome_message_enabled ? 'ON' : 'OFF'}</span>
+                  <span className="text-[14px] font-bold text-black dark:text-white/50">{form.welcome_message_enabled ? 'ON' : 'OFF'}</span>
                   <input type="checkbox" name="welcome_message_enabled" checked={form.welcome_message_enabled} onChange={e => handleFormChange({target: {name: 'welcome_message_enabled', value: e.target.checked}})} className="sr-only peer" />
                   <div className="w-11 h-6 bg-white/[0.05] border border-white/[0.1] rounded-full peer peer-checked:bg-[#9FFF57]/20 peer-checked:border-[#9FFF57]/50 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white/40 peer-checked:after:bg-[#9FFF57] after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-[20px] relative"></div>
                 </label>
@@ -844,22 +844,22 @@ export default function CommunityFormPage() {
               <div className={form.welcome_message_enabled ? 'mt-6 pt-6 border-t border-white/[0.05]' : 'hidden'}>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-7">
                   <div>
-                    <label className="block text-[14px] font-bold text-white/45 mb-2 uppercase tracking-widest">Message Template</label>
+                    <label className="block text-[14px] font-bold text-black dark:text-white/45 mb-2 uppercase tracking-widest">Message Template</label>
                     <textarea 
                       rows={6} 
                       name="welcome_message" 
                       value={form.welcome_message} 
                       onChange={handleFormChange} 
                       placeholder="Welcome {name}..." 
-                      className="w-full bg-[#0a0a0a] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-white focus:border-[#9FFF57]/40 outline-none resize-none leading-relaxed" 
+                      className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-black dark:text-white focus:border-[#9FFF57]/40 outline-none resize-none leading-relaxed" 
                     />
-                    <p className="text-[14px] text-white/30 mt-3 leading-relaxed">
+                    <p className="text-[14px] text-black dark:text-white/30 mt-3 leading-relaxed">
                       Variables: <code className="bg-white/5 border border-white/[0.05] px-1.5 py-0.5 rounded text-[#9FFF57]">{"{name}"}</code> <code className="bg-white/5 border border-white/[0.05] px-1.5 py-0.5 rounded text-[#9FFF57]">{"{community}"}</code> <br className="hidden lg:block"/> <code className="bg-white/5 border border-white/[0.05] px-1.5 py-0.5 rounded text-[#9FFF57] mt-1 lg:mt-0 inline-block">{"{plan}"}</code> <code className="bg-white/5 border border-white/[0.05] px-1.5 py-0.5 rounded text-[#9FFF57]">{"{expires_on}"}</code>
                     </p>
                   </div>
-                  <div className="bg-[#0a0a0a] border border-white/[0.05] rounded-xl p-7 shadow-inner">
-                    <p className="text-[14px] font-bold text-white/20 mb-3 uppercase tracking-widest">Live Preview</p>
-                    <p className="text-[14px] text-white/70 whitespace-pre-wrap leading-relaxed">
+                  <div className="bg-gray-50 dark:bg-[#0a0a0a] border border-white/[0.05] rounded-xl p-7 shadow-inner">
+                    <p className="text-[14px] font-bold text-black dark:text-white/20 mb-3 uppercase tracking-widest">Live Preview</p>
+                    <p className="text-[14px] text-black dark:text-white/70 whitespace-pre-wrap leading-relaxed">
                       {form.welcome_message
                         .replace(/{name}/g, "JohnDoe")
                         .replace(/{community}/g, form.name || "Your Community")
@@ -873,16 +873,16 @@ export default function CommunityFormPage() {
             </div>
 
           {/* Invite Link & Message Automation Settings */}
-          <div className="bg-[#111] border border-white/[0.07] rounded-xl p-7 space-y-6 overflow-visible">
+          <div className="bg-white dark:bg-[#111] border border-white/[0.07] rounded-xl p-7 space-y-6 overflow-visible">
             <div>
-              <h2 className="text-[15px] font-bold text-white">Invite Link Settings</h2>
-              <p className="text-[14px] text-white/35 mt-1">Control how the bot delivers invite links to paying members.</p>
+              <h2 className="text-[15px] font-bold text-black dark:text-white">Invite Link Settings</h2>
+              <p className="text-[14px] text-black dark:text-white/35 mt-1">Control how the bot delivers invite links to paying members.</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-7">
               {/* Invite link expiry */}
               <div>
-                <label className="block text-[14px] font-bold text-white/45 mb-2 uppercase tracking-widest">
+                <label className="block text-[14px] font-bold text-black dark:text-white/45 mb-2 uppercase tracking-widest">
                   Invite Link Expires After
                 </label>
                 <Select
@@ -898,14 +898,14 @@ export default function CommunityFormPage() {
                     { value: 4320, label: '3 days' },
                   ]}
                 />
-                <p className="text-[14px] text-white/25 mt-2 leading-relaxed">
+                <p className="text-[14px] text-black dark:text-white/25 mt-2 leading-relaxed">
                   After this time, the invite link becomes invalid even if unused.
                 </p>
               </div>
 
               {/* Auto-delete DM */}
               <div>
-                <label className="block text-[14px] font-bold text-white/45 mb-2 uppercase tracking-widest">
+                <label className="block text-[14px] font-bold text-black dark:text-white/45 mb-2 uppercase tracking-widest">
                   Delete Bot Messages After
                 </label>
                 <Select
@@ -921,7 +921,7 @@ export default function CommunityFormPage() {
                     { value: 3600, label: '1 hour' },
                   ]}
                 />
-                <p className="text-[14px] text-white/25 mt-2 leading-relaxed">
+                <p className="text-[14px] text-black dark:text-white/25 mt-2 leading-relaxed">
                   The bot will delete its invite DMs after this delay. Keeps things tidy.
                 </p>
               </div>
@@ -936,7 +936,7 @@ export default function CommunityFormPage() {
               type="button"
               onClick={handlePrev}
               disabled={currentStep === 1}
-              className={`px-5 py-2.5 rounded-xl text-[14px] font-semibold transition-colors ${currentStep === 1 ? 'opacity-0 pointer-events-none' : 'text-white/40 hover:text-white/80 hover:bg-white/[0.05]'}`}
+              className={`px-5 py-2.5 rounded-xl text-[14px] font-semibold transition-colors ${currentStep === 1 ? 'opacity-0 pointer-events-none' : 'text-black dark:text-white/40 hover:text-black dark:text-white/80 hover:bg-white/[0.05]'}`}
             >
               ← Back
             </button>
@@ -944,7 +944,7 @@ export default function CommunityFormPage() {
               <button
                 type="button"
                 onClick={() => navigate('/dashboard/communities')}
-                className="px-4 border border-white/[0.1] sm:px-5 py-2.5 rounded-xl text-[14px] font-semibold text-white/40 hover:text-white/80 hover:border-white/20 transition-colors"
+                className="px-4 border border-white/[0.1] sm:px-5 py-2.5 rounded-xl text-[14px] font-semibold text-black dark:text-white/40 hover:text-black dark:text-white/80 hover:border-white/20 transition-colors"
                >
                  Cancel
                </button>
@@ -952,7 +952,7 @@ export default function CommunityFormPage() {
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="bg-white/[0.12] text-white px-6 sm:px-8 py-2.5 rounded-xl text-[14px] font-semibold hover:bg-white/20 transition-all"
+                  className="bg-white/[0.12] text-black dark:text-white px-6 sm:px-8 py-2.5 rounded-xl text-[14px] font-semibold hover:bg-white/20 transition-all"
                 >
                   Continue →
                 </button>
@@ -969,20 +969,20 @@ export default function CommunityFormPage() {
           </div>
         </form>
       </div>
-    </DashboardLayout>
+    </>
 
       {/* TSK-105/TSK-106: Test Setup Modal with sequential fading */}
       {setupModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-[#111] border border-white/[0.1] rounded-2xl p-7 w-full max-w-md shadow-2xl relative">
+          <div className="bg-white dark:bg-[#111] border border-white/[0.1] rounded-2xl p-7 w-full max-w-md shadow-2xl relative">
             <button
               onClick={() => setSetupModal(null)}
-              className="absolute top-7 right-4 text-white/40 hover:text-white transition-colors"
+              className="absolute top-7 right-4 text-black dark:text-white/40 hover:text-black dark:text-white transition-colors"
               disabled={setupModal.loading && (setupModal.checks || []).length < 2}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
-            <h3 className="text-[16px] font-black text-white mb-5">📋 Running Diagnostics...</h3>
+            <h3 className="text-[16px] font-black text-black dark:text-white mb-5">📋 Running Diagnostics...</h3>
             
             <div className="space-y-4 mb-6 min-h-[120px]">
               {/* Render verified checks sequentially */}
@@ -990,8 +990,8 @@ export default function CommunityFormPage() {
                 <div key={c.id} className="flex items-start gap-3 animate-in fade-in slide-in-from-bottom-2 duration-500">
                   <span className="flex-shrink-0 mt-0.5 text-[16px]">{c.pass ? '✅' : '❌'}</span>
                   <div>
-                    <p className={`text-[14px] font-semibold ${c.pass ? 'text-white/70' : 'text-white'}`}>{c.label}</p>
-                    {!c.pass && <p className="text-[14px] text-white/35 mt-0.5 leading-relaxed">{c.hint}</p>}
+                    <p className={`text-[14px] font-semibold ${c.pass ? 'text-black dark:text-white/70' : 'text-black dark:text-white'}`}>{c.label}</p>
+                    {!c.pass && <p className="text-[14px] text-black dark:text-white/35 mt-0.5 leading-relaxed">{c.hint}</p>}
                   </div>
                 </div>
               ))}
@@ -1003,7 +1003,7 @@ export default function CommunityFormPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
                   </svg>
-                  <p className="text-[14px] font-semibold text-white/50">Processing...</p>
+                  <p className="text-[14px] font-semibold text-black dark:text-white/50">Processing...</p>
                 </div>
               )}
             </div>
@@ -1020,10 +1020,10 @@ export default function CommunityFormPage() {
       {/* TSK-106: Connect via Telegram Bot Modal */}
       {connectQr && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-[#111] border border-white/[0.1] rounded-2xl p-8 w-full max-w-sm text-center shadow-2xl relative">
+          <div className="bg-white dark:bg-[#111] border border-white/[0.1] rounded-2xl p-8 w-full max-w-sm text-center shadow-2xl relative">
             <button
               onClick={() => setConnectQr(null)}
-              className="absolute top-7 right-4 text-white/40 hover:text-white transition-colors"
+              className="absolute top-7 right-4 text-black dark:text-white/40 hover:text-black dark:text-white transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
@@ -1031,8 +1031,8 @@ export default function CommunityFormPage() {
             <div className="mx-auto w-12 h-12 bg-[#229ED9]/10 rounded-full flex items-center justify-center mb-4 text-[#229ED9]">
               <FaTelegram size={24} />
             </div>
-            <h3 className="text-[17px] font-black text-white mb-2">Connect Telegram Group</h3>
-            <p className="text-[14px] text-white/40 mb-6 leading-relaxed px-2">
+            <h3 className="text-[17px] font-black text-black dark:text-white mb-2">Connect Telegram Group</h3>
+            <p className="text-[14px] text-black dark:text-white/40 mb-6 leading-relaxed px-2">
               Scan this QR to add Membba Bot as an admin to your Telegram Group. It will reply with your Chat ID.
             </p>
             
@@ -1040,7 +1040,7 @@ export default function CommunityFormPage() {
               <img src={connectQr.dataUrl} alt="Connect Telegram Bot" className="w-48 h-48" />
             </div>
 
-            <p className="text-[14px] font-bold text-white/30 uppercase tracking-widest mb-3" >OR CLICK DIRECTLY</p>
+            <p className="text-[14px] font-bold text-black dark:text-white/30 uppercase tracking-widest mb-3" >OR CLICK DIRECTLY</p>
             
             <a
               href={connectQr.deepLink}

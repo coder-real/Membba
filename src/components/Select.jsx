@@ -80,13 +80,13 @@ export default function Select({ value, onChange, options = [], placeholder = 'S
                 w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl
                 text-[13.5px] text-left transition-colors duration-100 group
                 ${isSelected
-                  ? 'bg-white/[0.08] text-white font-semibold'
-                  : 'text-white/65 hover:text-white hover:bg-white/[0.055]'
+                  ? 'bg-white/[0.08] text-black dark:text-white font-semibold'
+                  : 'text-black dark:text-white/65 hover:text-black dark:text-white hover:bg-white/[0.055]'
                 }
               `}
             >
               {opt.icon && (
-                <span className={`flex-shrink-0 transition-colors ${isSelected ? 'text-white' : 'text-white/35 group-hover:text-white/60'}`}>
+                <span className={`flex-shrink-0 transition-colors ${isSelected ? 'text-black dark:text-white' : 'text-black dark:text-white/35 group-hover:text-black dark:text-white/60'}`}>
                   {opt.icon}
                 </span>
               )}
@@ -122,20 +122,20 @@ export default function Select({ value, onChange, options = [], placeholder = 'S
           bg-[#0d0d0d] border rounded-xl px-4 py-3
           text-[14px] text-left transition-all duration-150 outline-none
           ${disabled
-            ? 'border-white/[0.06] text-white/25 cursor-not-allowed'
+            ? 'border-gray-200 dark:border-white/10 text-black dark:text-white/25 cursor-not-allowed'
             : open
-              ? 'border-white/25 text-white ring-1 ring-white/10'
-              : 'border-white/[0.1] text-white hover:border-white/20'
+              ? 'border-white/25 text-black dark:text-white ring-1 ring-white/10'
+              : 'border-white/[0.1] text-black dark:text-white hover:border-white/20'
           }
         `}
       >
         <span className="flex items-center gap-2.5 min-w-0">
-          {selected?.icon && <span className="text-white/50 flex-shrink-0">{selected.icon}</span>}
-          <span className="truncate">{selected ? selected.label : <span className="text-white/30">{placeholder}</span>}</span>
+          {selected?.icon && <span className="text-black dark:text-white/50 flex-shrink-0">{selected.icon}</span>}
+          <span className="truncate">{selected ? selected.label : <span className="text-black dark:text-white/30">{placeholder}</span>}</span>
         </span>
         {/* Chevron */}
         <svg
-          className={`flex-shrink-0 w-4 h-4 text-white/30 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          className={`flex-shrink-0 w-4 h-4 text-black dark:text-white/30 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
           fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />

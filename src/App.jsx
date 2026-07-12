@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import DashboardLayout from './components/DashboardLayout'
 
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
@@ -46,14 +47,16 @@ export default function App() {
             <Route path="/payment/success" element={<PaymentSuccessPage />} />
 
             {/* Protected — Creator Dashboard */}
-            <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-            <Route path="/dashboard/communities" element={<ProtectedRoute><CommunitiesPage /></ProtectedRoute>} />
-            <Route path="/dashboard/communities/new" element={<ProtectedRoute><CommunityFormPage /></ProtectedRoute>} />
-            <Route path="/dashboard/communities/:id/edit" element={<ProtectedRoute><CommunityFormPage /></ProtectedRoute>} />
-            <Route path="/dashboard/members" element={<ProtectedRoute><MembersPage /></ProtectedRoute>} />
-            <Route path="/dashboard/payments" element={<ProtectedRoute><PaymentsPage /></ProtectedRoute>} />
-            <Route path="/dashboard/automations" element={<ProtectedRoute><AutomationsPage /></ProtectedRoute>} />
-            <Route path="/dashboard/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route index element={<DashboardPage />} />
+              <Route path="communities" element={<CommunitiesPage />} />
+              <Route path="communities/new" element={<CommunityFormPage />} />
+              <Route path="communities/:id/edit" element={<CommunityFormPage />} />
+              <Route path="members" element={<MembersPage />} />
+              <Route path="payments" element={<PaymentsPage />} />
+              <Route path="automations" element={<AutomationsPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+            </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

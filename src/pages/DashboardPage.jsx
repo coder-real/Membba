@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import DashboardLayout from '../components/DashboardLayout'
+
 import Skeleton from '../components/ui/Skeleton'
 import Avatar from '../components/Avatar'
 
@@ -41,20 +41,20 @@ export default function DashboardPage() {
   const statCards = [
     { label: 'TOTAL REVENUE',   value: `₦${stats.totalRevenue.toLocaleString()}`, sub: 'All time earnings',       trend: '↑ 40% vs last month',   trendColor: 'text-[#9FFF57]' },
     { label: 'ACTIVE MEMBERS',  value: stats.activeMembers,                        sub: 'Current subscribers',     trend: '↑ 5 this week',         trendColor: 'text-[#9FFF57]' },
-    { label: 'COMMUNITIES',     value: stats.communities,                          sub: 'Active groups',           trend: '2 WhatsApp · 1 Telegram',trendColor: 'text-white/40' },
-    { label: 'JUNE EARNINGS',   value: '₦8.5k',                                     sub: 'Projected stats',         trend: 'On track',              trendColor: 'text-white/40' },
+    { label: 'COMMUNITIES',     value: stats.communities,                          sub: 'Active groups',           trend: '2 WhatsApp · 1 Telegram',trendColor: 'text-black dark:text-white/40' },
+    { label: 'JUNE EARNINGS',   value: '₦8.5k',                                     sub: 'Projected stats',         trend: 'On track',              trendColor: 'text-black dark:text-white/40' },
   ]
 
   // Mock data for the chart layout
   const fakeChartPoints = "M0,60 L20,55 L40,49 L60,52 L80,45 L100,48 L120,38 L140,40 L160,30 L180,28 L200,29"
 
   return (
-    <DashboardLayout>
+    <>
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-7 mb-6 mt-2">
         <div>
-          <h1 className="text-[28px] font-black text-white tracking-tight leading-tight">Good morning, {user?.user_metadata?.name?.split(' ')[0] || 'Creator'} 👋</h1>
-          <p className="text-[14px] text-white/50 mt-1.5">
+          <h1 className="text-[28px] font-black text-black dark:text-white tracking-tight leading-tight">Good morning, {user?.user_metadata?.name?.split(' ')[0] || 'Creator'} 👋</h1>
+          <p className="text-[14px] text-black dark:text-white/50 mt-1.5">
             Here's what's happening with your communities.
           </p>
         </div>
@@ -69,13 +69,13 @@ export default function DashboardPage() {
       {/* Stat Cards - Discord palette #111 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {statCards.map((card, i) => (
-          <div key={card.label} className="bg-[#111] rounded-[8px] p-7 flex flex-col justify-between shadow-sm min-h-[100px] hover:bg-white/[0.02] transition-colors border-l-2 border-transparent hover:border-[#9FFF57]/50 border-t border-r border-b border-white/[0.02]">
-            <p className="text-[14px] font-bold text-[#b5bac1] uppercase tracking-wide mb-1">{card.label}</p>
+          <div key={card.label} className="bg-white dark:bg-[#111] rounded-[8px] p-7 flex flex-col justify-between shadow-sm min-h-[100px] hover:bg-white/[0.02] transition-colors border-l-2 border-transparent hover:border-[#9FFF57]/50 border-t border-r border-b border-gray-200 dark:border-white/10">
+            <p className="text-[14px] font-bold text-gray-600 dark:text-[#b5bac1] uppercase tracking-wide mb-1">{card.label}</p>
             {loading ? (
               <Skeleton width="w-24" height="h-7" />
             ) : (
               <div className="flex flex-col">
-                <p className="text-[24px] font-black text-white leading-none">{card.value}</p>
+                <p className="text-[24px] font-black text-black dark:text-white leading-none">{card.value}</p>
                 <p className={`text-[14px] font-medium mt-2 ${card.trendColor}`}>{card.trend}</p>
               </div>
             )}
@@ -86,10 +86,10 @@ export default function DashboardPage() {
       {/* Split Layout: Chart & Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         { /* Chart Column */ }
-        <div className="lg:col-span-2 bg-[#111] rounded-[8px] p-7 shadow-sm min-h-[300px] flex flex-col justify-between border border-white/[0.02]">
+        <div className="lg:col-span-2 bg-white dark:bg-[#111] rounded-[8px] p-7 shadow-sm min-h-[300px] flex flex-col justify-between border border-gray-200 dark:border-white/10">
           <div>
-            <h2 className="text-[14px] font-bold text-[#f2f3f5] mb-0.5">Revenue over time</h2>
-            <p className="text-[14px] text-[#b5bac1]">Last 30 days - All communities</p>
+            <h2 className="text-[14px] font-bold text-gray-900 dark:text-[#f2f3f5] mb-0.5">Revenue over time</h2>
+            <p className="text-[14px] text-gray-600 dark:text-[#b5bac1]">Last 30 days - All communities</p>
           </div>
           <div className="flex-1 w-full mt-8 relative">
             {/* Minimalist SVG Chart placeholder matching reference */}
@@ -104,7 +104,7 @@ export default function DashboardPage() {
               <path d={fakeChartPoints} fill="none" stroke="#9FFF57" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               <circle cx="200" cy="29" r="2.5" fill="#9FFF57" />
             </svg>
-            <div className="absolute bottom-[-20px] left-0 right-0 flex justify-between text-[14px] font-medium text-[#72767d]">
+            <div className="absolute bottom-[-20px] left-0 right-0 flex justify-between text-[14px] font-medium text-gray-500 dark:text-[#72767d]">
               <span>May 20</span>
               <span>Jun 3</span>
               <span>Jun 19</span>
@@ -113,26 +113,26 @@ export default function DashboardPage() {
         </div>
 
         { /* Activity Column */ }
-        <div className="bg-[#111] rounded-[8px] p-7 shadow-sm border border-white/[0.02]">
-          <h2 className="text-[14px] font-bold text-[#f2f3f5] mb-4">Recent activity</h2>
+        <div className="bg-white dark:bg-[#111] rounded-[8px] p-7 shadow-sm border border-gray-200 dark:border-white/10">
+          <h2 className="text-[14px] font-bold text-gray-900 dark:text-[#f2f3f5] mb-4">Recent activity</h2>
           {loading ? (
              <div className="space-y-4">
                 {[1,2,3,4].map(k => <Skeleton key={k} width="w-full" height="h-4" />)}
              </div>
           ) : recentPayments.length === 0 ? (
-             <p className="text-[14px] text-[#96989d]">No recent activity yet.</p>
+             <p className="text-[14px] text-gray-500 dark:text-[#96989d]">No recent activity yet.</p>
           ) : (
             <div className="space-y-4">
               {recentPayments.map((p, i) => (
                 <div key={p.id} className="flex items-start justify-between gap-3 text-[14px]">
                   <div className="flex items-start gap-2.5 min-w-0">
                     <div className="w-1.5 h-1.5 rounded-full bg-[#9FFF57] mt-1.5 flex-shrink-0" />
-                    <p className="text-[#dbdee1] leading-snug">
+                    <p className="text-gray-800 dark:text-[#dbdee1] leading-snug">
                       <span className="font-semibold">{p.email}</span>{' '}
-                      <span className="text-[#96989d]">paid ₦{p.amount?.toLocaleString()} for {p.communities?.name}</span>
+                      <span className="text-gray-500 dark:text-[#96989d]">paid ₦{p.amount?.toLocaleString()} for {p.communities?.name}</span>
                     </p>
                   </div>
-                  <span className="text-[#72767d] whitespace-nowrap text-[14px]">
+                  <span className="text-gray-500 dark:text-[#72767d] whitespace-nowrap text-[14px]">
                     {new Date(p.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                   </span>
                 </div>
@@ -142,20 +142,20 @@ export default function DashboardPage() {
               <div className="flex items-start justify-between gap-3 text-[14px]">
                 <div className="flex items-start gap-2.5 min-w-0">
                    <div className="w-1.5 h-1.5 rounded-full bg-yellow-400 mt-1.5 flex-shrink-0" />
-                   <p className="text-[#dbdee1] leading-snug">
-                      <span className="font-semibold">alex@gmail.com</span>'s <span className="text-[#96989d]">plan expiring soon</span>
+                   <p className="text-gray-800 dark:text-[#dbdee1] leading-snug">
+                      <span className="font-semibold">alex@gmail.com</span>'s <span className="text-gray-500 dark:text-[#96989d]">plan expiring soon</span>
                    </p>
                 </div>
-                <span className="text-[#72767d] whitespace-nowrap text-[14px]">1 day</span>
+                <span className="text-gray-500 dark:text-[#72767d] whitespace-nowrap text-[14px]">1 day</span>
               </div>
               <div className="flex items-start justify-between gap-3 text-[14px]">
                 <div className="flex items-start gap-2.5 min-w-0">
                    <div className="w-1.5 h-1.5 rounded-full bg-red-400 mt-1.5 flex-shrink-0" />
-                   <p className="text-[#dbdee1] leading-snug">
-                      <span className="font-semibold">john@doe.com</span> <span className="text-[#96989d]">was removed</span>
+                   <p className="text-gray-800 dark:text-[#dbdee1] leading-snug">
+                      <span className="font-semibold">john@doe.com</span> <span className="text-gray-500 dark:text-[#96989d]">was removed</span>
                    </p>
                 </div>
-                <span className="text-[#72767d] whitespace-nowrap text-[14px]">3 days ago</span>
+                <span className="text-gray-500 dark:text-[#72767d] whitespace-nowrap text-[14px]">3 days ago</span>
               </div>
             </div>
           )}
@@ -165,12 +165,12 @@ export default function DashboardPage() {
       {/* Additional Analytics Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-6">
         {/* Member Status Breakdown */}
-        <div className="bg-[#111] rounded-[8px] p-7 shadow-sm border border-white/[0.02]">
-          <h2 className="text-[14px] font-bold text-[#f2f3f5] mb-6">Member Status</h2>
+        <div className="bg-white dark:bg-[#111] rounded-[8px] p-7 shadow-sm border border-gray-200 dark:border-white/10">
+          <h2 className="text-[14px] font-bold text-gray-900 dark:text-[#f2f3f5] mb-6">Member Status</h2>
           <div className="space-y-4">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[13px] text-[#b5bac1]">Active Subscriptions</span>
+                <span className="text-[13px] text-gray-600 dark:text-[#b5bac1]">Active Subscriptions</span>
                 <span className="text-[14px] font-bold text-[#9FFF57]">{loading ? '—' : stats.activeMembers}</span>
               </div>
               <div className="w-full bg-white/[0.05] rounded-full h-1.5 overflow-hidden">
@@ -179,48 +179,48 @@ export default function DashboardPage() {
             </div>
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[13px] text-[#b5bac1]">Expired Subscriptions</span>
+                <span className="text-[13px] text-gray-600 dark:text-[#b5bac1]">Expired Subscriptions</span>
                 <span className="text-[14px] font-bold text-[#ff6b6b]">{loading ? '—' : stats.expiredMembers}</span>
               </div>
               <div className="w-full bg-white/[0.05] rounded-full h-1.5 overflow-hidden">
                 <div className="bg-[#ff6b6b] h-full" style={{ width: stats.expiredMembers > 0 ? (stats.expiredMembers / (stats.activeMembers + stats.expiredMembers) * 100) : '0%' }} />
               </div>
             </div>
-            <div className="pt-3 border-t border-white/[0.06] text-[12px] text-[#96989d]">
+            <div className="pt-3 border-t border-gray-200 dark:border-white/10 text-[12px] text-gray-500 dark:text-[#96989d]">
               <p>Total: {loading ? '—' : stats.activeMembers + stats.expiredMembers} members</p>
             </div>
           </div>
         </div>
 
         {/* Communities Overview */}
-        <div className="bg-[#111] rounded-[8px] p-7 shadow-sm border border-white/[0.02]">
-          <h2 className="text-[14px] font-bold text-[#f2f3f5] mb-6">Communities</h2>
+        <div className="bg-white dark:bg-[#111] rounded-[8px] p-7 shadow-sm border border-gray-200 dark:border-white/10">
+          <h2 className="text-[14px] font-bold text-gray-900 dark:text-[#f2f3f5] mb-6">Communities</h2>
           <div className="flex items-center justify-between mb-6">
             <div>
-              <p className="text-[11px] text-[#72767d] uppercase tracking-wide mb-1">Total Communities</p>
-              <p className="text-[28px] font-black text-white">{loading ? '—' : stats.communities}</p>
+              <p className="text-[11px] text-gray-500 dark:text-[#72767d] uppercase tracking-wide mb-1">Total Communities</p>
+              <p className="text-[28px] font-black text-black dark:text-white">{loading ? '—' : stats.communities}</p>
             </div>
             <div className="w-20 h-20 rounded-full border-4 border-[#9FFF57]/20 flex items-center justify-center">
               <span className="text-[14px] font-bold text-[#9FFF57]">{stats.communities > 0 ? '100%' : '0%'}</span>
             </div>
           </div>
-          <div className="text-[12px] text-[#96989d]">
+          <div className="text-[12px] text-gray-500 dark:text-[#96989d]">
             <p>Active communities managing memberships</p>
           </div>
         </div>
 
         {/* Revenue Metrics */}
-        <div className="bg-[#111] rounded-[8px] p-7 shadow-sm border border-white/[0.02]">
-          <h2 className="text-[14px] font-bold text-[#f2f3f5] mb-6">Revenue Metrics</h2>
+        <div className="bg-white dark:bg-[#111] rounded-[8px] p-7 shadow-sm border border-gray-200 dark:border-white/10">
+          <h2 className="text-[14px] font-bold text-gray-900 dark:text-[#f2f3f5] mb-6">Revenue Metrics</h2>
           <div className="space-y-4">
             <div>
-              <p className="text-[11px] text-[#72767d] uppercase tracking-wide mb-2">Avg. Revenue Per Member</p>
+              <p className="text-[11px] text-gray-500 dark:text-[#72767d] uppercase tracking-wide mb-2">Avg. Revenue Per Member</p>
               <p className="text-[20px] font-bold text-[#9FFF57]">
                 {loading ? '—' : stats.activeMembers > 0 ? `₦${Math.round(stats.totalRevenue / stats.activeMembers).toLocaleString()}` : '—'}
               </p>
             </div>
-            <div className="pt-3 border-t border-white/[0.06]">
-              <p className="text-[11px] text-[#72767d] uppercase tracking-wide mb-2">Conversion Rate</p>
+            <div className="pt-3 border-t border-gray-200 dark:border-white/10">
+              <p className="text-[11px] text-gray-500 dark:text-[#72767d] uppercase tracking-wide mb-2">Conversion Rate</p>
               <p className="text-[20px] font-bold text-[#f0883e]">
                 {loading ? '—' : (stats.activeMembers + stats.expiredMembers) > 0 ? `${Math.round((stats.activeMembers / (stats.activeMembers + stats.expiredMembers)) * 100)}%` : '—'}
               </p>
@@ -228,6 +228,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   )
 }

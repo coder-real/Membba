@@ -18,7 +18,7 @@ const formatDuration = (minutes) => {
 
 function Spinner() {
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] flex items-center justify-center">
       <div className="w-7 h-7 rounded-full border-2 border-white/10 border-t-[#9FFF57] animate-spin" />
     </div>
   )
@@ -26,11 +26,11 @@ function Spinner() {
 
 function NotFound() {
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] flex items-center justify-center px-6">
       <div className="text-center max-w-sm">
-        <p className="text-[14px] font-bold tracking-[0.15em] text-white/25 uppercase mb-4">404 — Not Found</p>
-        <h1 className="text-2xl font-black text-white mb-3">This community doesn't exist</h1>
-        <p className="text-[14px] text-white/40 leading-relaxed">
+        <p className="text-[14px] font-bold tracking-[0.15em] text-black dark:text-white/25 uppercase mb-4">404 — Not Found</p>
+        <h1 className="text-2xl font-black text-black dark:text-white mb-3">This community doesn't exist</h1>
+        <p className="text-[14px] text-black dark:text-white/40 leading-relaxed">
           The link may be invalid or this community is no longer accepting members.
         </p>
       </div>
@@ -163,20 +163,20 @@ export default function JoinPage() {
   const platLabel  = isWA ? 'WhatsApp' : 'Telegram'
 
   const inputCls = [
-    'w-full bg-[#0d0d0d] border rounded-xl px-4 py-3 text-[14px] text-white',
+    'w-full bg-[#0d0d0d] border rounded-xl px-4 py-3 text-[14px] text-black dark:text-white',
     'placeholder-white/20 focus:outline-none transition-all duration-200',
-    'border-white/[0.08] focus:border-[#9FFF57]/40 focus:ring-2 focus:ring-[#9FFF57]/10',
+    'border-gray-200 dark:border-white/10 focus:border-[#9FFF57]/40 focus:ring-2 focus:ring-[#9FFF57]/10',
   ].join(' ')
 
-  const labelCls = 'block text-[14px] font-bold tracking-widest uppercase text-white/40 mb-2'
+  const labelCls = 'block text-[14px] font-bold tracking-widest uppercase text-black dark:text-white/40 mb-2'
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a]" style={{ fontFamily: "'Inter', sans-serif" }}>
 
       {/* Top bar */}
       <div className="border-b border-white/[0.05] px-6 py-4 flex items-center justify-between max-w-xl mx-auto">
-        <span className="text-[14px] font-black tracking-wider text-white/30 uppercase">Membba</span>
-        <div className="flex items-center gap-1.5 text-white/25">
+        <span className="text-[14px] font-black tracking-wider text-black dark:text-white/30 uppercase">Membba</span>
+        <div className="flex items-center gap-1.5 text-black dark:text-white/25">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
           </svg>
@@ -192,9 +192,9 @@ export default function JoinPage() {
             <PlatIcon size={10} />
             {platLabel} Community
           </div>
-          <h1 className="text-[28px] font-black text-white leading-tight mb-2">{community.name}</h1>
+          <h1 className="text-[28px] font-black text-black dark:text-white leading-tight mb-2">{community.name}</h1>
           {community.description && (
-            <p className="text-[14px] text-white/50 leading-relaxed">{community.description}</p>
+            <p className="text-[14px] text-black dark:text-white/50 leading-relaxed">{community.description}</p>
           )}
         </div>
 
@@ -221,7 +221,7 @@ export default function JoinPage() {
                       'w-full text-left rounded-xl border px-5 py-4 transition-all duration-200 group',
                       active
                         ? 'border-[#9FFF57]/35 bg-[#9FFF57]/[0.04]'
-                        : 'border-white/[0.07] hover:border-white/[0.13] bg-[#111]',
+                        : 'border-white/[0.07] hover:border-white/[0.13] bg-white dark:bg-[#111]',
                     ].join(' ')}
                   >
                     <div className="flex items-start justify-between gap-7">
@@ -232,18 +232,18 @@ export default function JoinPage() {
                         {active && <div className="w-1.5 h-1.5 rounded-full bg-[#9FFF57]" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={`font-bold text-[14.5px] leading-tight ${active ? 'text-white' : 'text-white/80'}`}>
+                        <p className={`font-bold text-[14.5px] leading-tight ${active ? 'text-black dark:text-white' : 'text-black dark:text-white/80'}`}>
                           {plan.name}
                         </p>
                         {plan.description && (
-                          <p className="text-[14px] text-white/35 mt-0.5 truncate">{plan.description}</p>
+                          <p className="text-[14px] text-black dark:text-white/35 mt-0.5 truncate">{plan.description}</p>
                         )}
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className={`font-black text-[17px] leading-tight ${active ? 'text-[#9FFF57]' : 'text-white'}`}>
+                        <p className={`font-black text-[17px] leading-tight ${active ? 'text-[#9FFF57]' : 'text-black dark:text-white'}`}>
                           ₦{plan.price.toLocaleString()}
                         </p>
-                        <p className="text-[14px] text-white/30 font-medium mt-0.5">
+                        <p className="text-[14px] text-black dark:text-white/30 font-medium mt-0.5">
                           {formatDuration(plan.duration_minutes)}
                         </p>
                       </div>
@@ -277,9 +277,9 @@ export default function JoinPage() {
                 <input type="tel" name="whatsapp_phone" required value={form.whatsapp_phone}
                   onChange={handleChange} className={inputCls}
                   placeholder="2348012345678" />
-                <p className="text-[14px] text-white/30 mt-2">
+                <p className="text-[14px] text-black dark:text-white/30 mt-2">
                   Country code + number, no spaces or + sign
-                  <span className="font-mono text-white/45 ml-1">(e.g. 2348012345678)</span>
+                  <span className="font-mono text-black dark:text-white/45 ml-1">(e.g. 2348012345678)</span>
                 </p>
               </div>
             ) : (
@@ -298,11 +298,11 @@ export default function JoinPage() {
                         <FaTelegram size={16} />
                       </div>
                       <div>
-                        <p className="text-[14px] font-bold text-white">Connected</p>
+                        <p className="text-[14px] font-bold text-black dark:text-white">Connected</p>
                         <p className="text-[14px] text-[#229ED9] font-mono">ID: {form.telegram_user_id}</p>
                       </div>
                     </div>
-                    <button type="button" onClick={() => { setUidStatus('idle'); setForm(f => ({...f, telegram_user_id: ''})) }} className="text-[14px] text-white/40 hover:text-white transition-colors underline underline-offset-2">
+                    <button type="button" onClick={() => { setUidStatus('idle'); setForm(f => ({...f, telegram_user_id: ''})) }} className="text-[14px] text-black dark:text-white/40 hover:text-black dark:text-white transition-colors underline underline-offset-2">
                       Disconnect
                     </button>
                   </div>
@@ -315,7 +315,7 @@ export default function JoinPage() {
                       className={`w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3.5 transition-all outline-none font-bold text-[14px] ${
                         uidPolling 
                           ? 'bg-[#229ED9]/10 text-[#229ED9] border border-[#229ED9]/20 cursor-wait' 
-                          : 'bg-[#229ED9] text-white hover:bg-[#1a8fc4]'
+                          : 'bg-[#229ED9] text-black dark:text-white hover:bg-[#1a8fc4]'
                       }`}
                     >
                       {uidPolling ? (
@@ -331,12 +331,12 @@ export default function JoinPage() {
                       )}
                     </button>
                     {!uidPolling && (
-                      <p className="text-[14px] text-white/30 mt-3 text-center leading-relaxed">
+                      <p className="text-[14px] text-black dark:text-white/30 mt-3 text-center leading-relaxed">
                         Click the button to open Telegram and tap Start. We will automatically grab your account ID.
                       </p>
                     )}
                     {uidPolling && (
-                      <p className="text-[14px] text-white/30 mt-3 text-center leading-relaxed animate-pulse">
+                      <p className="text-[14px] text-black dark:text-white/30 mt-3 text-center leading-relaxed animate-pulse">
                         Please open Telegram, tap <b>Start</b>, and then return here.
                       </p>
                     )}
@@ -355,13 +355,13 @@ export default function JoinPage() {
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                   Required Step
                 </p>
-                <p className="text-white/45 leading-relaxed">
+                <p className="text-black dark:text-white/45 leading-relaxed">
                   You must connect your Telegram above before paying, otherwise the bot cannot invite you to the private group.
                 </p>
               </div>
             )}
             {isWA && (
-              <div className="border border-[#25D366]/15 bg-[#25D366]/[0.04] rounded-xl px-5 py-4 text-[14px] text-white/45">
+              <div className="border border-[#25D366]/15 bg-[#25D366]/[0.04] rounded-xl px-5 py-4 text-[14px] text-black dark:text-white/45">
                 <p className="font-bold text-[#25D366] mb-1">After payment</p>
                 <p>You'll receive a WhatsApp message with your group invite link at the number you entered above.</p>
               </div>
@@ -374,7 +374,7 @@ export default function JoinPage() {
               className={[
                 'w-full py-4 rounded-xl font-black text-[15px] tracking-wide transition-all duration-200',
                 paying || !selectedPlan
-                  ? 'bg-white/[0.06] text-white/25 cursor-not-allowed'
+                  ? 'bg-white/[0.06] text-black dark:text-white/25 cursor-not-allowed'
                   : 'bg-[#9FFF57] text-[#0a0a0a] hover:bg-[#aaff62] active:scale-[0.99]',
               ].join(' ')}
             >
@@ -388,7 +388,7 @@ export default function JoinPage() {
                   : 'Select a plan to continue'}
             </button>
 
-            <p className="text-center text-[14px] text-white/20 leading-relaxed">
+            <p className="text-center text-[14px] text-black dark:text-white/20 leading-relaxed">
               By continuing you agree to Membba's terms. Payments processed securely by Paystack.
             </p>
           </form>
