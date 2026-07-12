@@ -126,6 +126,8 @@ export async function kickChatMember({ chatId, userId }) {
       console.log(`[telegram] skip kicking ${userId} — user is the chat owner`)
     } else if (msg.includes('PARTICIPANT_ID_INVALID') || msg.includes('user not found')) {
       console.log(`[telegram] skip kicking ${userId} — invalid ID or not in chat`)
+    } else if (msg.includes('chat not found')) {
+      console.log(`[telegram] skip kicking ${userId} — chat ${chatId} not found (deleted or bot kicked)`)
     } else {
       throw err
     }
