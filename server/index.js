@@ -11,6 +11,8 @@ import { startPolling, stopPolling } from './services/botPoller.js'
 import { registerWebhook } from './services/botWebhook.js'
 import { initWhatsApp } from './services/whatsapp.js'
 import { sendMorningDigest } from './services/digest.js'
+import { processScheduledPosts } from './services/scheduler.js'
+import automationsRouter from './routes/automations.js'
 
 // ── Global Error Catchers to prevent crashes ──────────────────────────────
 // Prevents the entire Node server from crashing if whatsapp-web.js throws
@@ -53,6 +55,7 @@ app.use('/api/bot', botRouter)
 app.use('/api/members', membersRouter)
 app.use('/api/whatsapp', whatsappRouter)
 app.use('/api/telegram', telegramRouter)
+app.use('/api/automations', automationsRouter)
 
 app.get('/api/health', (_req, res) =>
   res.json({ status: 'ok', time: new Date().toISOString() })
@@ -68,12 +71,13 @@ app.post('/api/digest/now', async (_req, res) => {
   }
 })
 
-// ── Cron: process expired subscriptions every minute ──
+// ── Cron: process expired subscriptions + scheduled posts every minute ──
 cron.schedule('* * * * *', async () => {
-  console.log('[cron] checking expired subscriptions...')
   try {
-    const count = await processExpiredSubscriptions()
-    if (count > 0) console.log(`[cron] expired ${count} subscription(s)`)
+    const expired = await processExpiredSubscriptions()
+    if (expired > 0) console.log(`[cron] expired ${expired} subscription(s)`)
+    const sent = await processScheduledPosts()
+    if (sent > 0) console.log(`[cron] sent ${sent} scheduled post(s)`)
   } catch (err) {
     console.error('[cron] error:', err.message)
   }
