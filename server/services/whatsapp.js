@@ -261,6 +261,50 @@ export async function initWhatsApp(opts = {}) {
     }
   })
 
+  // ── Private DM handler — AI First Responder ──────────────────────────────
+  // Only fires for incoming private DMs to the bot. Group messages are ignored.
+  sock.ev.on('messages.upsert', async ({ messages: msgs, type }) => {
+    // Only handle 'notify' type (new incoming messages, not history sync)
+    if (type !== 'notify') return
+
+    for (const msg of msgs) {
+      // Skip: no content, status updates, or messages sent BY the bot itself
+      if (!msg.message || msg.key.fromMe) continue
+
+      const jid = msg.key.remoteJid || ''
+
+      // Skip group messages — only handle private 1-to-1 DMs
+      if (jid.endsWith('@g.us')) continue
+
+      // Extract the phone number (strip @s.whatsapp.net)
+      const phone = jid.replace('@s.whatsapp.net', '').replace(/[^\d]/g, '')
+      if (!phone) continue
+
+      // Extract text from any message type
+      const text = (
+        msg.message.conversation ||
+        msg.message.extendedTextMessage?.text ||
+        msg.message.imageMessage?.caption ||
+        msg.message.documentMessage?.caption ||
+        ''
+      ).trim()
+
+      if (!text) continue
+
+      console.log(`[ai] DM from ${phone}: "${text.substring(0, 60)}"`)
+
+      try {
+        // Lazy import to avoid circular deps at module load time
+        const { getAIReply } = await import('./ai.js')
+        const reply = await getAIReply(phone, text)
+        await sock.sendMessage(jid, { text: reply })
+        console.log(`[ai] replied to ${phone}`)
+      } catch (err) {
+        console.error(`[ai] failed to reply to ${phone}:`, err.message)
+      }
+    }
+  })
+
   // ── Group participant auto-kick (replaces group_join event) -─────────────
   sock.ev.on('group-participants.update', async ({ id: groupId, participants, action }) => {
     if (action !== 'add') return
