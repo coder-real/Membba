@@ -321,7 +321,7 @@ export default function AutomationsPage() {
       {/* Scheduled Posts Manager */}
       {settings.scheduler && (
         <section>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-6">
             <h2 className="text-[12px] font-bold uppercase tracking-widest text-gray-500 dark:text-white/30">
               Scheduled Posts {pendingPosts.length > 0 && (
                 <span className="ml-2 text-[11px] text-[#9FFF57] normal-case font-semibold">
@@ -331,108 +331,139 @@ export default function AutomationsPage() {
             </h2>
             <button
               onClick={() => setShowForm(v => !v)}
-              className="flex items-center gap-1.5 text-[13px] font-semibold text-[#9FFF57] hover:text-white transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100/50 hover:bg-gray-200/50 dark:bg-white/5 dark:hover:bg-white/10 text-[13px] font-bold text-gray-900 dark:text-white rounded-[8px] transition-all"
             >
-              <HiOutlinePlusCircle size={16} />
-              {showForm ? 'Cancel' : 'New Post'}
+              {showForm ? <HiOutlineXCircle size={16} className="text-gray-400" /> : <HiOutlinePlusCircle size={16} className="text-[#9FFF57]" />}
+              {showForm ? 'Close Composer' : 'New Broadcast'}
             </button>
           </div>
 
-          {/* New Post Form */}
+          {/* New Post Form - Redesigned */}
           {showForm && (
-            <form onSubmit={schedulePost} className="bg-white dark:bg-[#111] rounded-[10px] p-6 border border-[#9FFF57]/30 mb-4 space-y-4">
-              <h3 className="text-[14px] font-bold text-gray-900 dark:text-[#f2f3f5]">Schedule a broadcast</h3>
-
-              <div>
-                <label className="block text-[12px] font-semibold text-gray-500 dark:text-[#96989d] uppercase tracking-wide mb-1.5">
-                  Community
-                </label>
-                <select
-                  value={newPost.community_id}
-                  onChange={e => setNewPost(p => ({ ...p, community_id: e.target.value }))}
-                  required
-                  className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[8px] px-3 py-2.5 text-[14px] text-gray-900 dark:text-white"
-                >
-                  <option value="">Select a community…</option>
-                  {communities.map(c => (
-                    <option key={c.id} value={c.id}>{c.name} ({c.platform || 'telegram'})</option>
-                  ))}
-                </select>
+            <form onSubmit={schedulePost} className="bg-[#fafafa] dark:bg-[#141414] rounded-[16px] p-6 sm:p-8 border border-gray-200 dark:border-white/10 shadow-2xl mb-8 space-y-6 relative overflow-hidden transition-all duration-300">
+              <div className="absolute top-0 w-full left-0 h-1 bg-gradient-to-r from-transparent via-[#9FFF57]/80 to-transparent opacity-100"></div>
+              
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-[18px] font-black tracking-tight text-gray-900 dark:text-white">Compose Broadcast</h3>
               </div>
 
-              <div>
-                <label className="block text-[12px] font-semibold text-gray-500 dark:text-[#96989d] uppercase tracking-wide mb-1.5">
-                  Message
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex flex-col gap-2">
+                  <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                    Target Community
+                  </label>
+                  <select
+                    value={newPost.community_id}
+                    onChange={e => setNewPost(p => ({ ...p, community_id: e.target.value }))}
+                    required
+                    className="w-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-[12px] px-4 py-3 text-[14px] font-medium text-gray-900 dark:text-white appearance-none focus:outline-none focus:ring-2 focus:ring-[#9FFF57]/50 transition-all shadow-sm cursor-pointer"
+                  >
+                    <option value="" className="text-gray-400">Select a community…</option>
+                    {communities.map(c => (
+                      <option key={c.id} value={c.id}>{c.name} ({c.platform || 'telegram'})</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                    Schedule For
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={newPost.scheduled_time}
+                    onChange={e => setNewPost(p => ({ ...p, scheduled_time: e.target.value }))}
+                    required
+                    min={new Date().toISOString().slice(0, 16)}
+                    className="w-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-[12px] px-4 py-3 text-[14px] font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#9FFF57]/50 transition-all shadow-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center justify-between text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                  <span>Message Body</span>
+                  <span className={`lowercase tracking-normal font-medium ${newPost.content.length > 1000 ? 'text-red-400' : 'text-gray-400'}`}>
+                    {newPost.content.length} / 1000 char
+                  </span>
                 </label>
                 <textarea
                   value={newPost.content}
                   onChange={e => setNewPost(p => ({ ...p, content: e.target.value }))}
                   required
-                  rows={4}
-                  placeholder="Write your announcement…"
-                  className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[8px] px-3 py-2.5 text-[14px] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 resize-none"
+                  maxLength={1000}
+                  rows={5}
+                  placeholder="Draft your announcement here… Make it count."
+                  className="w-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-[12px] px-4 py-3 text-[15px] leading-relaxed text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 resize-none focus:outline-none focus:ring-2 focus:ring-[#9FFF57]/50 transition-all shadow-sm"
                 />
-                <p className="text-[12px] text-gray-400 dark:text-[#72767d] mt-1">{newPost.content.length} characters</p>
               </div>
 
-              <div>
-                <label className="block text-[12px] font-semibold text-gray-500 dark:text-[#96989d] uppercase tracking-wide mb-1.5">
-                  Send at
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-5 pt-2">
+                <label className="flex items-center gap-3 cursor-pointer group rounded-lg p-2 -ml-2 hover:bg-gray-100 dark:hover:bg-white/5 transition">
+                  <div className={`w-10 h-6 flex items-center bg-gray-200 dark:bg-white/10 rounded-full p-1 transition duration-300 ease-in-out ${newPost.personalize_ai ? 'bg-[#9FFF57]' : ''}`}>
+                    <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition duration-300 ease-in-out ${newPost.personalize_ai ? 'translate-x-4' : ''}`}></div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={newPost.personalize_ai}
+                    onChange={e => setNewPost(p => ({ ...p, personalize_ai: e.target.checked }))}
+                    className="hidden"
+                  />
+                  <div className="flex items-center gap-1.5">
+                    <HiOutlineSparkles className={newPost.personalize_ai ? "text-[#9FFF57]" : "text-gray-400"} size={16} />
+                    <span className="text-[13px] font-bold text-gray-700 dark:text-[#dbdee1] transition">
+                      Auto-personalise tone per group with AI
+                    </span>
+                  </div>
                 </label>
-                <input
-                  type="datetime-local"
-                  value={newPost.scheduled_time}
-                  onChange={e => setNewPost(p => ({ ...p, scheduled_time: e.target.value }))}
-                  required
-                  min={new Date().toISOString().slice(0, 16)}
-                  className="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[8px] px-3 py-2.5 text-[14px] text-gray-900 dark:text-white"
-                />
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full sm:w-auto bg-[#9FFF57] hover:bg-[#b0ff6e] text-[#111] font-black px-8 py-3 rounded-[12px] text-[14px] flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:hover:scale-100 shadow-[0_0_15px_rgba(159,255,87,0.25)] hover:shadow-[0_0_25px_rgba(159,255,87,0.4)]"
+                >
+                  {submitting ? 'Setting up…' : (
+                    <>
+                      <HiOutlineCalendarDays size={18} />
+                      Set Broadcast
+                    </>
+                  )}
+                </button>
               </div>
-
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={newPost.personalize_ai}
-                  onChange={e => setNewPost(p => ({ ...p, personalize_ai: e.target.checked }))}
-                  className="w-4 h-4 accent-[#9FFF57]"
-                />
-                <span className="text-[13px] text-gray-700 dark:text-[#b5bac1]">
-                  <HiOutlineSparkles className="inline mr-1 text-[#9FFF57]" size={13} />
-                  Personalise tone with AI per group
-                </span>
-              </label>
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full bg-[#9FFF57] hover:bg-[#b0ff6e] text-black font-bold py-2.5 rounded-[8px] text-[14px] transition-colors disabled:opacity-60"
-              >
-                {submitting ? 'Scheduling…' : 'Schedule Post'}
-              </button>
             </form>
           )}
 
           {/* Queue */}
-          <div className="bg-white dark:bg-[#111] rounded-[10px] border border-gray-200 dark:border-white/10">
+          <div className="bg-white dark:bg-[#111] rounded-[12px] border border-gray-200 dark:border-white/10 shadow-sm overflow-hidden">
             {loadingPosts ? (
-              <div className="p-6 text-center text-[14px] text-gray-400 dark:text-[#72767d]">Loading…</div>
+              <div className="p-8 text-center text-[14px] text-gray-400 dark:text-[#72767d] animate-pulse">Loading queue…</div>
             ) : posts.length === 0 ? (
-              <div className="p-10 text-center">
-                <HiOutlineCalendarDays size={32} className="mx-auto mb-3 text-gray-300 dark:text-white/10" />
-                <p className="text-[14px] text-gray-400 dark:text-[#72767d]">No posts scheduled yet</p>
+              <div className="p-16 text-center">
+                <div className="w-16 h-16 bg-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <HiOutlineCalendarDays size={32} className="text-gray-300 dark:text-white/20" />
+                </div>
+                <h4 className="text-[15px] font-bold text-gray-900 dark:text-white mb-1">Queue is empty</h4>
+                <p className="text-[14px] text-gray-400 dark:text-[#72767d]">No broadcasts are currently scheduled.</p>
               </div>
             ) : (
-              <div className="divide-y divide-transparent">
+              <div className="divide-y divide-gray-100 dark:divide-white/5">
                 {pendingPosts.length > 0 && (
-                  <div className="px-5 pt-4 pb-2">
-                    <p className="text-[11px] font-bold uppercase tracking-widest text-[#9FFF57] mb-1">Queued</p>
-                    {pendingPosts.map(p => <PostRow key={p.id} post={p} onCancel={cancelPost} />)}
+                  <div className="px-6 pt-5 pb-3">
+                     <p className="text-[11px] font-bold uppercase tracking-widest text-[#9FFF57] mb-2 flex items-center gap-1.5">
+                       <span className="w-1.5 h-1.5 rounded-full bg-[#9FFF57] animate-pulse"></span>
+                       Queued for Delivery
+                     </p>
+                    <div className="space-y-1">
+                      {pendingPosts.map(p => <PostRow key={p.id} post={p} onCancel={cancelPost} />)}
+                    </div>
                   </div>
                 )}
                 {pastPosts.length > 0 && (
-                  <div className="px-5 pt-4 pb-4">
-                    <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 dark:text-[#72767d] mb-1">History</p>
-                    {pastPosts.slice(0, 10).map(p => <PostRow key={p.id} post={p} onCancel={cancelPost} />)}
+                  <div className="px-6 pt-5 pb-5">
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 dark:text-[#72767d] mb-2">History logs</p>
+                    <div className="space-y-1">
+                       {pastPosts.slice(0, 10).map(p => <PostRow key={p.id} post={p} onCancel={cancelPost} />)}
+                    </div>
                   </div>
                 )}
               </div>
