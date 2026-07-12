@@ -7,7 +7,26 @@ import makeWASocket, {
 import { Boom } from '@hapi/boom'
 import pino from 'pino'
 import qrcode from 'qrcode'
+import fs from 'fs'
+import path from 'path'
 import { supabase } from '../lib/supabase.js'
+
+// ── Diagnostic: Check 5 — Render persistent disk mount ───────────────────────
+function checkDiskMount(authDir) {
+  const diskPath = '/var/data'
+  console.log('[disk] /var/data exists:', fs.existsSync(diskPath))
+  console.log('[disk] /var/data is writable:', (() => {
+    try { fs.accessSync(diskPath, fs.constants.W_OK); return true } catch { return false }
+  })())
+  console.log('[disk] AUTH_DIR writable:', (() => {
+    try {
+      const testFile = path.join(authDir, '.write_test')
+      fs.writeFileSync(testFile, 'test')
+      fs.unlinkSync(testFile)
+      return true
+    } catch (e) { return false }
+  })())
+}
 
 // ── Status & state ────────────────────────────────────────────────────────────
 // 'initializing' | 'needs_scan' | 'needs_pairing_code' | 'syncing' | 'connected' | 'reconnecting'
@@ -104,7 +123,31 @@ export async function initWhatsApp(opts = {}) {
 
   try {
     const AUTH_DIR = process.env.BAILEYS_AUTH_DIR || './baileys_auth'
+    const resolvedPath = path.resolve(AUTH_DIR)
+
+    // ── Check 1: Confirm env var resolves correctly ──────────────────────────
+    console.log('[session] AUTH_DIR resolves to:', process.env.BAILEYS_AUTH_DIR)
+    console.log('[session] Full path:', resolvedPath)
+
+    // ── Check 5: Confirm Render persistent disk is mounted ───────────────────
+    checkDiskMount(resolvedPath)
+
+    // ── Check 2: Confirm auth folder exists and contains session files ────────
+    console.log('[session] Auth dir exists before init:', fs.existsSync(resolvedPath))
+    if (!fs.existsSync(resolvedPath)) {
+      fs.mkdirSync(resolvedPath, { recursive: true })
+      console.log('[session] Auth dir created at:', resolvedPath)
+    }
+    if (fs.existsSync(resolvedPath)) {
+      const files = fs.readdirSync(resolvedPath).filter(f => !f.startsWith('.'))
+      console.log('[session] Files in auth dir:', files.length > 0 ? files : 'EMPTY — no session saved yet')
+    }
+
     const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR)
+
+    // ── Check 6: Confirm session is being read on reconnect ───────────────────
+    console.log('[session] creds registered:', state.creds.registered)
+    console.log('[session] has me:', state.creds.me ? JSON.stringify(state.creds.me) : false)
 
   const { version } = await fetchLatestBaileysVersion()
   console.log(`[whatsapp] Baileys v${version.join('.')} — starting...`)
