@@ -11,21 +11,71 @@ import fs from 'fs'
 import path from 'path'
 import { supabase } from '../lib/supabase.js'
 
-// ── Diagnostic: Check 5 — Render persistent disk mount ───────────────────────
-function checkDiskMount(authDir) {
-  const diskPath = '/var/data'
-  console.log('[disk] /var/data exists:', fs.existsSync(diskPath))
-  console.log('[disk] /var/data is writable:', (() => {
-    try { fs.accessSync(diskPath, fs.constants.W_OK); return true } catch { return false }
-  })())
-  console.log('[disk] AUTH_DIR writable:', (() => {
+import { BufferJSON, initAuthCreds } from '@whiskeysockets/baileys'
+
+// ── Custom Supabase AuthState Wrapper ───────────────────────────────────────
+// Replaces useMultiFileAuthState to persist Baileys directly into DB.
+const useSupabaseAuthState = async () => {
+  const writeData = async (data, id) => {
+    // Serialize data the exact same way Baileys does for disk
+    const stringData = JSON.stringify(data, BufferJSON.replacer)
+    await supabase.from('baileys_sessions').upsert({ id, data: JSON.parse(stringData) })
+  }
+
+  const readData = async (id) => {
     try {
-      const testFile = path.join(authDir, '.write_test')
-      fs.writeFileSync(testFile, 'test')
-      fs.unlinkSync(testFile)
-      return true
-    } catch (e) { return false }
-  })())
+      const { data } = await supabase.from('baileys_sessions').select('data').eq('id', id).single()
+      if (data?.data) {
+        return JSON.parse(JSON.stringify(data.data), BufferJSON.reviver)
+      }
+      return null
+    } catch { return null } // Not found
+  }
+
+  const removeData = async (id) => {
+    try { await supabase.from('baileys_sessions').delete().eq('id', id) } catch { /* ignore */ }
+  }
+
+  let creds = await readData('creds')
+  if (!creds) {
+    creds = initAuthCreds()
+    await writeData(creds, 'creds')
+  }
+
+  return {
+    state: {
+      creds,
+      keys: {
+        get: async (type, ids) => {
+          const data = {}
+          await Promise.all(
+            ids.map(async (id) => {
+              let value = await readData(`${type}-${id}`)
+              if (type === 'app-state-sync-key' && value) {
+                value = makeCacheableSignalKeyStore(value, pino({ level: 'silent' }))
+              }
+              data[id] = value
+            })
+          )
+          return data
+        },
+        set: async (data) => {
+          const tasks = []
+          for (const category in data) {
+            for (const id in data[category]) {
+              const value = data[category][id]
+              const key = `${category}-${id}`
+              tasks.push(value ? writeData(value, key) : removeData(key))
+            }
+          }
+          await Promise.all(tasks)
+        }
+      }
+    },
+    saveCreds: () => {
+      return writeData(creds, 'creds')
+    }
+  }
 }
 
 // ── Status & state ────────────────────────────────────────────────────────────
@@ -122,31 +172,9 @@ export async function initWhatsApp(opts = {}) {
   }
 
   try {
-    const AUTH_DIR = process.env.BAILEYS_AUTH_DIR || './baileys_auth'
-    const resolvedPath = path.resolve(AUTH_DIR)
+    const { state, saveCreds } = await useSupabaseAuthState()
 
-    // ── Check 1: Confirm env var resolves correctly ──────────────────────────
-    console.log('[session] AUTH_DIR resolves to:', process.env.BAILEYS_AUTH_DIR)
-    console.log('[session] Full path:', resolvedPath)
-
-    // ── Check 5: Confirm Render persistent disk is mounted ───────────────────
-    checkDiskMount(resolvedPath)
-
-    // ── Check 2: Confirm auth folder exists and contains session files ────────
-    console.log('[session] Auth dir exists before init:', fs.existsSync(resolvedPath))
-    if (!fs.existsSync(resolvedPath)) {
-      fs.mkdirSync(resolvedPath, { recursive: true })
-      console.log('[session] Auth dir created at:', resolvedPath)
-    }
-    if (fs.existsSync(resolvedPath)) {
-      const files = fs.readdirSync(resolvedPath).filter(f => !f.startsWith('.'))
-      console.log('[session] Files in auth dir:', files.length > 0 ? files : 'EMPTY — no session saved yet')
-    }
-
-    const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR)
-
-    // ── Check 6: Confirm session is being read on reconnect ───────────────────
-    console.log('[session] creds registered:', state.creds.registered)
+    console.log('[session] creds registered (from Supabase):', state.creds.registered)
     console.log('[session] has me:', state.creds.me ? JSON.stringify(state.creds.me) : false)
 
   const { version } = await fetchLatestBaileysVersion()
