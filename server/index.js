@@ -10,6 +10,7 @@ import { processExpiredSubscriptions } from './services/subscription.js'
 import { startPolling, stopPolling } from './services/botPoller.js'
 import { registerWebhook } from './services/botWebhook.js'
 import { initWhatsApp } from './services/whatsapp.js'
+import { sendMorningDigest } from './services/digest.js'
 
 // ── Global Error Catchers to prevent crashes ──────────────────────────────
 // Prevents the entire Node server from crashing if whatsapp-web.js throws
@@ -57,6 +58,16 @@ app.get('/api/health', (_req, res) =>
   res.json({ status: 'ok', time: new Date().toISOString() })
 )
 
+// ── Manual digest trigger (for testing) ──────────────────
+app.post('/api/digest/now', async (_req, res) => {
+  try {
+    await sendMorningDigest()
+    res.json({ ok: true, message: 'Digest sent to admin WhatsApp' })
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message })
+  }
+})
+
 // ── Cron: process expired subscriptions every minute ──
 cron.schedule('* * * * *', async () => {
   console.log('[cron] checking expired subscriptions...')
@@ -68,7 +79,16 @@ cron.schedule('* * * * *', async () => {
   }
 })
 
-// ── Start ─────────────────────────────────────────────
+// ── Cron: morning admin digest at 8am WAT (UTC+1 = 07:00 UTC) ──
+cron.schedule('0 7 * * *', async () => {
+  console.log('[cron] sending morning digest...')
+  try {
+    await sendMorningDigest()
+  } catch (err) {
+    console.error('[cron] digest error:', err.message)
+  }
+})
+
 app.listen(PORT, () => {
   console.log(`Membba server running on http://localhost:${PORT}`)
 
