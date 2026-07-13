@@ -14,8 +14,7 @@ import {
   HiOutlineXCircle,
   HiOutlineSparkles,
 } from 'react-icons/hi2'
-
-const API = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+import API_BASE from '../lib/api'
 
 // ── Toggle Switch component ────────────────────────────────────────────────
 function Toggle({ checked, onChange, disabled }) {
@@ -146,7 +145,7 @@ export default function AutomationsPage() {
 
   async function apiFetch(path, opts = {}) {
     const token = await getToken()
-    const res = await fetch(`${API}${path}`, {
+    const res = await fetch(`${API_BASE}${path}`, {
       ...opts,
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...opts.headers },
       body: opts.body ? JSON.stringify(opts.body) : undefined,
