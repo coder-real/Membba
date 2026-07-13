@@ -41,7 +41,14 @@ const app = express()
 const PORT = process.env.PORT || 3001
 
 // ── Middleware ────────────────────────────────────────
-app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173' }))
+// Allow multiple frontend origins
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://membba-73xo.vercel.app',
+  process.env.CLIENT_URL
+].filter(Boolean)
+
+app.use(cors({ origin: allowedOrigins }))
 
 // Raw body for Paystack webhook HMAC verification — must come BEFORE express.json()
 app.use('/api/payments/webhook', express.raw({ type: 'application/json' }))
