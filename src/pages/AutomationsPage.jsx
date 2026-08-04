@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import toast from 'react-hot-toast'
@@ -16,6 +17,7 @@ import {
   HiOutlineBell,
 } from 'react-icons/hi2'
 import API_BASE from '../lib/api'
+import Tooltip from '../components/Tooltip'
 
 // ─────────────────────────────────────────────────────────────
 // Toggle
@@ -79,6 +81,7 @@ function AutomationCard({
   iconColor,
   title,
   description,
+  tooltip,
   active,
   onToggle,
   disabled,
@@ -109,7 +112,10 @@ function AutomationCard({
         {/* Title + description */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <h3 className="text-[15px] font-bold text-gray-900 dark:text-white">{title}</h3>
+            <h3 className="text-[15px] font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+              {title}
+              {tooltip && <Tooltip content={tooltip} />}
+            </h3>
             <StatusPill active={active} />
           </div>
           <p className="text-[13px] text-gray-500 dark:text-[#96989d] leading-relaxed">{description}</p>
@@ -215,26 +221,41 @@ export default function AutomationsPage() {
   const [posts, setPosts]             = useState([])
   const [loadingPosts, setLoadingPosts] = useState(true)
   const [communities, setCommunities]  = useState([])
+  const [readiness, setReadiness] = useState(null)
 
   const [showForm, setShowForm]   = useState(false)
   const [newPost, setNewPost]     = useState({ community_id: '', content: '', scheduled_time: '', personalize_ai: false })
   const [submitting, setSubmitting] = useState(false)
 
+  const [aiTest, setAiTest] = useState({ phone: '', text: 'How do I renew my subscription?' })
+  const [aiTesting, setAiTesting] = useState(false)
+  const [aiResult, setAiResult] = useState(null)
+
   // ── helpers ──────────────────────────────────────────────
   async function getToken() {
     const { data } = await supabase.auth.getSession()
-    return data?.session?.access_token
+    if (data?.session?.access_token) return data.session.access_token
+
+    const refreshed = await supabase.auth.refreshSession().catch(() => null)
+    return refreshed?.data?.session?.access_token || null
   }
 
   async function apiFetch(path, opts = {}) {
     const token = await getToken()
+    if (!token) throw new Error('Your session has expired. Please log out and sign in again.')
+
     const res = await fetch(`${API_BASE}${path}`, {
       ...opts,
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...opts.headers },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        ...opts.headers,
+      },
       body: opts.body ? JSON.stringify(opts.body) : undefined,
     })
-    if (!res.ok) throw new Error((await res.json()).error || 'Request failed')
-    return res.json()
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(data.error || data.message || 'Request failed')
+    return data
   }
 
   // ── load ─────────────────────────────────────────────────
@@ -242,6 +263,7 @@ export default function AutomationsPage() {
     loadSettings()
     loadPosts()
     loadCommunities()
+    loadReadiness()
   }, [])
 
   async function loadSettings() {
@@ -268,6 +290,15 @@ export default function AutomationsPage() {
       .from('communities').select('id, name, platform')
       .eq('creator_id', user.id).order('name')
     setCommunities(data || [])
+  }
+
+  async function loadReadiness() {
+    try {
+      const data = await apiFetch('/api/ai/status')
+      setReadiness(data)
+    } catch {
+      setReadiness(null)
+    }
   }
 
   // ── save ─────────────────────────────────────────────────
@@ -308,6 +339,29 @@ export default function AutomationsPage() {
     } catch { toast.error('Failed') }
   }
 
+  async function runAiTest(e) {
+    e.preventDefault()
+    const phone = aiTest.phone.replace(/\D/g, '')
+    const text = aiTest.text.trim()
+    if (!phone || !text) return toast.error('Enter a phone number and test message')
+
+    setAiTesting(true)
+    setAiResult(null)
+    try {
+      const data = await apiFetch('/api/ai/test-reply', {
+        method: 'POST',
+        body: { phone, text },
+      })
+      setAiResult(data)
+      toast.success('AI reply generated')
+      loadReadiness()
+    } catch (err) {
+      toast.error(err.message || 'AI test failed')
+    } finally {
+      setAiTesting(false)
+    }
+  }
+
   const pendingPosts = posts.filter(p => p.status === 'pending')
   const pastPosts    = posts.filter(p => p.status !== 'pending')
 
@@ -330,8 +384,41 @@ export default function AutomationsPage() {
             Control what Membba does on your behalf automatically
           </p>
         </div>
-        {saving && <span className="text-[13px] text-[#9FFF57] font-bold animate-pulse">Saving…</span>}
+        <div className="flex items-center gap-2">
+          {saving && <span className="text-[13px] text-[#9FFF57] font-bold animate-pulse">Saving…</span>}
+          <Link
+            to="/dashboard/ai-inbox"
+            className="inline-flex items-center gap-2 rounded-[10px] border border-[#9FFF57]/30 bg-[#9FFF57]/10 px-4 py-2 text-[13px] font-black text-[#76d83b] hover:bg-[#9FFF57]/15 transition"
+            title="Review AI conversations that need creator/admin attention"
+          >
+            <HiOutlineSparkles size={15} /> Open AI Inbox
+          </Link>
+        </div>
       </div>
+
+      <div className="mb-6 rounded-[14px] border border-blue-200 bg-blue-50 p-4 text-[13px] leading-relaxed text-blue-800 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-200">
+        <p className="font-black mb-1">How automations work</p>
+        <p>Turn a tool on, then configure the details below. AI First Responder handles member DMs, Daily Digest summarizes activity, and Scheduled Broadcasts sends timed posts. Anything the AI cannot safely handle appears in the AI Inbox.</p>
+      </div>
+
+      {readiness && (
+        <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {[
+            { label: 'Groq AI', ok: readiness.groq, value: readiness.groq ? 'Connected' : 'Missing key', hint: 'Needed for AI replies and digest writing.' },
+            { label: 'WhatsApp', ok: readiness.whatsapp_status === 'connected', value: readiness.whatsapp_status || 'unknown', hint: 'Needed for live WhatsApp DMs and delivery.' },
+            { label: 'Admin alerts', ok: readiness.admin_jid, value: readiness.admin_jid ? 'Configured' : 'No admin number', hint: 'Needed for escalation/digest alerts.' },
+            { label: 'Open AI inbox', ok: readiness.open_escalations === 0, value: `${readiness.open_escalations || 0} open`, hint: 'Items that need creator/admin review.' },
+          ].map(item => (
+            <div key={item.label} className="rounded-[14px] border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-[#111]" title={item.hint}>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[12px] font-black uppercase tracking-widest text-gray-400">{item.label}</p>
+                {item.ok ? <HiOutlineCheckCircle className="text-[#9FFF57]" size={18} /> : <HiOutlineXCircle className="text-amber-400" size={18} />}
+              </div>
+              <p className="mt-2 text-[14px] font-bold text-gray-900 dark:text-white capitalize">{item.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ── Automation cards ── */}
       <div className="space-y-4 mb-10">
@@ -343,6 +430,7 @@ export default function AutomationsPage() {
           iconColor={settings.ai_responder ? 'text-[#9FFF57]' : 'text-gray-400 dark:text-white/25'}
           title="AI First Responder"
           description="Automatically replies to member DMs using live subscription context. Escalates to you when unsure."
+          tooltip="Uses Groq plus Membba subscription data to answer member messages. Payment, refund, and invite issues are saved in AI Inbox for admin review."
           active={settings.ai_responder}
           onToggle={v => saveSettings({ ai_responder: v })}
           disabled={loadingSettings}
@@ -350,8 +438,67 @@ export default function AutomationsPage() {
           lastRun={settings.ai_responder ? 'Real-time' : null}
           nextRun={settings.ai_responder ? 'Always on' : null}
           lastRunStatus={settings.ai_responder ? 'completed' : null}
-          metric={{ label: 'DMs handled', value: settings.ai_responder ? '∞' : '0' }}
-        />
+          metric={{ label: 'AI replies', value: readiness?.ai_replies ?? '—', sub: readiness?.open_escalations ? `${readiness.open_escalations} open in inbox` : undefined }}
+        >
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-[13px] font-black text-gray-900 dark:text-white">Test AI Reply</p>
+                <p className="text-[12px] text-gray-500 dark:text-white/35 mt-0.5">Simulate a member DM without needing WhatsApp linked.</p>
+              </div>
+              <Link to="/dashboard/ai-inbox" className="text-[12px] font-bold text-[#76d83b] hover:underline">View AI Inbox</Link>
+            </div>
+
+            <form onSubmit={runAiTest} className="grid grid-cols-1 lg:grid-cols-[180px_1fr_auto] gap-3 items-start">
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-widest text-gray-400 flex items-center gap-1.5 mb-1.5">
+                  Phone
+                  <Tooltip content="Use the member's WhatsApp number in international format, e.g. 2347040883919." side="bottom" />
+                </label>
+                <input
+                  value={aiTest.phone}
+                  onChange={e => setAiTest(t => ({ ...t, phone: e.target.value }))}
+                  placeholder="2347040883919"
+                  className="w-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-[10px] px-3 py-2.5 text-[14px] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#9FFF57]/30"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1.5 block">Test message</label>
+                <input
+                  value={aiTest.text}
+                  onChange={e => setAiTest(t => ({ ...t, text: e.target.value }))}
+                  placeholder="How do I renew my subscription?"
+                  className="w-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-[10px] px-3 py-2.5 text-[14px] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#9FFF57]/30"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={aiTesting}
+                className="lg:mt-[22px] inline-flex items-center justify-center gap-2 rounded-[10px] bg-[#9FFF57] px-4 py-2.5 text-[13px] font-black text-black hover:bg-[#b0ff6e] disabled:opacity-50"
+              >
+                {aiTesting ? <HiOutlineArrowPath className="animate-spin" size={15} /> : <HiOutlineSparkles size={15} />}
+                {aiTesting ? 'Testing…' : 'Test AI'}
+              </button>
+            </form>
+
+            {aiResult && (
+              <div className="rounded-[13px] border border-[#9FFF57]/20 bg-[#9FFF57]/[0.06] p-4">
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-gray-700 dark:bg-black/20 dark:text-white/70">Intent: {aiResult.intent}</span>
+                  <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-gray-700 dark:bg-black/20 dark:text-white/70">Action: {aiResult.action?.action || 'reply_only'}</span>
+                  {aiResult.escalation?.escalated && <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-black text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">Escalated #{aiResult.escalation.escalation_id || 'queued'}</span>}
+                </div>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-[#76d83b] mb-1">AI reply</p>
+                <p className="text-[14px] leading-relaxed text-gray-900 dark:text-white">{aiResult.reply}</p>
+                {aiResult.member && (
+                  <p className="mt-3 text-[12px] text-gray-500 dark:text-white/40">
+                    Matched: {aiResult.member.community_name || 'Unknown community'} · {aiResult.member.status || 'unknown'}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </AutomationCard>
 
         {/* 2. Daily Admin Digest */}
         <AutomationCard
@@ -360,6 +507,7 @@ export default function AutomationsPage() {
           iconColor={settings.daily_digest ? 'text-violet-500' : 'text-gray-400 dark:text-white/25'}
           title="Daily Admin Digest"
           description="Sends you a WhatsApp morning briefing with new members, revenue, and open escalations."
+          tooltip="Creates a short daily summary for the creator. Requires ADMIN_JID and a working WhatsApp connection for delivery."
           active={settings.daily_digest}
           onToggle={v => saveSettings({ daily_digest: v })}
           disabled={loadingSettings}
@@ -371,7 +519,10 @@ export default function AutomationsPage() {
         >
           {/* Time picker — always shown inside card */}
           <div className="flex flex-wrap items-center gap-4">
-            <label className="text-[12px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-widest">Send At</label>
+            <label className="text-[12px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-widest flex items-center gap-1.5">
+              Send At
+              <Tooltip content="The preferred time for the daily admin digest. The current backend cron still needs to be wired to respect this saved time in production." side="bottom" />
+            </label>
             <input
               type="time"
               value={settings.digest_time}
@@ -390,6 +541,7 @@ export default function AutomationsPage() {
           iconColor={settings.scheduler ? 'text-amber-500' : 'text-gray-400 dark:text-white/25'}
           title="Scheduled Broadcasts"
           description="Send timed messages to your communities. Optionally let AI personalise the tone per group."
+          tooltip="Queues a message for later delivery. The backend cron/scheduler must be enabled for posts to send automatically."
           active={settings.scheduler}
           onToggle={v => saveSettings({ scheduler: v })}
           disabled={loadingSettings}
@@ -399,7 +551,7 @@ export default function AutomationsPage() {
             ? new Date(pendingPosts[0].scheduled_time).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
             : null}
           lastRunStatus={pendingPosts.length > 0 ? 'scheduled' : (pastPosts.length > 0 ? 'completed' : null)}
-          metric={{ label: 'Queued posts', value: pendingPosts.length, sub: pendingPosts.length > 0 ? `${pendingPosts.length} pending delivery` : undefined }}
+          metric={{ label: 'Queued posts', value: readiness?.queued_posts ?? pendingPosts.length, sub: pendingPosts.length > 0 ? `${pendingPosts.length} pending delivery` : undefined }}
         />
 
       </div>
@@ -429,7 +581,10 @@ export default function AutomationsPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-bold text-gray-400 dark:text-white/30 uppercase tracking-widest">Target Community</label>
+                  <label className="text-[11px] font-bold text-gray-400 dark:text-white/30 uppercase tracking-widest flex items-center gap-1.5">
+                    Target Community
+                    <Tooltip content="Choose the group where this broadcast should be sent. The community must already have Telegram or WhatsApp setup completed." side="bottom" />
+                  </label>
                   <select
                     value={newPost.community_id}
                     onChange={e => setNewPost(p => ({ ...p, community_id: e.target.value }))}
@@ -442,7 +597,10 @@ export default function AutomationsPage() {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-bold text-gray-400 dark:text-white/30 uppercase tracking-widest">Schedule For</label>
+                  <label className="text-[11px] font-bold text-gray-400 dark:text-white/30 uppercase tracking-widest flex items-center gap-1.5">
+                    Schedule For
+                    <Tooltip content="Pick when Membba should send this post. In local testing, scheduled posts only send when backend cron is enabled." side="bottom" />
+                  </label>
                   <input
                     type="datetime-local"
                     value={newPost.scheduled_time}

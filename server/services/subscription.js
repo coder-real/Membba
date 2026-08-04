@@ -106,8 +106,11 @@ export async function createSubscription({
 
   } else if (platform === 'whatsapp') {
     console.log(`\n[subscription] Platform is WhatsApp. Checking requirements for auto-add/invite...`)
-    console.log(`[subscription] whatsapp_phone: ${whatsappPhone || false}, group_id: ${community.whatsapp_group_id || false}`)
-    if (whatsappPhone && community.whatsapp_group_id) {
+    console.log(`[subscription] whatsapp_phone: ${whatsappPhone || false}, invite_link: ${community.whatsapp_group_invite_link || false}, group_id: ${community.whatsapp_group_id || false}`)
+
+    // A group ID enables direct auto-add. An invite link is still enough to DM/queue
+    // access when the WhatsApp client is connected later.
+    if (whatsappPhone && community.whatsapp_group_invite_link) {
       if (getWhatsAppStatus() !== 'connected') {
         console.warn('[subscription] WhatsApp client not ready — saving to pending queue.')
         await supabase.from('whatsapp_pending_invites').insert({
@@ -115,9 +118,10 @@ export async function createSubscription({
           invite_link: community.whatsapp_group_invite_link,
           community_name: community.name,
           community_id: communityId,
-          group_id: community.whatsapp_group_id,
+          group_id: community.whatsapp_group_id || null,
           custom_message: customMessage
         })
+        inviteLink = community.whatsapp_group_invite_link
       } else {
         try {
           await sendWhatsAppInvite(
@@ -125,7 +129,7 @@ export async function createSubscription({
             community.whatsapp_group_invite_link,
             community.name,
             communityId,
-            community.whatsapp_group_id,
+            community.whatsapp_group_id || null,
             customMessage
           )
           inviteLink = community.whatsapp_group_invite_link

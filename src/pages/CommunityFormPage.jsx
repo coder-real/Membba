@@ -10,6 +10,7 @@ import { FaTelegram, FaWhatsapp } from 'react-icons/fa'
 import telegramLogo from '../assets/icons8-telegram.svg'
 import whatsappLogo from '../assets/icons8-whatsapp.svg'
 import API_BASE from '../lib/api'
+import Tooltip from '../components/Tooltip'
 
 const generateSlug = (name) =>
   name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
@@ -548,7 +549,10 @@ export default function CommunityFormPage() {
                 <div className="flex gap-7">
                   <div className="flex-shrink-0 w-7 h-7 rounded-full bg-[#229ED9]/20 border border-[#229ED9]/30 flex items-center justify-center text-[#229ED9] text-[14px] font-black">2</div>
                   <div className="flex-1">
-                    <p className="text-[14px] font-bold text-black dark:text-white mb-1">Paste your Group Chat ID</p>
+                    <p className="text-[14px] font-bold text-black dark:text-white mb-1 flex items-center gap-1.5">
+                      Paste your Group Chat ID
+                      <Tooltip content="This is the numeric ID of your Telegram group. Membba Bot uses it to create invite links and remove expired members." />
+                    </p>
                     <p className="text-[14px] text-black dark:text-white/40 mb-3">The bot will post the ID to your group. Copy it here. It will self-destruct in 5 minutes.</p>
                     <input
                       type="text"
@@ -599,7 +603,10 @@ export default function CommunityFormPage() {
 
                 {/* Group invite link */}
                 <div>
-                  <label className="block text-[14px] font-bold text-black dark:text-white/40 mb-2 uppercase tracking-widest">Group Invite Link *</label>
+                  <label className="text-[14px] font-bold text-black dark:text-white/40 mb-2 uppercase tracking-widest flex items-center gap-1.5">
+                    Group Invite Link *
+                    <Tooltip content="Membba uses this link to join/register your WhatsApp group and later deliver invites to paying members." />
+                  </label>
                   <input
                     type="url"
                     name="whatsapp_group_invite_link"
@@ -882,8 +889,9 @@ export default function CommunityFormPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-7">
               {/* Invite link expiry */}
               <div>
-                <label className="block text-[14px] font-bold text-black dark:text-white/45 mb-2 uppercase tracking-widest">
+                <label className="text-[14px] font-bold text-black dark:text-white/45 mb-2 uppercase tracking-widest flex items-center gap-1.5">
                   Invite Link Expires After
+                  <Tooltip content="Controls how long a generated invite link remains valid. Shorter links reduce sharing abuse." />
                 </label>
                 <Select
                   value={form.invite_link_ttl_minutes}
@@ -905,8 +913,9 @@ export default function CommunityFormPage() {
 
               {/* Auto-delete DM */}
               <div>
-                <label className="block text-[14px] font-bold text-black dark:text-white/45 mb-2 uppercase tracking-widest">
+                <label className="text-[14px] font-bold text-black dark:text-white/45 mb-2 uppercase tracking-widest flex items-center gap-1.5">
                   Delete Bot Messages After
+                  <Tooltip content="Optional privacy cleanup. Membba can delete invite messages after a delay so links do not stay visible forever." />
                 </label>
                 <Select
                   value={form.msg_auto_delete_seconds}

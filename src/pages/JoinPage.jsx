@@ -53,6 +53,7 @@ export default function JoinPage() {
   const [uidToken, setUidToken]     = useState(null)
   const [uidPolling, setUidPolling] = useState(false)
   const [uidStatus, setUidStatus]   = useState('idle') // 'idle' | 'polling' | 'success'
+  const [telegramDeepLink, setTelegramDeepLink] = useState(null)
 
   const handleConnectTelegram = async () => {
     try {
@@ -62,8 +63,12 @@ export default function JoinPage() {
       const data = await res.json()
       if (!data.token) throw new Error('No token')
 
-      // Open telegram
-      window.open(data.deepLink, '_blank')
+      // Save link for sandboxed previews where popups are blocked.
+      setTelegramDeepLink(data.deepLink)
+
+      // Try to open Telegram. In Arena's sandboxed preview this may be blocked,
+      // so the UI also shows a copy/open-manually link below the button.
+      try { window.open(data.deepLink, '_blank', 'noopener,noreferrer') } catch { /* ignore */ }
       
       // Poll
       let attempts = 0
@@ -336,9 +341,29 @@ export default function JoinPage() {
                       </p>
                     )}
                     {uidPolling && (
-                      <p className="text-[14px] text-black dark:text-white/30 mt-3 text-center leading-relaxed animate-pulse">
-                        Please open Telegram, tap <b>Start</b>, and then return here.
-                      </p>
+                      <div className="mt-3 text-center space-y-2">
+                        <p className="text-[14px] text-black dark:text-white/30 leading-relaxed animate-pulse">
+                          Please open Telegram, tap <b>Start</b>, and then return here.
+                        </p>
+                        {telegramDeepLink && (
+                          <div className="rounded-xl border border-[#229ED9]/20 bg-[#229ED9]/[0.06] p-3 text-left">
+                            <p className="text-[12px] font-bold text-[#229ED9] mb-1">If Telegram did not open</p>
+                            <p className="text-[12px] text-black dark:text-white/45 mb-2 leading-relaxed">
+                              Arena preview blocks popups. Copy this link and open it in a normal browser tab or Telegram.
+                            </p>
+                            <div className="flex gap-2">
+                              <input readOnly value={telegramDeepLink} className="flex-1 min-w-0 bg-white dark:bg-[#0a0a0a] border border-white/[0.08] rounded-lg px-2 py-2 text-[12px] text-black dark:text-white/60 font-mono" />
+                              <button
+                                type="button"
+                                onClick={() => { navigator.clipboard.writeText(telegramDeepLink); toast.success('Telegram link copied') }}
+                                className="px-3 py-2 rounded-lg bg-[#229ED9] text-white text-[12px] font-bold"
+                              >
+                                Copy
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}

@@ -2,28 +2,46 @@ import express from 'express'
 import { supabase } from '../lib/supabase.js'
 import { kickChatMember, sendTelegramMessage } from '../services/telegram.js'
 import { removeWhatsAppMember } from '../services/whatsapp.js'
+import { sendTelegramInvite as _sendTelegramInvite } from '../services/telegram.js'
 
 const router = express.Router()
 
+// ── Verify caller JWT and return creator id ───────────────────────────────
+async function getCreatorId(req) {
+  const token = req.headers.authorization?.replace('Bearer ', '')
+  if (!token) return null
+  const { data, error } = await supabase.auth.getUser(token)
+  if (error) return null
+  return data?.user?.id || null
+}
+
+async function getOwnedSubscription(subscriptionId, creatorId) {
+  const { data: sub, error } = await supabase
+    .from('subscriptions')
+    .select('*, communities(telegram_chat_id, whatsapp_group_id, whatsapp_group_invite_link, name, slug, platform, creator_id)')
+    .eq('id', subscriptionId)
+    .single()
+
+  if (error || !sub) return { sub: null, error: 'not_found' }
+  if (sub.communities?.creator_id !== creatorId) return { sub: null, error: 'forbidden' }
+  return { sub, error: null }
+}
+
 // ─────────────────────────────────────────────────────
 // POST /api/members/:subscriptionId/remove
-// Manually remove a member: kick from Telegram + cancel subscription.
+// Manually remove a member: kick from Telegram/WhatsApp + cancel subscription.
 // Only the community creator can call this.
 // ─────────────────────────────────────────────────────
 router.post('/:subscriptionId/remove', async (req, res) => {
   const { subscriptionId } = req.params
+  const creatorId = await getCreatorId(req)
+  if (!creatorId) return res.status(401).json({ message: 'Unauthorized' })
 
   try {
-    // Fetch full subscription details
-    const { data: sub, error } = await supabase
-      .from('subscriptions')
-      .select('*, communities(telegram_chat_id, name, slug, creator_id)')
-      .eq('id', subscriptionId)
-      .single()
+    const { sub, error } = await getOwnedSubscription(subscriptionId, creatorId)
 
-    if (error || !sub) {
-      return res.status(404).json({ message: 'Subscription not found' })
-    }
+    if (error === 'not_found') return res.status(404).json({ message: 'Subscription not found' })
+    if (error === 'forbidden') return res.status(403).json({ message: 'Forbidden' })
 
     // Kick from Telegram group if we have the necessary IDs
     const tgChatId = sub.communities?.telegram_chat_id
@@ -48,7 +66,7 @@ router.post('/:subscriptionId/remove', async (req, res) => {
     // Kick from WhatsApp if applicable
     const waGroupId = sub.communities?.whatsapp_group_id
     const waPhone = sub.whatsapp_phone
-    
+
     if (waGroupId && waPhone) {
       try {
         await removeWhatsAppMember(waGroupId, waPhone)
@@ -74,22 +92,57 @@ router.post('/:subscriptionId/remove', async (req, res) => {
   }
 })
 
-// ─────────────────────────────────────────────────────
-// POST /api/members/:id/resend-invite
-// Re-sends the Telegram invite link to the subscriber via DM.
-// ─────────────────────────────────────────────────────
-import { sendTelegramInvite as _sendTelegramInvite } from '../services/telegram.js'
 
-router.post('/:subscriptionId/resend-invite', async (req, res) => {
+// ─────────────────────────────────────────────────────
+// POST /api/members/:subscriptionId/extend
+// Creator extends a member subscription by N days.
+// ─────────────────────────────────────────────────────
+router.post('/:subscriptionId/extend', async (req, res) => {
   const { subscriptionId } = req.params
+  const creatorId = await getCreatorId(req)
+  if (!creatorId) return res.status(401).json({ message: 'Unauthorized' })
+
+  const days = Math.max(1, Math.min(365, parseInt(req.body?.days || 30)))
+
   try {
-    const { data: sub, error } = await supabase
+    const { sub, error } = await getOwnedSubscription(subscriptionId, creatorId)
+    if (error === 'not_found') return res.status(404).json({ message: 'Subscription not found' })
+    if (error === 'forbidden') return res.status(403).json({ message: 'Forbidden' })
+
+    const currentExpiry = new Date(sub.expires_at)
+    const base = currentExpiry > new Date() ? currentExpiry : new Date()
+    const newExpiry = new Date(base.getTime() + days * 24 * 60 * 60 * 1000)
+
+    const { data, error: updateErr } = await supabase
       .from('subscriptions')
-      .select('*, communities(telegram_chat_id, whatsapp_group_invite_link, name, slug, platform)')
+      .update({ status: 'active', expires_at: newExpiry.toISOString() })
       .eq('id', subscriptionId)
+      .select('*, communities(name, slug, platform), plans(name, price, duration_minutes)')
       .single()
 
-    if (error || !sub) return res.status(404).json({ message: 'Subscription not found' })
+    if (updateErr) throw updateErr
+    return res.json({ success: true, message: `Subscription extended by ${days} days`, subscription: data })
+  } catch (err) {
+    console.error('[members/extend] error:', err.message)
+    return res.status(500).json({ message: 'Failed to extend subscription' })
+  }
+})
+
+// ─────────────────────────────────────────────────────
+// POST /api/members/:subscriptionId/resend-invite
+// Re-sends the Telegram invite link to the subscriber via DM.
+// Only the community creator can call this.
+// ─────────────────────────────────────────────────────
+router.post('/:subscriptionId/resend-invite', async (req, res) => {
+  const { subscriptionId } = req.params
+  const creatorId = await getCreatorId(req)
+  if (!creatorId) return res.status(401).json({ message: 'Unauthorized' })
+
+  try {
+    const { sub, error } = await getOwnedSubscription(subscriptionId, creatorId)
+
+    if (error === 'not_found') return res.status(404).json({ message: 'Subscription not found' })
+    if (error === 'forbidden') return res.status(403).json({ message: 'Forbidden' })
     if (sub.status !== 'active') return res.status(400).json({ message: 'Subscription is not active' })
 
     const platform = sub.communities?.platform || 'telegram'

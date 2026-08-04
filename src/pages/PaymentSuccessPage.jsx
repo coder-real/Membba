@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { FaTelegram, FaWhatsapp } from 'react-icons/fa'
+import toast from 'react-hot-toast'
 import API_BASE from '../lib/api'
 
 function Spinner() {
@@ -11,6 +12,18 @@ function Spinner() {
   )
 }
 
+function CopyButton({ value, label = 'Copy' }) {
+  return (
+    <button
+      type="button"
+      onClick={() => { navigator.clipboard.writeText(value || ''); toast.success('Copied') }}
+      className="rounded-lg border border-gray-200 px-3 py-1.5 text-[12px] font-bold text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-white/50 dark:hover:bg-white/5"
+    >
+      {label}
+    </button>
+  )
+}
+
 export default function PaymentSuccessPage() {
   const [searchParams] = useSearchParams()
   const reference = searchParams.get('reference')
@@ -18,29 +31,47 @@ export default function PaymentSuccessPage() {
   const [subscription, setSubscription] = useState(null)
   const [inviteLink, setInviteLink]     = useState(null)
   const [platform, setPlatform]         = useState('telegram')
+  const [alreadyProcessed, setAlreadyProcessed] = useState(false)
+  const [message, setMessage]           = useState('')
   const [showHelp, setShowHelp]         = useState(false)
+  const [retrying, setRetrying]         = useState(false)
 
   useEffect(() => { if (reference) verifyPayment(); else setStatus('failed') }, [reference])
 
-  const verifyPayment = async () => {
+  const verifyPayment = async ({ silent = false } = {}) => {
+    if (!reference) return setStatus('failed')
+    if (!silent) setStatus('verifying')
+    setRetrying(true)
     try {
       const res  = await fetch(`${API_BASE}/api/payments/verify/${reference}`)
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
       if (data.success) {
         setStatus('success')
         setSubscription(data.subscription || null)
         setInviteLink(data.invite_link || null)
-        setPlatform(data.platform || 'telegram')
+        setPlatform(data.platform || data.subscription?.communities?.platform || 'telegram')
+        setAlreadyProcessed(Boolean(data.already_processed))
+        setMessage(data.message || '')
+        if (silent) toast.success(data.already_processed ? 'Already processed' : 'Payment verified')
       } else {
         setStatus('failed')
+        setMessage(data.message || 'Payment could not be verified yet.')
+        if (silent) toast.error(data.message || 'Payment could not be verified yet')
       }
-    } catch { setStatus('failed') }
+    } catch {
+      setStatus('failed')
+      setMessage('Could not connect to the payment server.')
+      if (silent) toast.error('Could not connect to the payment server')
+    } finally {
+      setRetrying(false)
+    }
   }
 
   const isWA        = platform === 'whatsapp'
   const PlatIcon    = isWA ? FaWhatsapp : FaTelegram
   const platColor   = isWA ? '#25D366' : '#229ED9'
   const platLabel   = isWA ? 'WhatsApp' : 'Telegram'
+  const supportHref = `mailto:support@membba.com?subject=Payment%20Issue%20${reference || ''}&body=Payment%20reference:%20${reference || ''}`
 
   if (status === 'verifying') return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] flex items-center justify-center px-6" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -51,15 +82,13 @@ export default function PaymentSuccessPage() {
         </div>
         <p className="text-[14px] font-bold tracking-[0.15em] uppercase text-black dark:text-white/25 mb-3">Processing</p>
         <h1 className="text-[22px] font-black text-black dark:text-white mb-3">Verifying your payment</h1>
-        <p className="text-[14px] text-black dark:text-white/40 leading-relaxed">This usually takes just a moment.</p>
+        <p className="text-[14px] text-black dark:text-white/40 leading-relaxed">This usually takes just a moment. Please don’t close this page.</p>
       </div>
     </div>
   )
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a]" style={{ fontFamily: "'Inter', sans-serif" }}>
-
-      {/* Top bar */}
       <div className="border-b border-white/[0.05] px-6 py-4 flex items-center justify-between max-w-xl mx-auto">
         <span className="text-[14px] font-black tracking-wider text-black dark:text-white/30 uppercase">Membba</span>
         <div className="flex items-center gap-1.5 text-black dark:text-white/25">
@@ -71,11 +100,8 @@ export default function PaymentSuccessPage() {
       </div>
 
       <div className="max-w-xl mx-auto px-6 py-14">
-
-        {/* ── Success ───────────────────────────────────────── */}
         {status === 'success' && (
           <div>
-            {/* Status mark */}
             <div className="w-16 h-16 rounded-2xl bg-[#9FFF57]/10 border border-[#9FFF57]/20 flex items-center justify-center mb-7">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9FFF57" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 6 9 17 4 12" />
@@ -88,8 +114,16 @@ export default function PaymentSuccessPage() {
                 ? `You're in, ${subscription.communities.name}!`
                 : "You're all set!"}
             </h1>
+            <p className="text-[14px] text-black dark:text-white/45 leading-relaxed mb-5">
+              Your payment has been verified and your membership has been created.
+            </p>
 
-            {/* Subscription summary */}
+            {alreadyProcessed && (
+              <div className="mb-5 rounded-xl border border-blue-400/20 bg-blue-400/10 px-5 py-4 text-[14px] text-blue-700 dark:text-blue-300">
+                This payment had already been processed, so we didn’t create a duplicate subscription.
+              </div>
+            )}
+
             {subscription && (
               <div className="border border-white/[0.07] bg-white dark:bg-[#111] rounded-xl px-5 py-4 mb-7 mt-5">
                 <div className="grid grid-cols-2 gap-y-3">
@@ -108,14 +142,11 @@ export default function PaymentSuccessPage() {
                     </>
                   )}
                   <span className="text-[14px] text-black dark:text-white/35 font-semibold uppercase tracking-wider">Platform</span>
-                  <span className="text-[14px] font-semibold text-right" style={{ color: platColor }}>
-                    {platLabel}
-                  </span>
+                  <span className="text-[14px] font-semibold text-right" style={{ color: platColor }}>{platLabel}</span>
                 </div>
               </div>
             )}
 
-            {/* Invite link CTA */}
             {inviteLink ? (
               <div className="space-y-3 mb-6">
                 <a
@@ -128,11 +159,9 @@ export default function PaymentSuccessPage() {
                   <PlatIcon size={20} />
                   Join {platLabel} Group
                 </a>
-                {!isWA && (
-                  <p className="text-center text-[14px] text-black dark:text-white/30">
-                    Link expires in 15 minutes. The bot may also DM you the same link.
-                  </p>
-                )}
+                <p className="text-center text-[14px] text-black dark:text-white/30">
+                  We may also send this invite through {platLabel} if the bot can reach you.
+                </p>
               </div>
             ) : (
               <>
@@ -143,7 +172,7 @@ export default function PaymentSuccessPage() {
                   </p>
                   {isWA ? (
                     <p className="text-black dark:text-white/50">
-                      We're sending your group invite link to the WhatsApp number you provided.
+                      Your invite will be sent to the WhatsApp number you provided. If WhatsApp delivery is offline, the invite is queued and the admin can resend it.
                     </p>
                   ) : (
                     <div className="text-black dark:text-white/50 space-y-1">
@@ -155,7 +184,6 @@ export default function PaymentSuccessPage() {
                   )}
                 </div>
 
-                {/* TSK-102: Expandable help for Telegram */}
                 {!isWA && (
                   <div className="mb-6">
                     <button
@@ -170,7 +198,7 @@ export default function PaymentSuccessPage() {
                         <p>1. Open Telegram and search for <span className="font-mono text-black dark:text-white/70">@membba_bot</span></p>
                         <p>2. Send the command <span className="font-mono text-black dark:text-white/70">/start</span></p>
                         <p>3. Wait a moment — the bot will automatically send you the invite link.</p>
-                        <p className="text-black dark:text-white/30">If it still doesn't arrive, contact your community admin.</p>
+                        <p className="text-black dark:text-white/30">If it still doesn't arrive, contact your community admin with your payment reference.</p>
                       </div>
                     )}
                   </div>
@@ -178,16 +206,15 @@ export default function PaymentSuccessPage() {
               </>
             )}
 
-            {/* Reference */}
-            <div className="border-t border-white/[0.05] pt-5">
-              <p className="text-[14px] text-black dark:text-white/25">
-                Reference: <span className="font-mono text-black dark:text-white/35">{reference}</span>
+            <div className="border-t border-white/[0.05] pt-5 flex items-center justify-between gap-3">
+              <p className="text-[14px] text-black dark:text-white/25 min-w-0">
+                Reference: <span className="font-mono text-black dark:text-white/35 break-all">{reference}</span>
               </p>
+              <CopyButton value={reference} />
             </div>
           </div>
         )}
 
-        {/* ── Failed ─────────────────────────────────────────── */}
         {status === 'failed' && (
           <div>
             <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-7">
@@ -198,21 +225,29 @@ export default function PaymentSuccessPage() {
 
             <p className="text-[14px] font-bold tracking-[0.15em] uppercase text-red-400/60 mb-2">Payment Issue</p>
             <h1 className="text-[26px] font-black text-black dark:text-white leading-tight mb-3">We couldn't verify your payment</h1>
-            <p className="text-[14px] text-black dark:text-white/45 leading-relaxed mb-7">
-              Don't worry — if your card was charged, your money is safe. Contact support with the reference below and we'll resolve it promptly.
+            <p className="text-[14px] text-black dark:text-white/45 leading-relaxed mb-5">
+              {message || "Don't worry — if your card was charged, your money is safe. Try verifying again or contact support with your reference."}
             </p>
 
             {reference && (
-              <div className="bg-white dark:bg-[#111] border border-white/[0.07] rounded-xl px-5 py-3.5 mb-7 flex items-center justify-between gap-3">
-                <div>
+              <div className="bg-white dark:bg-[#111] border border-white/[0.07] rounded-xl px-5 py-3.5 mb-5 flex items-center justify-between gap-3">
+                <div className="min-w-0">
                   <p className="text-[14px] text-black dark:text-white/30 uppercase tracking-wider font-semibold mb-1">Reference</p>
                   <p className="font-mono text-[14px] text-black dark:text-white/70 break-all">{reference}</p>
                 </div>
+                <CopyButton value={reference} />
               </div>
             )}
 
             <div className="flex flex-col gap-3">
-              <a href={`mailto:support@membba.com?subject=Payment%20Issue&body=Reference:%20${reference}`}
+              <button
+                onClick={() => verifyPayment({ silent: true })}
+                disabled={retrying}
+                className="w-full py-3.5 rounded-xl font-black text-[14px] bg-[#9FFF57] text-black hover:bg-[#b0ff6e] disabled:opacity-50 transition-colors"
+              >
+                {retrying ? 'Checking again…' : 'Retry verification'}
+              </button>
+              <a href={supportHref}
                 className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-bold text-[14px] bg-white/[0.06] text-black dark:text-white/70 hover:bg-white/[0.09] transition-colors border border-white/[0.07]">
                 Contact Support
               </a>

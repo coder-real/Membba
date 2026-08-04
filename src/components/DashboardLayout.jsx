@@ -11,6 +11,7 @@ import {
   HiOutlineCog6Tooth,
   HiOutlineMagnifyingGlass,
   HiOutlineBolt,
+  HiOutlineInbox,
   HiOutlineSun,
   HiOutlineMoon,
   HiOutlineArrowRightOnRectangle,
@@ -40,6 +41,7 @@ const WORKSPACE_LINKS = [
 ]
 const TOOL_LINKS = [
   { label: 'Automations', path: '/dashboard/automations', Icon: HiOutlineBolt },
+  { label: 'AI Inbox',    path: '/dashboard/ai-inbox',    Icon: HiOutlineInbox },
   { label: 'Settings',    path: '/dashboard/settings',    Icon: HiOutlineCog6Tooth  },
 ]
 

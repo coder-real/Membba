@@ -13,6 +13,8 @@ import { initWhatsApp } from './services/whatsapp.js'
 import { sendMorningDigest } from './services/digest.js'
 import { processScheduledPosts } from './services/scheduler.js'
 import automationsRouter from './routes/automations.js'
+import aiRouter from './routes/ai.js'
+import opsRouter from './routes/ops.js'
 
 // ── Global Error Catchers to prevent crashes ──────────────────────────────
 // Prevents the entire Node server from crashing if whatsapp-web.js throws
@@ -63,6 +65,8 @@ app.use('/api/members', membersRouter)
 app.use('/api/whatsapp', whatsappRouter)
 app.use('/api/telegram', telegramRouter)
 app.use('/api/automations', automationsRouter)
+app.use('/api/ai', aiRouter)
+app.use('/api/ops', opsRouter)
 
 app.get('/api/health', (_req, res) =>
   res.json({ status: 'ok', time: new Date().toISOString() })
@@ -78,33 +82,44 @@ app.post('/api/digest/now', async (_req, res) => {
   }
 })
 
-// ── Cron: process expired subscriptions + scheduled posts every minute ──
-cron.schedule('* * * * *', async () => {
-  try {
-    const expired = await processExpiredSubscriptions()
-    if (expired > 0) console.log(`[cron] expired ${expired} subscription(s)`)
-    const sent = await processScheduledPosts()
-    if (sent > 0) console.log(`[cron] sent ${sent} scheduled post(s)`)
-  } catch (err) {
-    console.error('[cron] error:', err.message)
-  }
-})
+// ── Cron: process expired subscriptions + scheduled posts ─────────────────
+// Disable in local testing with DISABLE_CRON=true to avoid accidentally
+// removing real members while validating WhatsApp/AI connectivity.
+if (process.env.DISABLE_CRON === 'true') {
+  console.log('[cron] disabled — DISABLE_CRON=true')
+} else {
+  // Every minute: expire subscriptions + send due scheduled posts
+  cron.schedule('* * * * *', async () => {
+    try {
+      const expired = await processExpiredSubscriptions()
+      if (expired > 0) console.log(`[cron] expired ${expired} subscription(s)`)
+      const sent = await processScheduledPosts()
+      if (sent > 0) console.log(`[cron] sent ${sent} scheduled post(s)`)
+    } catch (err) {
+      console.error('[cron] error:', err.message)
+    }
+  })
 
-// ── Cron: morning admin digest at 8am WAT (UTC+1 = 07:00 UTC) ──
-cron.schedule('0 7 * * *', async () => {
-  console.log('[cron] sending morning digest...')
-  try {
-    await sendMorningDigest()
-  } catch (err) {
-    console.error('[cron] digest error:', err.message)
-  }
-})
+  // Morning admin digest at 8am WAT (UTC+1 = 07:00 UTC)
+  cron.schedule('0 7 * * *', async () => {
+    console.log('[cron] sending morning digest...')
+    try {
+      await sendMorningDigest()
+    } catch (err) {
+      console.error('[cron] digest error:', err.message)
+    }
+  })
+}
 
 app.listen(PORT, () => {
   console.log(`Membba server running on http://localhost:${PORT}`)
 
-  // Telegram bot: use webhook in production, long-polling in local dev
-  if (process.env.SERVER_URL) {
+  // Telegram bot: use webhook in production, long-polling in local dev.
+  // Disable in WhatsApp/AI-only testing with DISABLE_TELEGRAM=true so local
+  // startup does not delete or replace a production Telegram webhook.
+  if (process.env.DISABLE_TELEGRAM === 'true') {
+    console.log('[bot] disabled — DISABLE_TELEGRAM=true')
+  } else if (process.env.SERVER_URL) {
     registerWebhook(process.env.SERVER_URL).catch(err =>
       console.error('[bot] webhook registration failed:', err.message)
     )

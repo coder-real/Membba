@@ -39,8 +39,10 @@ router.post('/connect', async (req, res) => {
   }
 
   try {
-    await restartWhatsApp()                                     // clean up any existing socket
-    await initWhatsApp({ usePairingCode, phoneNumber })
+    // Clean up any existing socket and start one new connection with the
+    // requested auth method. Do not call initWhatsApp twice here — QR and
+    // pairing-code flows depend on these exact options being used on startup.
+    await restartWhatsApp({ usePairingCode, phoneNumber })
     res.json({ ok: true, method })
   } catch (err) {
     console.error('[whatsapp/connect] error:', err.message)

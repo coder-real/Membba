@@ -7,6 +7,7 @@
 
 import { supabase } from '../lib/supabase.js'
 import { generateText } from './ai.js'
+import { isSchedulerEnabledForCreator, logAutomationRun } from './automation.js'
 
 // ── Vary tone per group if AI personalization is enabled ─────────────────────
 async function personalizeContent(content, communityName) {
@@ -33,6 +34,7 @@ export async function processScheduledPosts() {
 
   if (error) {
     console.error('[scheduler] fetch error:', error.message)
+    await logAutomationRun({ type: 'scheduler', status: 'failed', message: error.message })
     return 0
   }
 
@@ -45,6 +47,12 @@ export async function processScheduledPosts() {
     if (!community) continue
 
     try {
+      const enabled = await isSchedulerEnabledForCreator(post.creator_id)
+      if (!enabled) {
+        await logAutomationRun({ creatorId: post.creator_id, type: 'scheduler', status: 'skipped', message: 'Scheduler disabled', metadata: { post_id: post.id } })
+        continue
+      }
+
       let content = post.content
 
       // Optionally personalize tone via Groq
@@ -57,27 +65,30 @@ export async function processScheduledPosts() {
         await sendWhatsAppMessage(community.whatsapp_group_id, content)
 
       } else if ((community.platform === 'telegram' || !community.platform) && community.telegram_chat_id) {
-        // Telegram broadcast
         const token = process.env.TELEGRAM_BOT_TOKEN
-        await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ chat_id: community.telegram_chat_id, text: content }),
         })
+        if (!tgRes.ok) throw new Error(`Telegram send failed: ${tgRes.status}`)
+      } else {
+        throw new Error('Community delivery channel is not configured')
       }
 
-      // Mark as sent
       await supabase
         .from('scheduled_posts')
         .update({ status: 'sent', sent_at: new Date().toISOString() })
         .eq('id', post.id)
 
+      await logAutomationRun({ creatorId: post.creator_id, type: 'scheduler', status: 'success', message: 'Scheduled post sent', metadata: { post_id: post.id, community: community.name } })
       sentCount++
       console.log(`[scheduler] sent post ${post.id} to ${community.name}`)
 
     } catch (err) {
       console.error(`[scheduler] failed to send post ${post.id}:`, err.message)
-      // Don't mark as failed — retry next minute
+      await logAutomationRun({ creatorId: post.creator_id, type: 'scheduler', status: 'failed', message: err.message, metadata: { post_id: post.id } })
+      // Don't mark as failed yet — retry next minute.
     }
   }
 

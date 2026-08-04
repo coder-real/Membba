@@ -82,8 +82,8 @@ router.get('/check-setup/:communityId', async (req, res) => {
       })
       checks.push({
         id: 'whatsapp_auth',
-        label: 'WhatsApp bot authenticated',
-        pass: waStatus === 'authenticated',
+        label: 'WhatsApp bot connected',
+        pass: waStatus === 'connected',
         hint: 'Go to Settings → WhatsApp Bot → Connect WhatsApp and scan the QR code.',
       })
     }

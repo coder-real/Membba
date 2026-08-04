@@ -10,6 +10,7 @@ import qrcode from 'qrcode'
 import fs from 'fs'
 import path from 'path'
 import { supabase } from '../lib/supabase.js'
+import { isAIResponderEnabledForPhone, logAutomationRun } from './automation.js'
 
 import { BufferJSON, initAuthCreds } from '@whiskeysockets/baileys'
 
@@ -199,6 +200,23 @@ export async function initWhatsApp(opts = {}) {
     // Persist credentials whenever they change
     sock.ev.on('creds.update', saveCreds)
 
+    // Pairing-code path: request the code shortly after the socket is created.
+    // Requesting inside every connection.update event can race with WhatsApp and
+    // produce "Connection Closed" before the socket is ready.
+    if (usePairingCode && phoneNumber && !state.creds.registered) {
+      setTimeout(async () => {
+        try {
+          if (!sock || sock.authState.creds.registered) return
+          const code = await sock.requestPairingCode(phoneNumber.replace(/\D/g, ''))
+          pairingCode = code
+          status = 'needs_pairing_code'
+          console.log('[whatsapp] pairing code ready:', pairingCode)
+        } catch (err) {
+          console.error('[whatsapp] pairing code request failed:', err.message)
+        }
+      }, 3000)
+    }
+
     // ── Release the lock as soon as the socket is wired up ──────────────────
     isConnecting = false
 
@@ -213,22 +231,6 @@ export async function initWhatsApp(opts = {}) {
       } catch { currentQRDataUrl = null }
       status = 'needs_scan'
       console.log('[whatsapp] QR ready — visit /api/whatsapp/qr to scan')
-    }
-
-    // Pairing code path — requested once after socket is open but not yet registered
-    if (
-      usePairingCode && phoneNumber &&
-      !sock.authState.creds.registered &&
-      connection !== 'open'
-    ) {
-      try {
-        const code = await sock.requestPairingCode(phoneNumber.replace(/\D/g, ''))
-        pairingCode = code
-        status = 'needs_pairing_code'
-        console.log('[whatsapp] pairing code ready:', pairingCode)
-      } catch (err) {
-        console.error('[whatsapp] pairing code request failed:', err.message)
-      }
     }
 
     if (connection === 'open') {
@@ -294,12 +296,21 @@ export async function initWhatsApp(opts = {}) {
       console.log(`[ai] DM from ${phone}: "${text.substring(0, 60)}"`)
 
       try {
+        const enabled = await isAIResponderEnabledForPhone(phone)
+        if (!enabled) {
+          console.log(`[ai] responder disabled for ${phone}, skipping reply`)
+          await logAutomationRun({ type: 'ai_responder', status: 'skipped', message: 'AI responder disabled', metadata: { phone } })
+          continue
+        }
+
         // Lazy import to avoid circular deps at module load time
-        const { getAIReply } = await import('./ai.js')
-        const reply = await getAIReply(phone, text)
-        await sock.sendMessage(jid, { text: reply })
+        const { getAIReplyDetailed } = await import('./ai.js')
+        const result = await getAIReplyDetailed(phone, text)
+        await sock.sendMessage(jid, { text: result.reply })
+        await logAutomationRun({ type: 'ai_responder', status: 'success', message: 'AI reply sent', metadata: { phone, intent: result.intent, escalated: result.escalation?.escalated || false } })
         console.log(`[ai] replied to ${phone}`)
       } catch (err) {
+        await logAutomationRun({ type: 'ai_responder', status: 'failed', message: err.message, metadata: { phone } })
         console.error(`[ai] failed to reply to ${phone}:`, err.message)
       }
     }
@@ -385,11 +396,13 @@ export async function initWhatsApp(opts = {}) {
 }
 
 // ── Restart ───────────────────────────────────────────────────────────────────
-export async function restartWhatsApp() {
+export async function restartWhatsApp(opts = null) {
   console.log('[whatsapp] restarting client...')
   status = 'initializing'
   currentQRDataUrl = null
   pairingCode = null
+
+  if (opts) connectionOptions = opts
 
   if (sock) {
     try {

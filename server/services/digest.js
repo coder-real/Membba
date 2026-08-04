@@ -9,6 +9,7 @@
 
 import { supabase } from '../lib/supabase.js'
 import { generateText } from './ai.js'
+import { isAnyDailyDigestEnabled, logAutomationRun } from './automation.js'
 
 // ── Pull everything needed for the briefing ───────────────────────────────────
 async function collectDigestData() {
@@ -103,9 +104,17 @@ End with one short actionable recommendation for the day.`
 export async function sendMorningDigest() {
   console.log('[digest] building morning briefing...')
 
+  const enabled = await isAnyDailyDigestEnabled()
+  if (!enabled) {
+    console.log('[digest] skipped — daily_digest disabled')
+    await logAutomationRun({ type: 'daily_digest', status: 'skipped', message: 'Daily digest disabled' })
+    return
+  }
+
   const adminJid = process.env.ADMIN_JID
   if (!adminJid) {
     console.warn('[digest] ADMIN_JID not set — skipping digest')
+    await logAutomationRun({ type: 'daily_digest', status: 'skipped', message: 'ADMIN_JID not set' })
     return
   }
 
@@ -118,9 +127,11 @@ export async function sendMorningDigest() {
     // Lazy import to avoid circular deps
     const { sendWhatsAppMessage } = await import('./whatsapp.js')
     await sendWhatsAppMessage(adminPhone, message)
+    await logAutomationRun({ type: 'daily_digest', status: 'success', message: 'Morning digest sent', metadata: { adminPhone, totalRevenue: data.totalRevenue, newMembers: data.newMembers.length } })
 
     console.log('[digest] morning briefing sent to admin ✅')
   } catch (err) {
+    await logAutomationRun({ type: 'daily_digest', status: 'failed', message: err.message })
     console.error('[digest] failed to send digest:', err.message)
   }
 }

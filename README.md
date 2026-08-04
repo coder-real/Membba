@@ -1,14 +1,17 @@
-# Membba — Frontend
+# Membba
 
-Monetize your Telegram community. Automated payments, access control, and subscription management.
+Membba helps creators monetize Telegram and WhatsApp communities with automated payments, access control, subscription management, and community automations.
 
 ## Stack
 
 - React + Vite
 - Tailwind CSS
-- Supabase (auth + database)
-- React Router v6
-- React Hot Toast
+- Supabase Auth + Database
+- Express backend
+- Paystack payments
+- Telegram Bot API
+- WhatsApp/Baileys integration
+- Groq-powered AI automations
 
 ## Setup
 
@@ -24,27 +27,72 @@ npm install
 cp .env.example .env
 ```
 
-Fill in your Supabase project URL and anon key from your [Supabase dashboard](https://app.supabase.com).
+Fill in your Supabase, Paystack, Telegram, WhatsApp, and AI credentials.
+
+Important frontend variables:
 
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
+VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-or-anon-key
 ```
+
+Important backend variables:
+
+```env
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_KEY=your-service-role-key
+PAYSTACK_SECRET_KEY=sk_live_or_test_xxxxxxxxxxxxxxxxxxxx
+TELEGRAM_BOT_TOKEN=123456789:ABCdefGhIJKlmNoPQRsTUVwxyz
+GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxx
+CLIENT_URL=http://localhost:5173
+PORT=3001
+```
+
+### API URL handling
+
+For local development, `VITE_API_URL` can be left empty. The frontend calls relative `/api/*` URLs and Vite proxies them to the Express backend through `vite.config.js`.
+
+For production, either:
+
+1. Set `VITE_API_URL` to your backend origin, for example:
+
+```env
+VITE_API_URL=https://membba-server.onrender.com
+```
+
+or
+
+2. Leave it empty if your frontend host rewrites `/api/*` to the backend, as configured in `vercel.json`.
 
 ### 3. Set up the database
 
-- Go to your Supabase project → SQL Editor
-- Run the full contents of `supabase-schema.sql`
+For a new Supabase project, run the consolidated current schema:
 
-### 4. Run the dev server
+```txt
+supabase-current-schema.sql
+```
+
+Older incremental files are still kept in the repo for history/backwards reference:
+
+```txt
+supabase-schema.sql
+supabase-whatsapp-migration.sql
+supabase-baileys-migration.sql
+supabase-session-migration.sql
+automations-migration.sql
+ai-memory-migration.sql
+```
+
+### 4. Run the app locally
 
 ```bash
 npm run dev
 ```
 
-App runs at `http://localhost:5173`
+This starts both:
 
----
+- Vite frontend: `http://localhost:5173`
+- Express backend: `http://localhost:3001`
 
 ## Pages
 
@@ -59,16 +107,18 @@ App runs at `http://localhost:5173`
 | `/dashboard/communities/:id/edit` | Edit a community |
 | `/dashboard/members` | All subscribers |
 | `/dashboard/payments` | All transactions |
+| `/dashboard/automations` | AI/community automation tools |
 | `/dashboard/settings` | Profile + integrations |
 | `/join/:slug` | Public subscriber payment page |
 | `/payment/success` | Post-payment callback |
 
----
+## Backend endpoints
 
-## Backend (coming next)
+The Express backend handles:
 
-The backend (Node.js + Express) will handle:
-- Paystack webhook verification
-- Subscription creation after payment
-- Telegram bot automation (add/remove members)
-- Cron job for expiry checks
+- Paystack initialization, verification, and webhook processing
+- Subscription creation and expiry processing
+- Telegram bot webhook/polling, invites, and removals
+- WhatsApp connection, QR/pairing, invites, and removals
+- Scheduled posts and automation settings
+- AI responses/digests through Groq
