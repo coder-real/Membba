@@ -58,12 +58,24 @@ export function AuthProvider({ children }) {
     return { data, error }
   }
 
+  const refreshUser = async () => {
+    const { data, error } = await supabase.auth.getUser()
+    if (!error) setUser(data.user ?? null)
+    return { data, error }
+  }
+
+  const updateUserMetadata = async (metadata) => {
+    const { data, error } = await supabase.auth.updateUser({ data: metadata })
+    if (!error) setUser(data.user ?? null)
+    return { data, error }
+  }
+
   const signOut = async () => {
     await supabase.auth.signOut()
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, signIn, signInWithGoogle, resetPassword, updatePassword, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signUp, signIn, signInWithGoogle, resetPassword, updatePassword, refreshUser, updateUserMetadata, signOut }}>
       {children}
     </AuthContext.Provider>
   )

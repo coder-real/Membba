@@ -6,6 +6,23 @@ import { supabase } from '../lib/supabase.js'
 const router = express.Router()
 
 // ─────────────────────────────────────────────────────
+// GET /api/telegram/status
+// Returns basic Telegram bot readiness for Settings/Integrations.
+// ─────────────────────────────────────────────────────
+router.get('/status', async (_req, res) => {
+  const token = process.env.TELEGRAM_BOT_TOKEN
+  if (!token) return res.json({ configured: false, online: false })
+
+  try {
+    const tgRes = await fetch(`https://api.telegram.org/bot${token}/getMe`)
+    const data = await tgRes.json()
+    res.json({ configured: true, online: Boolean(data.ok), bot: data.result || null })
+  } catch {
+    res.json({ configured: true, online: false })
+  }
+})
+
+// ─────────────────────────────────────────────────────
 // GET /api/telegram/check-admin/:chatId
 // Returns { isAdmin: true/false }
 // ─────────────────────────────────────────────────────

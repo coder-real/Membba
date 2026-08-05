@@ -15,7 +15,7 @@ import API_BASE from '../lib/api'
 function Pill({ children, tone = 'gray' }) {
   const tones = {
     gray: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-white/5 dark:text-white/50 dark:border-white/10',
-    green: 'bg-[#9FFF57]/15 text-[#76d83b] border-[#9FFF57]/20',
+    green: 'bg-[#c8f135]/15 text-[#c8f135] border-[#c8f135]/20',
     amber: 'bg-amber-400/10 text-amber-700 border-amber-400/20 dark:text-amber-300',
     red: 'bg-red-500/10 text-red-600 border-red-500/20 dark:text-red-300',
     blue: 'bg-blue-500/10 text-blue-700 border-blue-500/20 dark:text-blue-300',
@@ -109,7 +109,7 @@ export default function OpsCreatorDetailPage() {
           <HiOutlineShieldCheck size={36} className="mx-auto mb-3 text-red-400" />
           <h1 className="text-xl font-black text-gray-900 dark:text-white">Could not load creator</h1>
           <p className="mt-2 text-sm text-gray-500 dark:text-white/45">{error}</p>
-          <Link to="/ops/helpdesk" className="mt-5 inline-block rounded-xl bg-[#9FFF57] px-5 py-2.5 text-sm font-black text-black">Back to helpdesk</Link>
+          <Link to="/ops/helpdesk" className="mt-5 inline-block rounded-xl bg-[#c8f135] px-5 py-2.5 text-sm font-black text-black">Back to helpdesk</Link>
         </div>
       </div>
     )
@@ -118,27 +118,8 @@ export default function OpsCreatorDetailPage() {
   const { creator, summary, communities, payments, subscriptions, escalations, automation_settings, notes } = data
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-black dark:text-white">
-      <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/90 px-6 py-4 backdrop-blur dark:border-white/10 dark:bg-[#111]/90">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-          <div>
-            <Link to="/ops/helpdesk" className="mb-2 inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-[#76d83b] dark:text-white/40">
-              <HiOutlineArrowLeft size={16} /> Back to Ops Help Desk
-            </Link>
-            <h1 className="text-2xl font-black tracking-tight">{creator.name}</h1>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-white/40">
-              <span>{creator.email}</span>
-              <button onClick={() => copy(creator.email, 'Email copied')} className="text-[#76d83b]"><HiOutlineClipboardDocument size={16} /></button>
-              {creator.phone && <span>· {creator.phone}</span>}
-            </div>
-          </div>
-          <button onClick={load} className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold hover:bg-gray-50 dark:border-white/10 dark:hover:bg-white/5">
-            <HiOutlineArrowPath size={16} /> Refresh
-          </button>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-7xl px-6 py-8">
+    <>
+      <main>
         <section className="mb-7 grid grid-cols-2 gap-3 lg:grid-cols-6">
           <StatCard label="Communities" value={summary.communities} />
           <StatCard label="Revenue" value={`₦${Number(summary.total_revenue || 0).toLocaleString()}`} />
@@ -180,9 +161,9 @@ export default function OpsCreatorDetailPage() {
                 value={noteText}
                 onChange={e => setNoteText(e.target.value)}
                 placeholder="Add note..."
-                className="min-w-0 flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#9FFF57]/30 dark:border-white/10 dark:bg-black/20 dark:text-white"
+                className="min-w-0 flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#c8f135]/30 dark:border-white/10 dark:bg-black/20 dark:text-white"
               />
-              <button disabled={savingNote} className="rounded-xl bg-[#9FFF57] px-4 py-2 text-sm font-black text-black disabled:opacity-50">Add</button>
+              <button disabled={savingNote} className="rounded-xl bg-[#c8f135] px-4 py-2 text-sm font-black text-black disabled:opacity-50">Add</button>
             </form>
             <div className="mt-4 max-h-52 overflow-y-auto">
               {notes?.length ? notes.map(n => (
@@ -246,6 +227,6 @@ export default function OpsCreatorDetailPage() {
           </div>
         </section>
       </main>
-    </div>
+    </>
   )
 }

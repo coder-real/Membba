@@ -55,7 +55,7 @@ export default function Tooltip({ content, side = 'top' }) {
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(v => !v) }}
-        className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-[10px] font-black text-gray-400 transition hover:border-[#9FFF57]/60 hover:text-[#9FFF57] dark:border-white/15 dark:text-white/35"
+        className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-[10px] font-black text-gray-400 transition hover:border-[#c8f135]/60 hover:text-[#c8f135] dark:border-white/15 dark:text-white/35"
       >
         ?
       </button>

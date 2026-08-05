@@ -1,203 +1,80 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import { useTheme } from "../context/ThemeContext";
-import toast from "react-hot-toast";
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import toast from 'react-hot-toast'
+import AuthShell, { GoogleIcon, authInputClass, authLabelClass } from '../components/AuthShell'
+import Button from '../components/ui/Button'
 
 function friendlyError(message) {
-  if (!message) return "Something went wrong. Please try again."
+  if (!message) return 'Something went wrong. Please try again.'
   const m = message.toLowerCase()
-  if (m.includes("user already registered") || m.includes("already been registered"))
-    return "An account with this email already exists. Try logging in instead."
-  if (m.includes("password should be at least"))
-    return "Password must be at least 6 characters long."
-  if (m.includes("unable to validate email address") || m.includes("invalid email"))
-    return "Please enter a valid email address (e.g. name@gmail.com)."
-  if (m.includes("signup is disabled"))
-    return "Sign-ups are temporarily disabled. Please try again later."
-  if (m.includes("too many requests") || m.includes("rate limit"))
-    return "Too many attempts. Please wait a moment before trying again."
+  if (m.includes('user already registered') || m.includes('already been registered')) return 'An account with this email already exists. Try logging in instead.'
+  if (m.includes('password should be at least')) return 'Password must be at least 6 characters long.'
+  if (m.includes('unable to validate email address') || m.includes('invalid email')) return 'Please enter a valid email address.'
+  if (m.includes('signup is disabled')) return 'Sign-ups are temporarily disabled. Please try again later.'
+  if (m.includes('too many requests') || m.includes('rate limit')) return 'Too many attempts. Please wait a moment before trying again.'
   return message
 }
 
-const GoogleIcon = () => (
-  <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
-    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-  </svg>
-)
-
 export default function RegisterPage() {
-  const { signUp, signInWithGoogle } = useAuth();
-  const { dark, toggleTheme } = useTheme();
-  const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
-  const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
+  const { signUp, signInWithGoogle } = useAuth()
+  const navigate = useNavigate()
+  const [form, setForm] = useState({ name: '', email: '', password: '' })
+  const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
 
-  const bg = dark ? "bg-gray-50 dark:bg-[#0a0a0a]" : "bg-gray-50";
-  const card = dark ? "bg-white dark:bg-[#111] border-gray-200 dark:border-[#1e1e1e]" : "bg-white border-gray-200";
-  const inputCls = dark
-    ? "bg-gray-50 dark:bg-[#0a0a0a] border-[#2a2a2a] text-black dark:text-white placeholder-gray-600 focus:border-[#9FFF57]/50 focus:ring-[#9FFF57]/25"
-    : "bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400 focus:border-[#7de040]/60 focus:ring-[#7de040]/20";
-  const labelCls = dark ? "text-gray-400" : "text-gray-500";
-  const textMuted = dark ? "text-gray-500" : "text-gray-500";
-  const navBorder = dark ? "border-[#1a1a1a]" : "border-gray-200";
-  const googleBtn = dark
-    ? "bg-[#1a1a1a] border-[#2a2a2a] text-black dark:text-white hover:bg-[#222] hover:border-[#333]"
-    : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400";
-
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (form.password.length < 6) {
-      toast.error("Password must be at least 6 characters long.")
-      return
-    }
-    setLoading(true);
-    const { error } = await signUp(form.email, form.password, form.name);
-    setLoading(false);
-    if (error) {
-      toast.error(friendlyError(error.message));
-    } else {
-      toast.success("Account created! Check your email to confirm.");
-      navigate("/dashboard");
-    }
-  };
+    e.preventDefault()
+    if (form.password.length < 6) return toast.error('Password must be at least 6 characters long.')
+    setLoading(true)
+    const { error } = await signUp(form.email, form.password, form.name)
+    setLoading(false)
+    if (error) toast.error(friendlyError(error.message))
+    else { toast.success('Account created! Check your email to confirm.'); navigate('/dashboard') }
+  }
 
   const handleGoogle = async () => {
-    setGoogleLoading(true);
-    const { error } = await signInWithGoogle();
-    if (error) {
-      setGoogleLoading(false);
-      toast.error(friendlyError(error.message));
-    }
-  };
+    setGoogleLoading(true)
+    const { error } = await signInWithGoogle()
+    if (error) { setGoogleLoading(false); toast.error(friendlyError(error.message)) }
+  }
 
   return (
-    <div className={`min-h-screen ${bg} flex flex-col transition-colors duration-300`}>
-      {dark && (
-        <div className="fixed inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-[#9FFF57]/5 rounded-full blur-[120px]" />
-        </div>
-      )}
+    <AuthShell
+      eyebrow="Start free"
+      title="Create your Membba account"
+      description="Monetize and operate private Telegram or WhatsApp communities from one dark-first dashboard."
+      footer={<>Already have an account? <Link to="/login" className="font-medium text-[var(--color-brand)] hover:opacity-80">Login</Link></>}
+    >
+      <button onClick={handleGoogle} disabled={googleLoading} className="btn-secondary mb-5 w-full justify-center py-3 disabled:opacity-60">
+        <GoogleIcon /> {googleLoading ? 'Redirecting…' : 'Continue with Google'}
+      </button>
 
-      {/* Navbar */}
-      <nav className={`relative z-10 flex items-center justify-between px-6 py-4 border-b ${navBorder}`}>
-        <Link to="/" className="flex items-center gap-2">
-          <img src="/green.svg" alt="Membba" className="h-7" />
-          <span className={`font-bold tracking-tight ${dark ? "text-black dark:text-white" : "text-gray-900"}`}>Membba</span>
-        </Link>
-        <div className="flex items-center gap-7">
-          <p className={`text-sm ${textMuted}`}>
-            Already have an account?{" "}
-            <Link to="/login" className="text-[#9FFF57] hover:underline font-medium">Sign in</Link>
-          </p>
-          <button
-            onClick={toggleTheme}
-            aria-label="Toggle theme"
-            className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
-              dark ? "bg-white/[0.07] hover:bg-white/[0.12] text-black dark:text-white/60" : "bg-gray-100 hover:bg-gray-200 text-gray-500"
-            }`}
-          >
-            {dark ? (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-            ) : (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-            )}
-          </button>
-        </div>
-      </nav>
-
-      {/* Form */}
-      <div className="relative z-10 flex-1 flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md">
-          <div className={`border rounded-2xl p-8 ${card}`}>
-            <div className="mb-8">
-              <div className="inline-flex items-center gap-2 text-xs text-[#9FFF57] border border-[#9FFF57]/25 bg-[#9FFF57]/5 rounded-full px-3 py-1 mb-5 tracking-widest uppercase">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#9FFF57] animate-pulse inline-block" />
-                Free to start
-              </div>
-              <h1 className={`text-2xl font-black mb-1 ${dark ? "text-black dark:text-white" : "text-gray-900"}`}>Create your account</h1>
-              <p className={`text-sm ${textMuted}`}>Start managing your paid community today</p>
-            </div>
-
-            {/* Google button */}
-            <button
-              onClick={handleGoogle}
-              disabled={googleLoading}
-              className={`w-full flex items-center justify-center gap-3 border rounded-xl py-3 text-sm font-semibold transition-all mb-5 disabled:opacity-60 disabled:cursor-not-allowed ${googleBtn}`}
-            >
-              <GoogleIcon />
-              {googleLoading ? "Redirecting…" : "Sign up with Google"}
-            </button>
-
-            <div className="flex items-center gap-3 mb-5">
-              <div className={`flex-1 h-px ${dark ? "bg-[#2a2a2a]" : "bg-gray-200"}`} />
-              <span className={`text-xs ${dark ? "text-gray-600" : "text-gray-400"}`}>or with email</span>
-              <div className={`flex-1 h-px ${dark ? "bg-[#2a2a2a]" : "bg-gray-200"}`} />
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label className={`block text-xs font-semibold mb-2 uppercase tracking-wider ${labelCls}`}>Full Name</label>
-                <input
-                  type="text"
-                  name="name"
-                  required
-                  value={form.name}
-                  onChange={handleChange}
-                  className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 transition-colors ${inputCls}`}
-                  placeholder="Your full name"
-                />
-              </div>
-              <div>
-                <label className={`block text-xs font-semibold mb-2 uppercase tracking-wider ${labelCls}`}>Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  required
-                  value={form.email}
-                  onChange={handleChange}
-                  className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 transition-colors ${inputCls}`}
-                  placeholder="you@example.com"
-                />
-              </div>
-              <div>
-                <label className={`block text-xs font-semibold mb-2 uppercase tracking-wider ${labelCls}`}>Password</label>
-                <input
-                  type="password"
-                  name="password"
-                  required
-                  minLength={6}
-                  value={form.password}
-                  onChange={handleChange}
-                  className={`w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 transition-colors ${inputCls}`}
-                  placeholder="Min. 6 characters"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-[#9FFF57] text-black py-3 rounded-xl font-black text-sm hover:bg-[#8aed47] disabled:opacity-50 disabled:cursor-not-allowed transition-colors mt-2"
-              >
-                {loading ? "Creating account…" : "Create Free Account →"}
-              </button>
-            </form>
-
-            <p className={`text-xs text-center mt-5 ${textMuted}`}>
-              Already have an account?{" "}
-              <Link to="/login" className="text-[#9FFF57] hover:underline font-medium">Sign in</Link>
-            </p>
-          </div>
-          <p className={`text-center text-xs mt-5 ${dark ? "text-gray-700" : "text-gray-400"}`}>
-            By signing up you agree to our Terms of Service &amp; Privacy Policy
-          </p>
-        </div>
+      <div className="mb-5 flex items-center gap-3">
+        <div className="h-px flex-1 bg-[var(--color-border-subtle)]" />
+        <span className="text-[12px] text-[var(--color-text-muted)]">or with email</span>
+        <div className="h-px flex-1 bg-[var(--color-border-subtle)]" />
       </div>
-    </div>
-  );
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <label className={authLabelClass}>Name</label>
+          <input type="text" name="name" required value={form.name} onChange={handleChange} className={authInputClass} placeholder="Your name" />
+        </div>
+        <div>
+          <label className={authLabelClass}>Email</label>
+          <input type="email" name="email" required value={form.email} onChange={handleChange} className={authInputClass} placeholder="you@example.com" />
+        </div>
+        <div>
+          <label className={authLabelClass}>Password</label>
+          <input type="password" name="password" required value={form.password} onChange={handleChange} className={authInputClass} placeholder="At least 6 characters" />
+        </div>
+        <Button type="submit" variant="primary" disabled={loading} className="w-full py-3 disabled:opacity-50">
+          {loading ? 'Creating account…' : 'Create account →'}
+        </Button>
+      </form>
+    </AuthShell>
+  )
 }
