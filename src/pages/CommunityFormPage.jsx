@@ -351,8 +351,8 @@ export default function CommunityFormPage() {
                     onClick={() => setCurrentStep(step.num)}
                     className={`
                       w-8 h-8 rounded-full flex items-center justify-center text-[14px] font-bold transition-all
-                      ${isActive ? 'bg-[#9FFF57] text-black shadow-[0_0_15px_rgba(159,255,87,0.3)]'
-                        : isPast ? 'bg-[#9FFF57]/20 text-[#9FFF57] border border-[#9FFF57]/30'
+                      ${isActive ? 'bg-[#c8f135] text-black shadow-[0_0_15px_rgba(159,255,87,0.3)]'
+                        : isPast ? 'bg-[#c8f135]/20 text-[#c8f135] border border-[#c8f135]/30'
                         : 'bg-white dark:bg-[#111] text-black dark:text-white/30 border border-white/[0.1] hover:border-white/20'
                       }
                       ${!isClickable ? 'cursor-not-allowed' : 'cursor-pointer'}
@@ -360,7 +360,7 @@ export default function CommunityFormPage() {
                   >
                     {isPast ? <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg> : step.num}
                   </button>
-                  <span className={`text-[14px] font-semibold tracking-wide uppercase transition-colors ${isActive ? 'text-black dark:text-white' : isPast ? 'text-[#9FFF57]/70' : 'text-black dark:text-white/30'}`}>
+                  <span className={`text-[14px] font-semibold tracking-wide uppercase transition-colors ${isActive ? 'text-black dark:text-white' : isPast ? 'text-[#c8f135]/70' : 'text-black dark:text-white/30'}`}>
                     {step.label}
                   </span>
                 </div>
@@ -486,7 +486,7 @@ export default function CommunityFormPage() {
                 <label className="block text-[14px] font-bold text-black dark:text-white/45 mb-2 uppercase tracking-widest">Community Name *</label>
                 <input
                   type="text" name="name" required={currentStep === 2} value={form.name} onChange={handleFormChange}
-                  className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-black dark:text-white placeholder-white/20 focus:outline-none focus:border-[#9FFF57]/40 focus:ring-1 focus:ring-[#9FFF57]/15 transition-colors"
+                  className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-black dark:text-white placeholder-white/20 focus:outline-none focus:border-[#c8f135]/40 focus:ring-1 focus:ring-[#c8f135]/15 transition-colors"
                   placeholder="e.g. Crypto Inner Circle"
                 />
                 {form.name && !isEditing && (
@@ -500,7 +500,7 @@ export default function CommunityFormPage() {
                 <label className="block text-[14px] font-bold text-black dark:text-white/45 mb-2 uppercase tracking-widest">Description</label>
                 <textarea
                   name="description" value={form.description} onChange={handleFormChange} rows={3}
-                  className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-black dark:text-white placeholder-white/20 focus:outline-none focus:border-[#9FFF57]/40 focus:ring-1 focus:ring-[#9FFF57]/15 transition-colors resize-none"
+                  className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-black dark:text-white placeholder-white/20 focus:outline-none focus:border-[#c8f135]/40 focus:ring-1 focus:ring-[#c8f135]/15 transition-colors resize-none"
                   placeholder="What will members get access to?"
                 />
               </div>
@@ -629,7 +629,7 @@ export default function CommunityFormPage() {
                       <img src={whatsappLogo} alt="" className="w-4 h-4 invert brightness-0" />
                       {registeringGroup ? 'Joining group...' : 'Register Group'}
                     </button>
-                    {waGroupId && <span className="text-[14px] text-[#9FFF57] font-semibold">✅ Registered ({waGroupId})</span>}
+                    {waGroupId && <span className="text-[14px] text-[#c8f135] font-semibold">✅ Registered ({waGroupId})</span>}
                     {!waGroupId && <span className="text-[14px] text-yellow-400/70">⚠ Not yet registered</span>}
                   </div>
                 ) : (
@@ -663,7 +663,7 @@ export default function CommunityFormPage() {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#9FFF57]/60 flex-shrink-0" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#c8f135]/60 flex-shrink-0" />
                     <span className="font-semibold text-[14px] text-black dark:text-white">{p.name}</span>
                   </div>
                   <span className="text-[14px] text-black dark:text-white/70 font-mono">₦{p.price.toLocaleString()}</span>
@@ -721,7 +721,7 @@ export default function CommunityFormPage() {
                           placeholder="Plan name e.g. Monthly Access"
                           className="w-full bg-transparent text-[17px] font-bold text-black dark:text-white placeholder-white/20 outline-none border-0 focus:outline-none"
                         />
-                        <div className="h-px bg-white/[0.07] mt-2 group-focus-within:bg-[#9FFF57]/30 transition-colors" />
+                        <div className="h-px bg-white/[0.07] mt-2 group-focus-within:bg-[#c8f135]/30 transition-colors" />
                       </div>
                       {plans.length > 1 && (
                         <button
@@ -776,11 +776,11 @@ export default function CommunityFormPage() {
                             onChange={e => handlePlanChange(i, e)}
                             placeholder="e.g. 2 minutes, 45 days"
                             autoFocus
-                            className="w-full bg-white/[0.03] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-black dark:text-white placeholder-white/20 outline-none focus:border-[#9FFF57]/40 transition-colors font-mono"
+                            className="w-full bg-white/[0.03] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-black dark:text-white placeholder-white/20 outline-none focus:border-[#c8f135]/40 transition-colors font-mono"
                           />
                         ) : null}
                         {plan.duration && parsedMins && (
-                          <p className="text-[14px] text-[#9FFF57]/80 flex items-center gap-1.5">
+                          <p className="text-[14px] text-[#c8f135]/80 flex items-center gap-1.5">
                             <svg width="10" height="10" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
                             {formatDuration(parsedMins)}
                           </p>
@@ -807,7 +807,7 @@ export default function CommunityFormPage() {
                           placeholder="Describe what members get access to with this plan…"
                           maxLength={200}
                           rows={3}
-                          className="w-full bg-white/[0.03] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-black dark:text-white placeholder-white/30 outline-none focus:border-[#9FFF57]/40 focus:ring-1 focus:ring-[#9FFF57]/15 transition-colors resize-none"
+                          className="w-full bg-white/[0.03] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-black dark:text-white placeholder-white/30 outline-none focus:border-[#c8f135]/40 focus:ring-1 focus:ring-[#c8f135]/15 transition-colors resize-none"
                         />
                         <div className="flex items-center justify-between mt-1.5 px-1">
                           <p className="text-[14px] text-black dark:text-white/30">Helps members understand what they're subscribing to</p>
@@ -826,7 +826,7 @@ export default function CommunityFormPage() {
               onClick={addPlanRow}
               className="w-full flex items-center gap-3 px-7 py-5 border-t border-dashed border-gray-200 dark:border-white/10 text-black dark:text-white/30 hover:text-black dark:text-white/60 hover:bg-white/[0.025] transition-all group"
             >
-              <span className="w-5 h-5 rounded-md border border-current flex items-center justify-center text-[14px] leading-none group-hover:border-[#9FFF57]/50 group-hover:text-[#9FFF57]/70 transition-colors">+</span>
+              <span className="w-5 h-5 rounded-md border border-current flex items-center justify-center text-[14px] leading-none group-hover:border-[#c8f135]/50 group-hover:text-[#c8f135]/70 transition-colors">+</span>
               <span className="text-[14px] font-medium">Add a plan</span>
             </button>
           </div>
@@ -844,7 +844,7 @@ export default function CommunityFormPage() {
                 <label className="flex items-center gap-3 cursor-pointer flex-shrink-0">
                   <span className="text-[14px] font-bold text-black dark:text-white/50">{form.welcome_message_enabled ? 'ON' : 'OFF'}</span>
                   <input type="checkbox" name="welcome_message_enabled" checked={form.welcome_message_enabled} onChange={e => handleFormChange({target: {name: 'welcome_message_enabled', value: e.target.checked}})} className="sr-only peer" />
-                  <div className="w-11 h-6 bg-white/[0.05] border border-white/[0.1] rounded-full peer peer-checked:bg-[#9FFF57]/20 peer-checked:border-[#9FFF57]/50 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white/40 peer-checked:after:bg-[#9FFF57] after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-[20px] relative"></div>
+                  <div className="w-11 h-6 bg-white/[0.05] border border-white/[0.1] rounded-full peer peer-checked:bg-[#c8f135]/20 peer-checked:border-[#c8f135]/50 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white/40 peer-checked:after:bg-[#c8f135] after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-[20px] relative"></div>
                 </label>
               </div>
 
@@ -858,10 +858,10 @@ export default function CommunityFormPage() {
                       value={form.welcome_message} 
                       onChange={handleFormChange} 
                       placeholder="Welcome {name}..." 
-                      className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-black dark:text-white focus:border-[#9FFF57]/40 outline-none resize-none leading-relaxed" 
+                      className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-black dark:text-white focus:border-[#c8f135]/40 outline-none resize-none leading-relaxed" 
                     />
                     <p className="text-[14px] text-black dark:text-white/30 mt-3 leading-relaxed">
-                      Variables: <code className="bg-white/5 border border-white/[0.05] px-1.5 py-0.5 rounded text-[#9FFF57]">{"{name}"}</code> <code className="bg-white/5 border border-white/[0.05] px-1.5 py-0.5 rounded text-[#9FFF57]">{"{community}"}</code> <br className="hidden lg:block"/> <code className="bg-white/5 border border-white/[0.05] px-1.5 py-0.5 rounded text-[#9FFF57] mt-1 lg:mt-0 inline-block">{"{plan}"}</code> <code className="bg-white/5 border border-white/[0.05] px-1.5 py-0.5 rounded text-[#9FFF57]">{"{expires_on}"}</code>
+                      Variables: <code className="bg-white/5 border border-white/[0.05] px-1.5 py-0.5 rounded text-[#c8f135]">{"{name}"}</code> <code className="bg-white/5 border border-white/[0.05] px-1.5 py-0.5 rounded text-[#c8f135]">{"{community}"}</code> <br className="hidden lg:block"/> <code className="bg-white/5 border border-white/[0.05] px-1.5 py-0.5 rounded text-[#c8f135] mt-1 lg:mt-0 inline-block">{"{plan}"}</code> <code className="bg-white/5 border border-white/[0.05] px-1.5 py-0.5 rounded text-[#c8f135]">{"{expires_on}"}</code>
                     </p>
                   </div>
                   <div className="bg-gray-50 dark:bg-[#0a0a0a] border border-white/[0.05] rounded-xl p-7 shadow-inner">
@@ -969,7 +969,7 @@ export default function CommunityFormPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="bg-[#9FFF57] text-black px-6 sm:px-8 py-2.5 rounded-xl text-[14px] font-bold hover:bg-[#b0ff6e] disabled:opacity-50 transition-all shadow-[0_0_15px_rgba(159,255,87,0.25)]"
+                  className="bg-[#c8f135] text-black px-6 sm:px-8 py-2.5 rounded-xl text-[14px] font-bold hover:bg-[#d6ff4f] disabled:opacity-50 transition-all shadow-[0_0_15px_rgba(159,255,87,0.25)]"
                 >
                   {loading ? 'Saving...' : isEditing ? 'Save Changes ✓' : 'Create Community ✓'}
                 </button>
@@ -1008,7 +1008,7 @@ export default function CommunityFormPage() {
               {/* Show simple spinner for pending check */}
               {setupModal.loading && (
                 <div className="flex items-center gap-3 opacity-50 animate-pulse">
-                   <svg className="animate-spin text-[#9FFF57] flex-shrink-0" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24">
+                   <svg className="animate-spin text-[#c8f135] flex-shrink-0" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
                   </svg>
@@ -1018,7 +1018,7 @@ export default function CommunityFormPage() {
             </div>
 
             {!setupModal.loading && (
-              <div className={`rounded-xl px-4 py-3 text-[14px] font-semibold text-center animate-in fade-in zoom-in-95 duration-500 ${setupModal.allPass ? 'bg-[#9FFF57]/10 text-[#9FFF57] border border-[#9FFF57]/20' : 'bg-yellow-400/10 text-yellow-400 border border-yellow-400/20'}`}>
+              <div className={`rounded-xl px-4 py-3 text-[14px] font-semibold text-center animate-in fade-in zoom-in-95 duration-500 ${setupModal.allPass ? 'bg-[#c8f135]/10 text-[#c8f135] border border-[#c8f135]/20' : 'bg-yellow-400/10 text-yellow-400 border border-yellow-400/20'}`}>
                 {setupModal.allPass ? '🚀 All systems go — your community is live!' : '⚠️ Fix the issues above before marketing.'}
               </div>
             )}

@@ -72,16 +72,16 @@ export default function PaymentsPage() {
   const failedCount    = payments.filter(p => p.status === 'failed').length
 
   const summaryCards = [
-    { label: 'TOTAL COLLECTED', value: `₦${(totalRevenue || 0).toLocaleString()}`, sub: 'All time', subColor: 'text-[#9FFF57]' },
-    { label: 'THIS MONTH',      value: `₦${(monthRevenue || 0).toLocaleString()}`, sub: 'This month', subColor: 'text-[#9FFF57]' },
+    { label: 'TOTAL COLLECTED', value: `₦${(totalRevenue || 0).toLocaleString()}`, sub: 'All time', subColor: 'text-[#c8f135]' },
+    { label: 'THIS MONTH',      value: `₦${(monthRevenue || 0).toLocaleString()}`, sub: 'This month', subColor: 'text-[#c8f135]' },
     { label: 'PENDING',         value: `₦${pendingPayments.reduce((s,p) => s + (p.amount||0), 0).toLocaleString()}`, sub: `${pendingPayments.length} transactions`, subColor: 'text-amber-500' },
     { label: 'FAILED',          value: failedCount === 0 ? '0' : failedCount,      sub: failedCount === 0 ? 'No issues' : `${failedCount} transactions`, subColor: failedCount ? 'text-red-400' : 'text-gray-500 dark:text-[#96989d]' },
   ]
 
   const Pill = ({ status }) => {
     if (status === 'success') return (
-      <span className="inline-flex items-center gap-1.5 bg-[#9FFF57]/10 border border-[#9FFF57]/10 px-2 py-0.5 rounded-[4px] text-[14px] font-bold text-[#9FFF57]">
-        <span className="w-1.5 h-1.5 rounded-full bg-[#9FFF57]" /> Paid
+      <span className="inline-flex items-center gap-1.5 bg-[#c8f135]/10 border border-[#c8f135]/10 px-2 py-0.5 rounded-[4px] text-[14px] font-bold text-[#c8f135]">
+        <span className="w-1.5 h-1.5 rounded-full bg-[#c8f135]" /> Paid
       </span>
     )
     if (status === 'failed') return (
@@ -134,8 +134,8 @@ export default function PaymentsPage() {
       )}
 
       {referenceFilter && (
-        <div className="mb-5 rounded-[12px] border border-[#9FFF57]/20 bg-[#9FFF57]/10 px-4 py-3 text-[13px] text-gray-700 dark:text-white/70">
-          Showing payment reference <span className="font-mono font-bold">{referenceFilter}</span>. <button onClick={() => navigate('/dashboard/payments')} className="font-bold text-[#76d83b] hover:underline">Clear filter</button>
+        <div className="mb-5 rounded-[12px] border border-[#c8f135]/20 bg-[#c8f135]/10 px-4 py-3 text-[13px] text-gray-700 dark:text-white/70">
+          Showing payment reference <span className="font-mono font-bold">{referenceFilter}</span>. <button onClick={() => navigate('/dashboard/payments')} className="font-bold text-[#c8f135] hover:underline">Clear filter</button>
         </div>
       )}
 
@@ -177,11 +177,11 @@ export default function PaymentsPage() {
                       <td className="px-5 py-3 text-[14px] text-gray-800 dark:text-[#dbdee1]">{p.communities?.name}</td>
                       <td className="px-5 py-3 text-[14px] text-gray-800 dark:text-[#dbdee1]">{p.plans?.name || 'Standard'}</td>
                       <td className="px-5 py-3">
-                        <button onClick={() => copyReference(p.paystack_reference)} className="font-mono text-[13px] text-gray-500 hover:text-[#9FFF57] dark:text-[#96989d] transition-colors" title="Copy reference">
+                        <button onClick={() => copyReference(p.paystack_reference)} className="font-mono text-[13px] text-gray-500 hover:text-[#c8f135] dark:text-[#96989d] transition-colors" title="Copy reference">
                           {p.paystack_reference}
                         </button>
                       </td>
-                      <td className="px-5 py-3 text-[14px] font-bold text-[#9FFF57]">₦{p.amount?.toLocaleString()}</td>
+                      <td className="px-5 py-3 text-[14px] font-bold text-[#c8f135]">₦{p.amount?.toLocaleString()}</td>
                       <td className="px-5 py-3"><Pill status={p.status} /></td>
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-2">
@@ -195,7 +195,7 @@ export default function PaymentsPage() {
                             <button
                               onClick={() => verifyPayment(p.paystack_reference)}
                               disabled={verifying === p.paystack_reference}
-                              className="rounded-[6px] bg-[#9FFF57] px-3 py-1.5 text-[12px] font-black text-black hover:bg-[#b0ff6e] disabled:opacity-50"
+                              className="rounded-[6px] bg-[#c8f135] px-3 py-1.5 text-[12px] font-black text-black hover:bg-[#d6ff4f] disabled:opacity-50"
                             >
                               {verifying === p.paystack_reference ? 'Checking…' : 'Verify'}
                             </button>
@@ -221,9 +221,9 @@ export default function PaymentsPage() {
                   <div className="flex flex-col ml-[34px] gap-1">
                     <p className="text-[14px] text-gray-600 dark:text-[#b5bac1]">{p.communities?.name} · {p.plans?.name || 'Standard'}</p>
                     <p className="text-[14px] text-gray-600 dark:text-[#b5bac1]">
-                      {new Date(p.created_at).toLocaleDateString()} — <span className="font-bold text-[#9FFF57]">₦{p.amount?.toLocaleString()}</span>
+                      {new Date(p.created_at).toLocaleDateString()} — <span className="font-bold text-[#c8f135]">₦{p.amount?.toLocaleString()}</span>
                     </p>
-                    <button onClick={() => copyReference(p.paystack_reference)} className="text-left font-mono text-[12px] text-gray-400 hover:text-[#9FFF57]">
+                    <button onClick={() => copyReference(p.paystack_reference)} className="text-left font-mono text-[12px] text-gray-400 hover:text-[#c8f135]">
                       {p.paystack_reference}
                     </button>
                     <div className="mt-2 flex flex-wrap gap-2">
@@ -232,7 +232,7 @@ export default function PaymentsPage() {
                         <button
                           onClick={() => verifyPayment(p.paystack_reference)}
                           disabled={verifying === p.paystack_reference}
-                          className="w-fit rounded-[6px] bg-[#9FFF57] px-3 py-1.5 text-[12px] font-black text-black disabled:opacity-50"
+                          className="w-fit rounded-[6px] bg-[#c8f135] px-3 py-1.5 text-[12px] font-black text-black disabled:opacity-50"
                         >
                           {verifying === p.paystack_reference ? 'Checking…' : 'Verify payment'}
                         </button>

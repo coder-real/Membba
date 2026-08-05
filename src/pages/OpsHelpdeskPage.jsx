@@ -14,7 +14,7 @@ import API_BASE from '../lib/api'
 function Pill({ children, tone = 'gray' }) {
   const tones = {
     gray: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-white/5 dark:text-white/50 dark:border-white/10',
-    green: 'bg-[#9FFF57]/15 text-[#76d83b] border-[#9FFF57]/20',
+    green: 'bg-[#c8f135]/15 text-[#c8f135] border-[#c8f135]/20',
     amber: 'bg-amber-400/10 text-amber-700 border-amber-400/20 dark:text-amber-300',
     red: 'bg-red-500/10 text-red-600 border-red-500/20 dark:text-red-300',
     blue: 'bg-blue-500/10 text-blue-700 border-blue-500/20 dark:text-blue-300',
@@ -202,33 +202,15 @@ export default function OpsHelpdeskPage() {
           <h1 className="text-xl font-black text-gray-900 dark:text-white">Ops access required</h1>
           <p className="mt-2 text-sm text-gray-500 dark:text-white/45">{error}</p>
           <p className="mt-4 text-xs text-gray-400 dark:text-white/25">Add your email to MEMBBA_ADMIN_EMAILS in the backend environment to access this page.</p>
-          <Link to="/dashboard" className="mt-5 inline-block rounded-xl bg-[#9FFF57] px-5 py-2.5 text-sm font-black text-black">Back to dashboard</Link>
+          <Link to="/dashboard" className="mt-5 inline-block rounded-xl bg-[#c8f135] px-5 py-2.5 text-sm font-black text-black">Back to dashboard</Link>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-black dark:text-white">
-      <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/90 px-6 py-4 backdrop-blur dark:border-white/10 dark:bg-[#111]/90">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-          <div>
-            <div className="mb-1 inline-flex items-center gap-2 rounded-full border border-[#9FFF57]/20 bg-[#9FFF57]/10 px-3 py-1 text-[12px] font-black text-[#76d83b]">
-              <HiOutlineLifebuoy size={14} /> Membba Operations
-            </div>
-            <h1 className="text-2xl font-black tracking-tight">Creator Help Desk</h1>
-            <p className="text-sm text-gray-500 dark:text-white/40">Internal queue for creator support, payments, AI escalations, and setup issues.</p>
-          </div>
-          <div className="flex gap-2">
-            <button onClick={load} className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold hover:bg-gray-50 dark:border-white/10 dark:hover:bg-white/5">
-              <HiOutlineArrowPath size={16} /> Refresh
-            </button>
-            <Link to="/dashboard" className="rounded-xl bg-[#9FFF57] px-4 py-2 text-sm font-black text-black">Creator app</Link>
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-7xl px-6 py-8">
+    <>
+      <main>
         <section className="mb-7 grid grid-cols-2 gap-3 lg:grid-cols-6">
           {[
             ['Creators', summary?.creators || 0],
@@ -256,9 +238,9 @@ export default function OpsHelpdeskPage() {
               value={searchQ}
               onChange={e => setSearchQ(e.target.value)}
               placeholder="Search email, phone, community slug, payment reference..."
-              className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#9FFF57]/30 dark:border-white/10 dark:bg-black/20 dark:text-white"
+              className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#c8f135]/30 dark:border-white/10 dark:bg-black/20 dark:text-white"
             />
-            <button disabled={searchLoading} className="rounded-xl bg-[#9FFF57] px-5 py-3 text-sm font-black text-black disabled:opacity-50">
+            <button disabled={searchLoading} className="rounded-xl bg-[#c8f135] px-5 py-3 text-sm font-black text-black disabled:opacity-50">
               {searchLoading ? 'Searching…' : 'Search'}
             </button>
           </form>
@@ -277,7 +259,7 @@ export default function OpsHelpdeskPage() {
                         <p className="text-xs text-gray-400">Expires {new Date(sub.expires_at).toLocaleString()}</p>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        <button onClick={() => subscriptionAction(sub.id, 'extend', { days: 30 })} disabled={subBusy === `extend:${sub.id}`} className="rounded-lg bg-[#9FFF57] px-3 py-1.5 text-xs font-black text-black disabled:opacity-50">+30 days</button>
+                        <button onClick={() => subscriptionAction(sub.id, 'extend', { days: 30 })} disabled={subBusy === `extend:${sub.id}`} className="rounded-lg bg-[#c8f135] px-3 py-1.5 text-xs font-black text-black disabled:opacity-50">+30 days</button>
                         <button onClick={() => subscriptionAction(sub.id, 'resend-invite')} disabled={subBusy === `resend-invite:${sub.id}` || sub.status !== 'active'} className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-bold disabled:opacity-40 dark:border-white/10">Resend invite</button>
                         <button onClick={() => subscriptionAction(sub.id, 'cancel')} disabled={subBusy === `cancel:${sub.id}`} className="rounded-lg border border-red-300 px-3 py-1.5 text-xs font-bold text-red-500 disabled:opacity-40">Cancel</button>
                       </div>
@@ -297,7 +279,7 @@ export default function OpsHelpdeskPage() {
                         <p className="text-sm text-gray-500 dark:text-white/40">{p.communities?.name} · ₦{Number(p.amount || 0).toLocaleString()}</p>
                         <p className="font-mono text-xs text-gray-400">{p.paystack_reference}</p>
                       </div>
-                      <button onClick={() => { setLookupRef(p.paystack_reference); setLookup(null); setTimeout(() => document.querySelector('[placeholder^="Paystack reference"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0) }} className="text-xs font-bold text-[#76d83b] hover:underline">Open lookup</button>
+                      <button onClick={() => { setLookupRef(p.paystack_reference); setLookup(null); setTimeout(() => document.querySelector('[placeholder^="Paystack reference"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0) }} className="text-xs font-bold text-[#c8f135] hover:underline">Open lookup</button>
                     </div>
                   </div>
                 )) : <p className="text-sm text-gray-500">No payments found.</p>}
@@ -319,7 +301,7 @@ export default function OpsHelpdeskPage() {
                   <div key={c.id} className="border-b border-gray-100 py-3 last:border-0 dark:border-white/5">
                     <div className="flex items-center justify-between gap-2"><p className="font-bold">{c.name}</p><Pill tone={c.is_active ? 'green' : 'gray'}>{c.is_active ? 'active' : 'inactive'}</Pill></div>
                     <p className="text-sm text-gray-500 dark:text-white/40">/{c.slug} · {c.platform} · {c.creator?.email || 'Unknown creator'}</p>
-                    {c.creator?.id && <Link to={`/ops/creators/${c.creator.id}`} className="mt-1 inline-block text-xs font-bold text-[#76d83b] hover:underline">Open creator profile</Link>}
+                    {c.creator?.id && <Link to={`/ops/creators/${c.creator.id}`} className="mt-1 inline-block text-xs font-bold text-[#c8f135] hover:underline">Open creator profile</Link>}
                   </div>
                 )) : <p className="text-sm text-gray-500">No communities found.</p>}
               </div>
@@ -337,9 +319,9 @@ export default function OpsHelpdeskPage() {
               value={lookupRef}
               onChange={e => setLookupRef(e.target.value)}
               placeholder="Paystack reference e.g. ryylv9ilpr"
-              className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-mono outline-none focus:ring-2 focus:ring-[#9FFF57]/30 dark:border-white/10 dark:bg-black/20 dark:text-white"
+              className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-mono outline-none focus:ring-2 focus:ring-[#c8f135]/30 dark:border-white/10 dark:bg-black/20 dark:text-white"
             />
-            <button disabled={lookupLoading} className="rounded-xl bg-[#9FFF57] px-5 py-3 text-sm font-black text-black disabled:opacity-50">
+            <button disabled={lookupLoading} className="rounded-xl bg-[#c8f135] px-5 py-3 text-sm font-black text-black disabled:opacity-50">
               {lookupLoading ? 'Checking…' : 'Lookup'}
             </button>
           </form>
@@ -354,10 +336,10 @@ export default function OpsHelpdeskPage() {
                 </div>
                 <p className="font-bold">{lookup.payment.email}</p>
                 <p className="text-sm text-gray-500 dark:text-white/40">{lookup.payment.communities?.name} · {lookup.payment.plans?.name || 'Plan'}</p>
-                <p className="mt-2 text-2xl font-black text-[#76d83b]">₦{Number(lookup.payment.amount || 0).toLocaleString()}</p>
+                <p className="mt-2 text-2xl font-black text-[#c8f135]">₦{Number(lookup.payment.amount || 0).toLocaleString()}</p>
                 <p className="mt-2 font-mono text-xs text-gray-400">{lookup.payment.paystack_reference}</p>
                 {lookup.creator && <p className="mt-2 text-sm text-gray-500 dark:text-white/40">Creator: {lookup.creator.name} · {lookup.creator.email}</p>}
-                <button onClick={verifyLookupPayment} disabled={lookupLoading} className="mt-4 rounded-xl bg-[#9FFF57] px-4 py-2 text-sm font-black text-black disabled:opacity-50">
+                <button onClick={verifyLookupPayment} disabled={lookupLoading} className="mt-4 rounded-xl bg-[#c8f135] px-4 py-2 text-sm font-black text-black disabled:opacity-50">
                   Verify / repair subscription
                 </button>
               </div>
@@ -385,9 +367,9 @@ export default function OpsHelpdeskPage() {
                     value={noteText}
                     onChange={e => setNoteText(e.target.value)}
                     placeholder="Add internal note, e.g. Creator contacted on WhatsApp..."
-                    className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#9FFF57]/30 dark:border-white/10 dark:bg-black/20 dark:text-white"
+                    className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#c8f135]/30 dark:border-white/10 dark:bg-black/20 dark:text-white"
                   />
-                  <button className="rounded-xl bg-[#9FFF57] px-4 py-2 text-sm font-black text-black">Add note</button>
+                  <button className="rounded-xl bg-[#c8f135] px-4 py-2 text-sm font-black text-black">Add note</button>
                 </form>
                 {notesLoading ? <p className="text-sm text-gray-500">Loading notes…</p> : notes.length ? notes.map(n => (
                   <div key={n.id} className="border-b border-gray-100 py-2 last:border-0 dark:border-white/5">
@@ -422,15 +404,15 @@ export default function OpsHelpdeskPage() {
                       <p className="mb-1 text-[11px] font-black uppercase tracking-widest text-gray-400">Member said</p>
                       <p className="text-sm">{e.message}</p>
                     </div>
-                    <div className="rounded-xl bg-[#9FFF57]/10 p-3">
-                      <p className="mb-1 text-[11px] font-black uppercase tracking-widest text-[#76d83b]">AI replied</p>
+                    <div className="rounded-xl bg-[#c8f135]/10 p-3">
+                      <p className="mb-1 text-[11px] font-black uppercase tracking-widest text-[#c8f135]">AI replied</p>
                       <p className="text-sm">{e.ai_reply}</p>
                     </div>
                   </div>
                   <button
                     onClick={() => resolveEscalation(e.id)}
                     disabled={busyId === e.id}
-                    className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#9FFF57] px-4 py-2 text-sm font-black text-black disabled:opacity-50"
+                    className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#c8f135] px-4 py-2 text-sm font-black text-black disabled:opacity-50"
                   >
                     <HiOutlineCheckCircle size={16} /> Mark resolved
                   </button>
@@ -455,7 +437,7 @@ export default function OpsHelpdeskPage() {
                       <p className="mt-1 font-mono text-xs text-gray-400">{p.paystack_reference}</p>
                       <button
                         onClick={() => { setLookupRef(p.paystack_reference); setLookup(null); setTimeout(() => { document.querySelector('[placeholder^=\"Paystack reference\"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' }) }, 0) }}
-                        className="mt-2 text-xs font-bold text-[#76d83b] hover:underline"
+                        className="mt-2 text-xs font-bold text-[#c8f135] hover:underline"
                       >
                         Open in lookup
                       </button>
@@ -463,7 +445,7 @@ export default function OpsHelpdeskPage() {
                     <div className="text-right text-sm text-gray-500 dark:text-white/40">
                       <p>{p.creator?.name}</p>
                       <p>{p.creator?.email}</p>
-                      {p.creator?.id && <Link to={`/ops/creators/${p.creator.id}`} className="text-xs font-bold text-[#76d83b] hover:underline">Creator profile</Link>}
+                      {p.creator?.id && <Link to={`/ops/creators/${p.creator.id}`} className="text-xs font-bold text-[#c8f135] hover:underline">Creator profile</Link>}
                     </div>
                   </div>
                 </div>
@@ -497,13 +479,13 @@ export default function OpsHelpdeskPage() {
                   </div>
                   <p className="text-sm text-gray-500 dark:text-white/40">/{c.slug} · {c.platform}</p>
                   <p className="mt-1 text-xs text-gray-400">{c.creator?.email || 'Unknown creator'}</p>
-                  {c.creator?.id && <Link to={`/ops/creators/${c.creator.id}`} className="mt-1 inline-block text-xs font-bold text-[#76d83b] hover:underline">Open creator</Link>}
+                  {c.creator?.id && <Link to={`/ops/creators/${c.creator.id}`} className="mt-1 inline-block text-xs font-bold text-[#c8f135] hover:underline">Open creator</Link>}
                 </div>
               ))}
             </div>
           </div>
         </section>
       </main>
-    </div>
+    </>
   )
 }

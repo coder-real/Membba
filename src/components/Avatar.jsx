@@ -4,7 +4,7 @@
  * size: number — diameter in px (default 28)
  */
 const COLORS = [
-  { bg: 'rgba(159,255,87,0.15)',  border: 'rgba(159,255,87,0.3)',  text: '#9FFF57' },
+  { bg: 'rgba(159,255,87,0.15)',  border: 'rgba(159,255,87,0.3)',  text: '#c8f135' },
   { bg: 'rgba(87,196,255,0.15)', border: 'rgba(87,196,255,0.3)',  text: '#57C4FF' },
   { bg: 'rgba(255,107,157,0.15)',border: 'rgba(255,107,157,0.3)', text: '#FF6B9D' },
   { bg: 'rgba(255,179,71,0.15)', border: 'rgba(255,179,71,0.3)',  text: '#FFB347' },

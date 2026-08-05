@@ -53,9 +53,9 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-7 mb-6 mt-2">
         <div>
-          <h1 className="text-[28px] font-black text-black dark:text-white tracking-tight leading-tight">Good morning, {user?.user_metadata?.name?.split(' ')[0] || 'Creator'} 👋</h1>
+          <h1 className="text-[28px] font-black text-black dark:text-white tracking-tight leading-tight">Dashboard</h1>
           <p className="text-[14px] text-black dark:text-white/50 mt-1.5">
-            Here's what's happening with your communities.
+            Here's what's happening across your communities.
           </p>
         </div>
         <Link

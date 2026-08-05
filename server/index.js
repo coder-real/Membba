@@ -15,6 +15,7 @@ import { processScheduledPosts } from './services/scheduler.js'
 import automationsRouter from './routes/automations.js'
 import aiRouter from './routes/ai.js'
 import opsRouter from './routes/ops.js'
+import billingRouter from './routes/billing.js'
 
 // ── Global Error Catchers to prevent crashes ──────────────────────────────
 // Prevents the entire Node server from crashing if whatsapp-web.js throws
@@ -67,6 +68,7 @@ app.use('/api/telegram', telegramRouter)
 app.use('/api/automations', automationsRouter)
 app.use('/api/ai', aiRouter)
 app.use('/api/ops', opsRouter)
+app.use('/api/billing', billingRouter)
 
 app.get('/api/health', (_req, res) =>
   res.json({ status: 'ok', time: new Date().toISOString() })

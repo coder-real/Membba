@@ -1,59 +1,124 @@
-import { useState, useEffect } from 'react'
-import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
-import toast from 'react-hot-toast'
 import {
-  HiOutlineSquares2X2,
-  HiOutlineUserGroup,
-  HiOutlineUsers,
-  HiOutlineCreditCard,
-  HiOutlineCog6Tooth,
-  HiOutlineMagnifyingGlass,
-  HiOutlineBolt,
-  HiOutlineInbox,
-  HiOutlineSun,
-  HiOutlineMoon,
-  HiOutlineArrowRightOnRectangle,
-} from 'react-icons/hi2'
-import { HiOutlineBolt as Bolt } from 'react-icons/hi2'
+  Activity,
+  BadgeCheck,
+  BellDot,
+  LogOut,
+  House,
+  Inbox,
+  Orbit,
+  Puzzle,
+  Settings,
+  Sparkles,
+  SquareFunction,
+  WalletCards,
+} from 'lucide-react'
 
-// ── Avatar initials circle ───────────────────────────────
-const AVATAR_COLORS = ['#9FFF57','#57C4FF','#FF6B9D','#FFB347','#B39DFF','#48CFAD']
-function UserAvatar({ name, size = 28 }) {
-  const idx = name ? name.charCodeAt(0) % AVATAR_COLORS.length : 0
-  const color = AVATAR_COLORS[idx]
+const NAV = [
+  { id: 'dashboard', label: 'Dashboard', path: '/dashboard', Icon: House },
+  {
+    id: 'communities',
+    label: 'Communities',
+    path: '/dashboard/communities',
+    Icon: Orbit,
+    sections: [
+      { label: 'Communities', items: [
+        { label: 'All communities', path: '/dashboard/communities', Icon: Orbit },
+        { label: 'Create community', path: '/dashboard/communities/new', Icon: Sparkles },
+      ]},
+    ],
+  },
+  { id: 'members', label: 'Members', path: '/dashboard/members', Icon: BadgeCheck },
+  { id: 'payments', label: 'Payments', path: '/dashboard/payments', Icon: WalletCards },
+  {
+    id: 'automation',
+    label: 'Automations',
+    path: '/dashboard/automations',
+    Icon: SquareFunction,
+    sections: [
+      { label: 'AI Tools', items: [
+        { label: 'Automations', path: '/dashboard/automations', Icon: SquareFunction },
+        { label: 'Conversations', path: '/dashboard/ai-inbox', Icon: Inbox },
+      ]},
+    ],
+  },
+  {
+    id: 'settings',
+    label: 'Settings',
+    path: '/dashboard/settings',
+    Icon: Settings,
+    sections: [
+      { label: 'Account', items: [
+        { label: 'My Account', path: '/dashboard/settings?tab=account', Icon: Settings },
+        { label: 'Billing', path: '/dashboard/settings?tab=billing', Icon: WalletCards },
+        { label: 'Notifications', path: '/dashboard/settings?tab=notifications', Icon: BellDot },
+      ]},
+      { label: 'Platform', items: [
+        { label: 'Integrations', path: '/dashboard/settings?tab=integrations', Icon: Puzzle },
+        { label: 'Danger Zone', path: '/dashboard/settings?tab=danger', Icon: Activity },
+      ]},
+    ],
+  },
+]
+
+function UserAvatar({ user }) {
+  const name = user?.user_metadata?.name || user?.email || 'Creator'
+  const avatar = user?.user_metadata?.avatar_url
   return (
-    <div
-      style={{ width: size, height: size, background: color + '22', border: `1.5px solid ${color}44`, color, fontSize: Math.floor(size * 0.38) }}
-      className="rounded-full flex items-center justify-center font-bold select-none flex-shrink-0"
-    >
-      {name ? name[0].toUpperCase() : '?'}
+    <div className="h-8 w-8 overflow-hidden rounded-full border border-[var(--color-border-default)] bg-[var(--color-bg-elevated)]" title={name}>
+      {avatar
+        ? <img src={avatar} alt="Avatar" className="h-full w-full object-cover" />
+        : <div className="flex h-full w-full items-center justify-center text-[12px] font-bold text-[var(--color-brand)]">{name[0]?.toUpperCase()}</div>}
     </div>
   )
 }
 
-// ── Nav structure (mirrors reference images exactly) ────
-const WORKSPACE_LINKS = [
-  { label: 'Communities', path: '/dashboard/communities', Icon: HiOutlineUserGroup  },
-  { label: 'Members',     path: '/dashboard/members',     Icon: HiOutlineUsers      },
-  { label: 'Payments',    path: '/dashboard/payments',    Icon: HiOutlineCreditCard },
-]
-const TOOL_LINKS = [
-  { label: 'Automations', path: '/dashboard/automations', Icon: HiOutlineBolt },
-  { label: 'AI Inbox',    path: '/dashboard/ai-inbox',    Icon: HiOutlineInbox },
-  { label: 'Settings',    path: '/dashboard/settings',    Icon: HiOutlineCog6Tooth  },
-]
+function BotStatus({ online }) {
+  return (
+    <div className="flex items-center gap-2" title={online ? 'Bot online' : 'Bot offline'}>
+      <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--color-border-default)] bg-[var(--color-bg-elevated)]">
+        <span
+          aria-hidden="true"
+          className={`h-5 w-5 ${online ? 'bg-[var(--color-success)]' : 'bg-[var(--color-danger)]'}`}
+          style={{
+            WebkitMask: "url('/bot-icon.svg') center / contain no-repeat",
+            mask: "url('/bot-icon.svg') center / contain no-repeat",
+          }}
+        />
+      </span>
+      <span className={`hidden text-[12px] font-medium sm:inline ${online ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
+        {online ? 'Online' : 'Offline'}
+      </span>
+    </div>
+  )
+}
 
 export default function DashboardLayout({ children, pageTitle }) {
   const { user, signOut } = useAuth()
-  const { dark, toggleTheme } = useTheme()
+  const { theme, setTheme } = useTheme()
   const location = useLocation()
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [search, setSearch] = useState('')
+  const [activeParent, setActiveParent] = useState(null)
+  const [closedParent, setClosedParent] = useState(null)
+  const [botOnline, setBotOnline] = useState(true)
+  const [avatarOpen, setAvatarOpen] = useState(false)
+  const avatarMenuRef = useRef(null)
 
-  const displayName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Creator'
+  const activeNav = useMemo(() => {
+    return [...NAV].sort((a, b) => b.path.length - a.path.length).find(item => {
+      if (item.path === '/dashboard') return location.pathname === '/dashboard'
+      if (item.id === 'automation') return location.pathname === '/dashboard/automations' || location.pathname === '/dashboard/ai-inbox'
+      return location.pathname === item.path || location.pathname.startsWith(item.path + '/')
+    }) || NAV[0]
+  }, [location.pathname])
+
+  const subnavParent = NAV.find(item => item.id === activeParent && item.sections)
+  const subnavOpen = Boolean(subnavParent)
+  const pageName = pageTitle || activeNav.label
 
   useEffect(() => { setMobileOpen(false) }, [location.pathname])
   useEffect(() => {
@@ -61,210 +126,215 @@ export default function DashboardLayout({ children, pageTitle }) {
     return () => { document.body.style.overflow = '' }
   }, [mobileOpen])
 
+  // If a user lands directly on a section with children, show its child nav.
+  // If they manually close that same section, respect the close until they navigate elsewhere.
+  useEffect(() => {
+    if (activeNav.sections && closedParent !== activeNav.id) {
+      setActiveParent(activeNav.id)
+    }
+    if (closedParent && activeNav.id !== closedParent) setClosedParent(null)
+  }, [activeNav.id, closedParent])
+
+
+  useEffect(() => {
+    if (!avatarOpen) return
+    const onPointerDown = (e) => {
+      if (avatarMenuRef.current && !avatarMenuRef.current.contains(e.target)) setAvatarOpen(false)
+    }
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setAvatarOpen(false)
+    }
+    document.addEventListener('mousedown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [avatarOpen])
+
   const handleSignOut = async () => {
     await signOut()
-    toast.success('Signed out')
+    setAvatarOpen(false)
     navigate('/')
   }
 
-  const isActive = (path) =>
-    path === '/dashboard'
-      ? location.pathname === '/dashboard'
-      : location.pathname === path || location.pathname.startsWith(path + '/')
+  useEffect(() => {
+    let alive = true
+    const check = async () => {
+      try {
+        const res = await fetch('/api/health')
+        if (alive) setBotOnline(res.ok)
+      } catch {
+        if (alive) setBotOnline(false)
+      }
+    }
+    check()
+    const id = setInterval(check, 30000)
+    return () => { alive = false; clearInterval(id) }
+  }, [])
 
-  // Figure out breadcrumb label
-  const allLinks = [
-    { label: 'Overview', path: '/dashboard' },
-    ...WORKSPACE_LINKS,
-    ...TOOL_LINKS,
-  ]
-  const activeLink = allLinks.find(l => isActive(l.path)) || allLinks[0]
-  const pageName = pageTitle || activeLink.label
+  const isChildActive = (path) => {
+    const [pathname, query = ''] = path.split('?')
+    if (location.pathname !== pathname) return false
+    if (!query) return true
+    return location.search === `?${query}`
+  }
 
-  // Subscription counts placeholder (could be data-driven later)
-  const COUNTS = {}
+  const onParentClick = (item) => {
+    if (!item.sections) {
+      setActiveParent(null)
+      setClosedParent(null)
+      navigate(item.path)
+      return
+    }
 
-  // ── Reusable NavItem ─────────────────────────────────
-  const NavItem = ({ label, path, Icon, count }) => {
-    const active = isActive(path)
+    if (activeParent === item.id) {
+      setActiveParent(null)
+      setClosedParent(item.id)
+      return
+    }
+
+    setClosedParent(null)
+    setActiveParent(item.id)
+    navigate(item.sections[0]?.items[0]?.path || item.path)
+  }
+
+  const ParentButton = ({ item }) => {
+    const active = activeNav.id === item.id || activeParent === item.id
+    const Icon = item.Icon
     return (
-      <Link
-        to={path}
-        className={`group flex items-center gap-3 px-3 py-[9px] rounded-[8px] text-[14px] font-medium transition-all mx-2 ${
+      <button
+        type="button"
+        onClick={() => onParentClick(item)}
+        className={`group/nav relative mx-2 flex w-[calc(100%-16px)] items-center gap-3 rounded-[var(--radius-default)] border-l-2 px-3 py-[7px] text-left text-[13px] font-medium transition-all ${
           active
-            ? 'bg-[rgba(159,255,87,0.12)] text-black dark:text-white'
-            : 'text-gray-500 dark:text-[#96989d] hover:text-gray-900 dark:text-[#dcddde] hover:bg-white/[0.04]'
-        }`}
+            ? 'border-transparent bg-[var(--color-bg-elevated)] text-[var(--color-text-primary)]'
+            : 'border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-elevated)] hover:text-[var(--color-text-primary)]'
+        } ${subnavOpen ? 'justify-center px-0' : ''}`}
+        title={subnavOpen ? item.label : undefined}
       >
-        <Icon size={18} className={active ? 'text-[#9FFF57]' : 'text-gray-500 dark:text-[#72767d] group-hover:text-gray-500 dark:text-[#96989d]'} />
-        <span className="flex-1 truncate">{label}</span>
-        {count !== undefined && count !== null && (
-          <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
-            active ? 'bg-[#9FFF57]/20 text-[#9FFF57]' : 'bg-white/[0.08] text-black dark:text-white/50'
-          }`}>
-            {count}
+        <Icon size={18} strokeWidth={1.5} className="shrink-0" />
+        <span className={`truncate ${subnavOpen ? 'hidden' : 'inline'}`}>{item.label}</span>
+        {subnavOpen && (
+          <span className="pointer-events-none absolute left-[46px] z-[90] whitespace-nowrap rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-bg-elevated)] px-2 py-1 text-[12px] text-[var(--color-text-primary)] opacity-0 shadow-2xl transition-opacity duration-150 group-hover/nav:opacity-100">
+            {item.label}
           </span>
         )}
-        {active && (
-          <span className="w-[3px] h-4 bg-[#9FFF57] rounded-full absolute right-0" />
-        )}
-      </Link>
+      </button>
     )
   }
 
-  // ── Section label ─────────────────────────────────────
-  const SectionLabel = ({ label }) => (
-    <p className="px-3 pt-4 pb-1 text-[11px] font-bold text-gray-500 dark:text-[#72767d] uppercase tracking-[0.7px] select-none">
-      {label}
-    </p>
-  )
-
-  // ── Sidebar body (reused for desktop + mobile drawer) ──
-  const SidebarBody = () => (
-    <div className="flex flex-col h-full">
-      {/* Page/section header in sidebar (mirrors "Overview" at top) */}
-      <div className="px-3 py-3 border-b border-gray-200 dark:border-white/10 flex-shrink-0">
-        <p className="text-[14px] font-bold text-black dark:text-white truncate">{pageName}</p>
+  const Sidebar = () => (
+    <div className="flex h-full flex-col bg-[var(--color-bg-sidebar)] py-3 text-[var(--color-text-primary)]">
+      <div className={`mb-1 flex items-center px-3 ${subnavOpen ? 'justify-center' : 'gap-2'}`}>
+        <img src="/green.svg" alt="Membba" className="h-7" />
+        <span className={`font-bold tracking-tight ${subnavOpen ? 'hidden' : 'inline'}`}>Membba</span>
       </div>
-
-      {/* Nav scroll area */}
-      <div className="flex-1 overflow-y-auto py-1">
-        {/* Dashboard (top, ungrouped) */}
-        <div className="mx-1 mt-1 mb-0.5">
-          <Link
-            to="/dashboard"
-            className={`flex items-center gap-2.5 px-2 py-[7px] rounded-[6px] text-[13.5px] font-medium transition-all ${
-              isActive('/dashboard')
-                ? 'bg-[rgba(159,255,87,0.12)] text-black dark:text-white'
-                : 'text-gray-500 dark:text-[#96989d] hover:text-gray-900 dark:text-[#dcddde] hover:bg-[rgba(255,255,255,0.06)]'
-            }`}
-          >
-            <HiOutlineSquares2X2 size={16} className={isActive('/dashboard') ? 'text-[#9FFF57]' : 'text-gray-500 dark:text-[#72767d]'} />
-            Dashboard
-          </Link>
-        </div>
-
-        {/* WORKSPACE group */}
-        <SectionLabel label="Workspace" />
-        <div className="relative space-y-0.5">
-          {WORKSPACE_LINKS.map(({ label, path, Icon }) => (
-            <NavItem key={path} label={label} path={path} Icon={Icon} />
-          ))}
-        </div>
-
-        {/* TOOLS group */}
-        <SectionLabel label="Tools" />
-        <div className="relative space-y-0.5">
-          {TOOL_LINKS.map(({ label, path, Icon }) => (
-            <NavItem key={path} label={label} path={path} Icon={Icon} />
-          ))}
-        </div>
-      </div>
-
-      {/* User card at bottom */}
-      <div className="border-t border-gray-200 dark:border-white/10 p-3 flex-shrink-0">
-        <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-white/[0.06] transition-all">
-          <UserAvatar name={displayName} size={32} />
-          <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold text-black dark:text-white/90 truncate leading-tight">{displayName}</p>
-            <p className="text-[11px] text-gray-500 dark:text-[#72767d] truncate leading-tight">Free plan</p>
-          </div>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={toggleTheme}
-              type="button"
-              aria-label="Toggle theme"
-              className="p-2 rounded-lg text-gray-500 dark:text-[#72767d] hover:text-black dark:text-white hover:bg-white/[0.12] transition-all"
-            >
-              {dark ? <HiOutlineSun size={18} /> : <HiOutlineMoon size={18} />}
-            </button>
-            <button
-              onClick={handleSignOut}
-              type="button"
-              aria-label="Sign out"
-              className="p-2 rounded-lg text-gray-500 dark:text-[#72767d] hover:text-red-400 hover:bg-red-500/15 transition-all"
-            >
-              <HiOutlineArrowRightOnRectangle size={18} />
-            </button>
-          </div>
-        </div>
+      <div className="space-y-1 pt-2">
+        {NAV.map(item => <ParentButton key={item.id} item={item} />)}
       </div>
     </div>
   )
 
   return (
-    <div
-      className="flex min-h-screen text-[14px] text-gray-900 dark:text-[#dcddde] bg-white dark:bg-[#000]"
-      style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
-    >
-      {/* ── Desktop Sidebar (Fixed, Hidden on Mobile) ───── */}
-      <aside
-        className="hidden lg:flex fixed inset-y-0 left-0 w-[240px] flex-col border-r border-gray-200 dark:border-white/10 z-50 overflow-y-auto bg-white dark:bg-[#111]"
-      >
-        <SidebarBody />
+    <div className="flex min-h-screen bg-[var(--color-bg-app)] text-[var(--color-text-primary)] font-sans">
+      <aside className={`hidden lg:flex fixed inset-y-0 left-0 z-50 flex-col border-r border-[var(--color-border-subtle)] bg-[var(--color-bg-sidebar)] transition-[width] duration-200 ease-in-out ${subnavOpen ? 'w-[52px]' : 'w-[220px]'}`}>
+        <Sidebar />
       </aside>
 
-      {/* ── Mobile: Backdrop ─────────────────────────────── */}
-      {mobileOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden"
-          onClick={() => setMobileOpen(false)}
-        />
+      {subnavOpen && (
+        <aside className="hidden lg:block fixed inset-y-0 left-[52px] z-40 w-[200px] border-r border-[var(--color-border-subtle)] bg-[var(--color-bg-sidebar)] px-3 py-4 opacity-100 transition-[opacity,transform] duration-200 ease-in-out">
+          <p className="mb-4 px-2 text-[13px] font-semibold text-[var(--color-text-primary)]">{subnavParent.label}</p>
+          {subnavParent.sections.map(section => (
+            <div key={section.label} className="mb-5">
+              <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">{section.label}</p>
+              <div className="space-y-1">
+                {section.items.map(child => {
+                  const ChildIcon = child.Icon
+                  return (
+                    <Link
+                      key={`${child.label}-${child.path}`}
+                      to={child.path}
+                      className={`flex items-center gap-2 rounded-[var(--radius-default)] border-l-2 px-3 py-2 text-[13px] font-medium transition-all ${
+                        isChildActive(child.path)
+                          ? 'border-transparent bg-[var(--color-bg-elevated)] text-[var(--color-text-primary)]'
+                          : 'border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-elevated)] hover:text-[var(--color-text-primary)]'
+                      }`}
+                    >
+                      {ChildIcon && <ChildIcon size={18} strokeWidth={1.5} className="shrink-0" />}
+                      {child.label}
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
+        </aside>
       )}
 
-      {/* ── Mobile: Drawer ──────────────────────────────── */}
-      <aside
-        className={`
-          fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-white dark:bg-[#111]
-          border-r border-gray-200 dark:border-white/10
-          transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)]
-          lg:hidden
-          ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
-        `}
-      >
-        <SidebarBody />
+      {mobileOpen && <div className="fixed inset-0 z-40 bg-[var(--color-bg-overlay)] backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} />}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 flex flex-col border-r border-[var(--color-border-subtle)] transition-transform duration-300 lg:hidden ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <Sidebar />
       </aside>
 
-      {/* ── Main content area with left margin for fixed sidebar ── */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen lg:ml-[240px]">
-
-        {/* ── Topbar ─────────────────────────────────────── */}
-        <header
-          className="h-[60px] flex-shrink-0 border-b border-gray-200 dark:border-white/10 bg-white dark:bg-[#111]/80 backdrop-blur-md flex items-center justify-between px-4 sm:px-6 lg:px-8 z-10 sticky top-0"
-        >
-          {/* Left: mobile menu + breadcrumb */}
+      <div className={`flex min-h-screen min-w-0 flex-1 flex-col transition-[margin] duration-200 ease-in-out ${subnavOpen ? 'lg:ml-[252px]' : 'lg:ml-[220px]'}`}>
+        <header className="sticky top-0 z-10 flex h-[48px] flex-shrink-0 items-center justify-between border-b border-[var(--color-border-subtle)] bg-[var(--color-bg-sidebar)] px-4 sm:px-6">
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setMobileOpen(true)}
-              aria-label="Open menu"
-              className="lg:hidden text-gray-500 dark:text-[#72767d] hover:text-black dark:text-white p-1.5 rounded transition-all"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+            <button onClick={() => setMobileOpen(true)} aria-label="Open menu" className="btn-ghost p-1.5 lg:hidden">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
             </button>
-            <div className="flex items-center gap-1.5 text-[14px]">
-              <span className="text-gray-500 dark:text-[#72767d] font-medium">Workspace</span>
-              <span className="text-gray-400 dark:text-[#4f545c] font-light">·</span>
-              <span className="text-black dark:text-white font-semibold">{pageName}</span>
+            <div className="flex items-center gap-2 text-[13px] font-medium text-[var(--color-text-secondary)]">
+              <span>Membba</span>
+              <span className="text-[var(--color-text-muted)]">/</span>
+              <span className="text-[var(--color-text-primary)]">{pageName}</span>
+              <span className="ml-2 hidden rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-bg-elevated)] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-secondary)] sm:inline-flex">Creator Hub</span>
             </div>
           </div>
-
-          {/* Right: search */}
-          <div className="flex items-center gap-2">
-            <div
-              className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-[6px] text-[13px] text-gray-500 dark:text-[#72767d] cursor-text hover:bg-white/[0.06] transition-all"
-              style={{ background: '#1e1f22', minWidth: 160 }}
-            >
-              <HiOutlineMagnifyingGlass size={14} />
-              <span>Search...</span>
-            </div>
+          <div className="relative flex items-center gap-3" ref={avatarMenuRef}>
+            <BotStatus online={botOnline} />
+            <button type="button" onClick={() => setAvatarOpen(v => !v)} aria-label="Open account menu" className="rounded-full">
+              <UserAvatar user={user} />
+            </button>
+            {avatarOpen && (
+              <div
+                className="absolute right-0 top-full mt-2 z-[9999] w-[240px] origin-top-right rounded-[14px] border border-[var(--color-border-default)] p-2 text-[13px] opacity-100 shadow-2xl transition-all duration-150"
+                style={{ backgroundColor: 'var(--color-bg-surface)', boxShadow: '0 18px 55px rgba(0,0,0,0.55)' }}
+              >
+                <div className="border-b border-[var(--color-border-subtle)] px-3 py-3 text-[var(--color-text-secondary)]">
+                  <p className="truncate font-mono text-[12px]">{user?.email}</p>
+                </div>
+                <button onClick={() => { setAvatarOpen(false); navigate('/dashboard/settings?tab=account') }} className="mt-2 flex w-full items-center rounded-[var(--radius-md)] px-3 py-2 text-left text-[var(--color-text-primary)] hover:bg-[var(--color-bg-elevated)]">
+                  Account
+                </button>
+                <button onClick={() => { setAvatarOpen(false); navigate('/dashboard/settings?tab=billing') }} className="flex w-full items-center rounded-[var(--radius-md)] px-3 py-2 text-left text-[var(--color-text-primary)] hover:bg-[var(--color-bg-elevated)]">
+                  Upgrade to Pro
+                </button>
+                <div className="my-2 border-t border-[var(--color-border-subtle)] pt-2">
+                  <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">Theme</p>
+                  <div className="space-y-1 pl-5 pr-2">
+                    {['system', 'dark', 'light'].map(mode => (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => setTheme(mode)}
+                        className={`flex w-full items-center justify-between rounded-[var(--radius-md)] px-3 py-1.5 text-left text-[12px] capitalize ${theme === mode ? 'bg-[var(--color-bg-elevated)] text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-elevated)]'}`}
+                      >
+                        <span>{mode}</span>
+                        {theme === mode && <span className="text-[var(--color-brand)]">•</span>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button onClick={handleSignOut} className="flex w-full items-center gap-2 rounded-[var(--radius-md)] px-3 py-2 text-left text-[var(--color-danger)] hover:bg-[var(--color-danger-muted)]">
+                  <LogOut size={15} strokeWidth={1.5} /> Log out
+                </button>
+              </div>
+            )}
           </div>
         </header>
 
-        {/* ── Page content ───────────────────────────────── */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="w-full px-4 sm:px-6 lg:px-8 py-6 lg:py-8 page-enter">
+        <main className="flex-1 overflow-y-auto bg-[var(--color-bg-app)]">
+          <div className="mx-auto w-full max-w-[860px] px-4 py-6 sm:px-8 sm:py-10 page-enter">
             {children || <Outlet />}
           </div>
         </main>

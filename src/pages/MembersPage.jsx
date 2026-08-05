@@ -140,7 +140,7 @@ export default function MembersPage() {
   }
 
   const Pill = ({ status }) => {
-    if (status === 'active') return <span className="inline-flex items-center gap-1.5 bg-[#9FFF57]/10 border border-[#9FFF57]/10 px-2 py-0.5 rounded-[4px] text-[14px] font-bold text-[#9FFF57]"><span className="w-1.5 h-1.5 rounded-full bg-[#9FFF57]" /> Active</span>
+    if (status === 'active') return <span className="inline-flex items-center gap-1.5 bg-[#c8f135]/10 border border-[#c8f135]/10 px-2 py-0.5 rounded-[4px] text-[14px] font-bold text-[#c8f135]"><span className="w-1.5 h-1.5 rounded-full bg-[#c8f135]" /> Active</span>
     if (status === 'expired') return <span className="inline-flex items-center gap-1.5 bg-yellow-400/10 border border-yellow-400/10 px-2 py-0.5 rounded-[4px] text-[14px] font-bold text-yellow-400"><span className="w-1.5 h-1.5 rounded-full bg-yellow-400" /> Expired</span>
     return <span className="inline-flex items-center gap-1.5 bg-white/[0.05] border border-white/[0.05] px-2 py-0.5 rounded-[4px] text-[14px] font-bold text-gray-500 dark:text-[#96989d]"><span className="w-1.5 h-1.5 rounded-full bg-[#4f545c]" /> Cancelled</span>
   }
@@ -191,7 +191,7 @@ export default function MembersPage() {
                       <td className="px-5 py-3.5"><Pill status={s.status} /></td>
                       <td className="px-5 py-3.5" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center gap-2">
-                          <button onClick={() => setSelected(s)} className="text-[14px] px-2.5 py-1 rounded-[4px] font-medium text-[#9FFF57] hover:bg-[#9FFF57]/10 transition-colors">View</button>
+                          <button onClick={() => setSelected(s)} className="text-[14px] px-2.5 py-1 rounded-[4px] font-medium text-[#c8f135] hover:bg-[#c8f135]/10 transition-colors">View</button>
                           {s.status === 'active' && <button onClick={() => handleRemove(s)} disabled={removing === s.id} className="text-[14px] px-2.5 py-1 rounded-[4px] font-medium text-red-400 hover:bg-red-500/10 disabled:opacity-40 transition-colors">{removing === s.id ? '…' : 'Remove'}</button>}
                         </div>
                       </td>
@@ -243,7 +243,7 @@ export default function MembersPage() {
 
             <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-2">
               <button onClick={() => copyRenewalLink(selected)} className="rounded-xl border border-gray-200 px-4 py-3 text-[13px] font-bold text-gray-700 hover:bg-gray-50 dark:border-white/10 dark:text-white/60 dark:hover:bg-white/5">Copy renewal link</button>
-              <button onClick={() => extendSubscription(selected, 30)} disabled={extending === selected.id} className="rounded-xl bg-[#9FFF57] px-4 py-3 text-[13px] font-black text-black disabled:opacity-50">{extending === selected.id ? 'Extending…' : '+30 days'}</button>
+              <button onClick={() => extendSubscription(selected, 30)} disabled={extending === selected.id} className="rounded-xl bg-[#c8f135] px-4 py-3 text-[13px] font-black text-black disabled:opacity-50">{extending === selected.id ? 'Extending…' : '+30 days'}</button>
               {selected.status === 'active' && selected.telegram_user_id && !selected.whatsapp_phone && <button onClick={() => handleResend(selected)} disabled={resending === selected.id} className="rounded-xl bg-[#229ED9] px-4 py-3 text-[13px] font-black text-white disabled:opacity-50">{resending === selected.id ? 'Sending…' : 'Resend invite'}</button>}
               {selected.status === 'active' && <button onClick={() => handleRemove(selected)} disabled={removing === selected.id} className="rounded-xl border border-red-300 px-4 py-3 text-[13px] font-bold text-red-500 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-500/10">{removing === selected.id ? 'Removing…' : 'Remove member'}</button>}
             </div>
@@ -255,14 +255,14 @@ export default function MembersPage() {
                   <div className="flex items-center justify-between gap-2"><p className="text-sm font-bold">₦{Number(p.amount || 0).toLocaleString()}</p><span className="text-xs text-gray-500 capitalize">{p.status}</span></div>
                   <div className="mt-1 flex items-center justify-between gap-2">
                     <p className="font-mono text-xs text-gray-400 break-all">{p.paystack_reference}</p>
-                    <a href={`/dashboard/payments?reference=${encodeURIComponent(p.paystack_reference)}`} className="text-xs font-bold text-[#76d83b] hover:underline">Open</a>
+                    <a href={`/dashboard/payments?reference=${encodeURIComponent(p.paystack_reference)}`} className="text-xs font-bold text-[#c8f135] hover:underline">Open</a>
                   </div>
                   <p className="text-xs text-gray-400 mt-1">{new Date(p.created_at).toLocaleString()}</p>
                   {p.status === 'pending' && (
                     <button
                       onClick={() => verifyPayment(p.paystack_reference)}
                       disabled={verifyingPayment === p.paystack_reference}
-                      className="mt-2 rounded-lg bg-[#9FFF57] px-3 py-1.5 text-xs font-black text-black disabled:opacity-50"
+                      className="mt-2 rounded-lg bg-[#c8f135] px-3 py-1.5 text-xs font-black text-black disabled:opacity-50"
                     >
                       {verifyingPayment === p.paystack_reference ? 'Checking…' : 'Verify payment'}
                     </button>
