@@ -3,6 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom'
 import { FaTelegram, FaWhatsapp } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import API_BASE from '../lib/api'
+import WhatsAppModeBadge from '../components/WhatsAppModeBadge'
 
 function Spinner() {
   return (
@@ -30,6 +31,7 @@ export default function PaymentSuccessPage() {
   const [status, setStatus]             = useState('verifying')
   const [subscription, setSubscription] = useState(null)
   const [inviteLink, setInviteLink]     = useState(null)
+  const [inviteDelivery, setInviteDelivery] = useState(null)
   const [platform, setPlatform]         = useState('telegram')
   const [alreadyProcessed, setAlreadyProcessed] = useState(false)
   const [message, setMessage]           = useState('')
@@ -49,6 +51,7 @@ export default function PaymentSuccessPage() {
         setStatus('success')
         setSubscription(data.subscription || null)
         setInviteLink(data.invite_link || null)
+        setInviteDelivery(data.invite_delivery || data.subscription?.inviteDelivery || null)
         setPlatform(data.platform || data.subscription?.communities?.platform || 'telegram')
         setAlreadyProcessed(Boolean(data.already_processed))
         setMessage(data.message || '')
@@ -68,6 +71,10 @@ export default function PaymentSuccessPage() {
   }
 
   const isWA        = platform === 'whatsapp'
+  const whatsappSetupMode = isWA
+    ? (subscription?.communities?.whatsapp_setup_mode || inviteDelivery?.setupMode || 'basic')
+    : null
+  const isAdvancedWhatsApp = whatsappSetupMode === 'advanced'
   const PlatIcon    = isWA ? FaWhatsapp : FaTelegram
   const platColor   = isWA ? '#25D366' : '#229ED9'
   const platLabel   = isWA ? 'WhatsApp' : 'Telegram'
@@ -143,6 +150,12 @@ export default function PaymentSuccessPage() {
                   )}
                   <span className="text-[14px] text-black dark:text-white/35 font-semibold uppercase tracking-wider">Platform</span>
                   <span className="text-[14px] font-semibold text-right" style={{ color: platColor }}>{platLabel}</span>
+                  {isWA && (
+                    <>
+                      <span className="text-[14px] text-black dark:text-white/35 font-semibold uppercase tracking-wider">WhatsApp mode</span>
+                      <span className="text-right"><WhatsAppModeBadge mode={whatsappSetupMode} label="full" /></span>
+                    </>
+                  )}
                 </div>
               </div>
             )}
@@ -160,7 +173,11 @@ export default function PaymentSuccessPage() {
                   Join {platLabel} Group
                 </a>
                 <p className="text-center text-[14px] text-black dark:text-white/30">
-                  We may also send this invite through {platLabel} if the bot can reach you.
+                  {isWA
+                    ? (isAdvancedWhatsApp
+                      ? 'This community uses Advanced group automation beta. If automation is unavailable, your invite still works manually.'
+                      : 'This community uses Basic access: your invite is delivered through official WhatsApp messaging.')
+                    : `We may also send this invite through ${platLabel} if the bot can reach you.`}
                 </p>
               </div>
             ) : (
@@ -171,9 +188,24 @@ export default function PaymentSuccessPage() {
                     Next step: check your {platLabel}
                   </p>
                   {isWA ? (
-                    <p className="text-black dark:text-white/50">
-                      Your invite will be sent to the WhatsApp number you provided. If WhatsApp delivery is offline, the invite is queued and the admin can resend it.
-                    </p>
+                    <div className="text-black dark:text-white/50 space-y-2">
+<WhatsAppModeBadge mode={whatsappSetupMode} label="full" />
+                      {inviteDelivery?.status === 'sent' ? (
+                        <p>Your invite has been sent to the WhatsApp number you provided.</p>
+                      ) : inviteDelivery?.status === 'queued' ? (
+                        <p>Your invite has been queued and will be sent when WhatsApp delivery is available. Keep this reference if you need support.</p>
+                      ) : (
+                        <p>Your invite will be sent to the WhatsApp number you provided. If delivery is offline, the admin can resend it.</p>
+                      )}
+                      <p className="text-[14px] text-black dark:text-white/30">
+                        {isAdvancedWhatsApp
+                          ? 'Advanced mode can attempt group add/remove automation, but it is still beta and may fall back to invite-link delivery.'
+                          : 'Basic mode uses Meta’s official WhatsApp Cloud API for reliable 1:1 invite delivery. Group add/remove automation is not required.'}
+                      </p>
+                      {inviteDelivery?.method && (
+                        <p className="text-[14px] text-black dark:text-white/30">Delivery: <span className="font-mono">{inviteDelivery.method}</span></p>
+                      )}
+                    </div>
                   ) : (
                     <div className="text-black dark:text-white/50 space-y-1">
                       <p>The bot will send you a join link on Telegram.</p>

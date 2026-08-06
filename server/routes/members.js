@@ -18,7 +18,7 @@ async function getCreatorId(req) {
 async function getOwnedSubscription(subscriptionId, creatorId) {
   const { data: sub, error } = await supabase
     .from('subscriptions')
-    .select('*, communities(telegram_chat_id, whatsapp_group_id, whatsapp_group_invite_link, name, slug, platform, creator_id)')
+    .select('*, communities(telegram_chat_id, whatsapp_group_id, whatsapp_group_invite_link, whatsapp_setup_mode, name, slug, platform, creator_id)')
     .eq('id', subscriptionId)
     .single()
 
@@ -117,7 +117,7 @@ router.post('/:subscriptionId/extend', async (req, res) => {
       .from('subscriptions')
       .update({ status: 'active', expires_at: newExpiry.toISOString() })
       .eq('id', subscriptionId)
-      .select('*, communities(name, slug, platform), plans(name, price, duration_minutes)')
+      .select('*, communities(name, slug, platform, whatsapp_setup_mode), plans(name, price, duration_minutes)')
       .single()
 
     if (updateErr) throw updateErr

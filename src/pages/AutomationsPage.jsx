@@ -91,6 +91,9 @@ function AutomationCard({
   lastRunStatus,   // 'completed' | 'scheduled' | 'stopped' | null
   metric,          // { label, value, sub }
   children,
+  expanded = false,
+  onDetails,
+  detailsLabel = 'View details',
 }) {
   const statusStyles = {
     completed: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
@@ -122,7 +125,14 @@ function AutomationCard({
         </div>
 
         {/* Toggle */}
-        <Toggle checked={active} onChange={onToggle} disabled={disabled} />
+        <div className="flex flex-col items-end gap-2">
+          <Toggle checked={active} onChange={onToggle} disabled={disabled} />
+          {children && onDetails && (
+            <button type="button" onClick={onDetails} className="text-[12px] font-bold text-[#c8f135] hover:underline">
+              {expanded ? 'Hide details' : detailsLabel}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Meta row */}
@@ -159,7 +169,7 @@ function AutomationCard({
       </div>
 
       {/* Optional expanded controls (e.g. time picker) — always shows when present */}
-      {children && (
+      {children && expanded && (
         <div className="border-t border-gray-100 dark:border-white/5 px-5 sm:px-6 py-4 bg-gray-50/50 dark:bg-white/[0.02]">
           {children}
         </div>
@@ -230,6 +240,7 @@ export default function AutomationsPage() {
   const [aiTest, setAiTest] = useState({ phone: '', text: 'How do I renew my subscription?' })
   const [aiTesting, setAiTesting] = useState(false)
   const [aiResult, setAiResult] = useState(null)
+  const [expandedAutomation, setExpandedAutomation] = useState(null)
 
   // ── helpers ──────────────────────────────────────────────
   async function getToken() {
@@ -240,7 +251,7 @@ export default function AutomationsPage() {
     return refreshed?.data?.session?.access_token || null
   }
 
-  async function apiFetch(path, opts = {}) {
+  async function apiFetch(path, opts = {}, didRetry = false) {
     const token = await getToken()
     if (!token) throw new Error('Your session has expired. Please log out and sign in again.')
 
@@ -254,6 +265,10 @@ export default function AutomationsPage() {
       body: opts.body ? JSON.stringify(opts.body) : undefined,
     })
     const data = await res.json().catch(() => ({}))
+    if (res.status === 401 && !didRetry) {
+      const refreshed = await supabase.auth.refreshSession().catch(() => null)
+      if (refreshed?.data?.session?.access_token) return apiFetch(path, opts, true)
+    }
     if (!res.ok) throw new Error(data.error || data.message || 'Request failed')
     return data
   }
@@ -439,6 +454,9 @@ export default function AutomationsPage() {
           nextRun={settings.ai_responder ? 'Always on' : null}
           lastRunStatus={settings.ai_responder ? 'completed' : null}
           metric={{ label: 'AI replies', value: readiness?.ai_replies ?? '—', sub: readiness?.open_escalations ? `${readiness.open_escalations} open in inbox` : undefined }}
+          expanded={expandedAutomation === 'ai'}
+          onDetails={() => setExpandedAutomation(v => v === 'ai' ? null : 'ai')}
+          detailsLabel="Configure"
         >
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -516,6 +534,9 @@ export default function AutomationsPage() {
           nextRun={settings.daily_digest ? nextDigest : null}
           lastRunStatus={settings.daily_digest ? 'completed' : null}
           metric={{ label: 'Delivery rate', value: settings.daily_digest ? '100%' : '—', sub: settings.daily_digest ? '↑ On time always' : undefined }}
+          expanded={expandedAutomation === 'digest'}
+          onDetails={() => setExpandedAutomation(v => v === 'digest' ? null : 'digest')}
+          detailsLabel="Configure"
         >
           {/* Time picker — always shown inside card */}
           <div className="flex flex-wrap items-center gap-4">
@@ -552,12 +573,30 @@ export default function AutomationsPage() {
             : null}
           lastRunStatus={pendingPosts.length > 0 ? 'scheduled' : (pastPosts.length > 0 ? 'completed' : null)}
           metric={{ label: 'Queued posts', value: readiness?.queued_posts ?? pendingPosts.length, sub: pendingPosts.length > 0 ? `${pendingPosts.length} pending delivery` : undefined }}
-        />
+          expanded={expandedAutomation === 'scheduler'}
+          onDetails={() => setExpandedAutomation(v => v === 'scheduler' ? null : 'scheduler')}
+          detailsLabel="Open queue"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[13px] font-black text-gray-900 dark:text-white">Broadcast Queue</p>
+              <p className="text-[12px] text-gray-500 dark:text-white/35 mt-0.5">{pendingPosts.length} pending · {pastPosts.length} sent</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowForm(v => !v)}
+              className="flex items-center gap-2 bg-[#c8f135] hover:bg-[#d6ff4f] text-[#111] font-black text-[13px] px-4 py-2 rounded-[10px] transition"
+            >
+              {showForm ? <HiOutlineXCircle size={15} /> : <HiOutlinePlusCircle size={15} />}
+              {showForm ? 'Close' : 'New Broadcast'}
+            </button>
+          </div>
+        </AutomationCard>
 
       </div>
 
       {/* ── Broadcast Queue (only when scheduler is on) ── */}
-      {settings.scheduler && (
+      {settings.scheduler && expandedAutomation === 'scheduler' && (
         <section>
           <div className="flex items-center justify-between mb-5">
             <div>

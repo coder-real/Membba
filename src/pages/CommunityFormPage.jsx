@@ -52,6 +52,7 @@ export default function CommunityFormPage() {
     platform: 'telegram',
     telegram_chat_id: '',
     whatsapp_group_invite_link: '',
+    whatsapp_setup_mode: 'basic',
     welcome_message_enabled: true,
     welcome_message: "Hello {name}! Welcome to {community}. We're excited to have you onboard for the {plan} plan.",
     invite_link_ttl_minutes: 60,
@@ -100,12 +101,25 @@ export default function CommunityFormPage() {
   const [loading, setLoading] = useState(false)
   const [registeringGroup, setRegisteringGroup] = useState(false)
   const [waGroupId, setWaGroupId] = useState(null)
+  const [waInviteCheck, setWaInviteCheck] = useState(null)
+  const [checkingWaInvite, setCheckingWaInvite] = useState(false)
   const [setupModal, setSetupModal] = useState(null) // null | { loading: true } | { allPass, checks }
   const [connectQr, setConnectQr] = useState(null)
   const [telegramLinking, setTelegramLinking] = useState(false)
   const [telegramAdvanced, setTelegramAdvanced] = useState(false)
   const [telegramGroup, setTelegramGroup] = useState(null) // { title, chat_id }
   const [telegramDeepLink, setTelegramDeepLink] = useState(null)
+  const [draftSavedAt, setDraftSavedAt] = useState(null)
+  const [draftLoaded, setDraftLoaded] = useState(false)
+
+  const draftKey = `membba:community-draft:${user?.id || 'anon'}:${id || 'new'}`
+
+  const stepItems = [
+    { num: 1, label: 'Choose platform', short: 'Platform', description: 'Telegram or WhatsApp' },
+    { num: 2, label: 'Connect group', short: 'Setup', description: 'Link the actual group' },
+    { num: 3, label: 'Add pricing', short: 'Plans', description: 'Plans and access duration' },
+    { num: 4, label: 'Review & automations', short: 'Review', description: 'Confirm before saving' },
+  ]
 
   async function getAuthHeaders() {
     const { data } = await supabase.auth.getSession()
@@ -198,6 +212,54 @@ export default function CommunityFormPage() {
 
   useEffect(() => { if (isEditing) fetchCommunity() }, [id])
 
+  useEffect(() => {
+    if (isEditing || draftLoaded) return
+    try {
+      const raw = localStorage.getItem(draftKey)
+      if (raw) {
+        const saved = JSON.parse(raw)
+        if (saved.form) setForm(prev => ({ ...prev, ...saved.form }))
+        if (Array.isArray(saved.plans) && saved.plans.length) setPlans(saved.plans)
+        if (saved.currentStep) setCurrentStep(Math.max(1, Math.min(4, saved.currentStep)))
+        if (saved.savedAt) setDraftSavedAt(saved.savedAt)
+        toast.success('Draft restored')
+      }
+    } catch {
+      // Ignore invalid draft data.
+    } finally {
+      setDraftLoaded(true)
+    }
+  }, [draftKey, draftLoaded, isEditing])
+
+  useEffect(() => {
+    if (isEditing || !draftLoaded) return
+    const timer = setTimeout(() => {
+      try {
+        const savedAt = new Date().toISOString()
+        localStorage.setItem(draftKey, JSON.stringify({ form, plans, currentStep, savedAt }))
+        setDraftSavedAt(savedAt)
+      } catch {
+        // localStorage may be unavailable in some embedded browsers.
+      }
+    }, 700)
+    return () => clearTimeout(timer)
+  }, [draftKey, draftLoaded, isEditing, form, plans, currentStep])
+
+  const saveDraftNow = () => {
+    try {
+      const savedAt = new Date().toISOString()
+      localStorage.setItem(draftKey, JSON.stringify({ form, plans, currentStep, savedAt }))
+      setDraftSavedAt(savedAt)
+      toast.success('Draft saved')
+    } catch {
+      toast.error('Could not save draft')
+    }
+  }
+
+  const clearDraft = () => {
+    try { localStorage.removeItem(draftKey) } catch { /* ignore */ }
+  }
+
   const fetchCommunity = async () => {
     const { data, error } = await supabase.from('communities').select('*').eq('id', id).single()
     if (error) return toast.error(error.message)
@@ -207,6 +269,7 @@ export default function CommunityFormPage() {
       platform: data.platform || 'telegram',
       telegram_chat_id: data.telegram_chat_id || '',
       whatsapp_group_invite_link: data.whatsapp_group_invite_link || '',
+      whatsapp_setup_mode: data.whatsapp_setup_mode || 'basic',
       welcome_message_enabled: data.welcome_message_enabled ?? true,
       welcome_message: data.welcome_message || "Hello {name}! Welcome to {community}. We're excited to have you onboard for the {plan} plan.",
       invite_link_ttl_minutes: data.invite_link_ttl_minutes ?? 60,
@@ -214,6 +277,7 @@ export default function CommunityFormPage() {
     })
     setWaGroupId(data.whatsapp_group_id || null)
     if (data.telegram_chat_id) setTelegramGroup({ title: data.name || 'Telegram group', chat_id: data.telegram_chat_id })
+    if (data.whatsapp_group_invite_link) setWaInviteCheck({ ok: true, invite_code: data.whatsapp_group_invite_link.split('chat.whatsapp.com/')[1]?.split(/[?#]/)[0] || null, saved: true })
 
     const { data: planData } = await supabase
       .from('plans').select('*').eq('community_id', id).eq('is_active', true).order('created_at', { ascending: true })
@@ -222,6 +286,7 @@ export default function CommunityFormPage() {
 
   const handleFormChange = e => {
     const { name, value } = e.target
+    if (name === 'whatsapp_group_invite_link') setWaInviteCheck(null)
     setForm(prev => ({ ...prev, [name]: value }))
   }
 
@@ -241,6 +306,32 @@ export default function CommunityFormPage() {
     if (error) return toast.error(error.message)
     setExistingPlans(prev => prev.filter(p => p.id !== planId))
     toast.success('Plan removed')
+  }
+
+
+  const verifyWhatsAppInviteLink = async () => {
+    const link = form.whatsapp_group_invite_link.trim()
+    if (!link) return toast.error('Enter a WhatsApp group invite link first')
+    if (!link.includes('chat.whatsapp.com')) return toast.error('Invalid WhatsApp invite link — must contain chat.whatsapp.com')
+
+    setCheckingWaInvite(true)
+    setWaInviteCheck(null)
+    try {
+      const res = await fetch(`${API_BASE}/api/whatsapp/resolve-link`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invite_link: link }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data.ok) throw new Error(data.message || 'Could not verify invite link')
+      setWaInviteCheck(data)
+      toast.success(data.group_name ? `Group found: ${data.group_name}` : 'Invite link looks valid')
+    } catch (err) {
+      setWaInviteCheck({ ok: false, message: err.message })
+      toast.error(err.message || 'Could not verify invite link')
+    } finally {
+      setCheckingWaInvite(false)
+    }
   }
 
   const handleRegisterWhatsAppGroup = async () => {
@@ -316,6 +407,9 @@ export default function CommunityFormPage() {
         ? parseInt(form.telegram_chat_id) : null,
       whatsapp_group_invite_link: form.platform === 'whatsapp'
         ? form.whatsapp_group_invite_link || null : null,
+      whatsapp_group_id: form.platform === 'whatsapp' && form.whatsapp_setup_mode === 'advanced'
+        ? waGroupId || null : null,
+      whatsapp_setup_mode: form.platform === 'whatsapp' ? form.whatsapp_setup_mode : 'basic',
       welcome_message_enabled: form.welcome_message_enabled,
       welcome_message: form.welcome_message,
       invite_link_ttl_minutes: parseInt(form.invite_link_ttl_minutes) || 60,
@@ -355,6 +449,7 @@ export default function CommunityFormPage() {
     }
 
     setLoading(false)
+    clearDraft()
     toast.success(isEditing ? 'Community updated!' : 'Community created!')
     navigate('/dashboard/communities')
   }
@@ -363,21 +458,34 @@ export default function CommunityFormPage() {
 
   return (
     <>
-    <>
-      <div className="max-w-2xl">
-        <div className="mb-10">
-          <div className="flex items-start justify-between gap-7">
-            <div>
-              <h1 className="text-3xl font-black text-black dark:text-white tracking-tight">
-                {isEditing ? 'Edit Community' : 'Create Community'}
-              </h1>
-              <p className="text-[14px] text-black dark:text-white/50 mt-1.5">Set up your paid community in a few steps</p>
-            </div>
+      <div className="mx-auto w-full max-w-7xl">
+        <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <button
+              type="button"
+              onClick={() => navigate('/dashboard/communities')}
+              className="mb-4 inline-flex items-center gap-2 text-[13px] font-bold text-black/45 transition hover:text-black dark:text-white/35 dark:hover:text-white/70"
+            >
+              ← Back to communities
+            </button>
+            <h1 className="text-[28px] font-black tracking-tight text-black dark:text-white sm:text-3xl">
+              {isEditing ? 'Edit Community' : 'Create Community'}
+            </h1>
+            <p className="mt-1.5 max-w-xl text-[14px] leading-relaxed text-black/50 dark:text-white/45">
+              One focused step at a time. Your draft saves automatically on this device.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {!isEditing && (
+              <span className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-[12px] font-bold text-gray-500 dark:border-white/10 dark:bg-white/[0.03] dark:text-white/35">
+                {draftSavedAt ? `Draft saved ${new Date(draftSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Draft autosaves'}
+              </span>
+            )}
             {isEditing && (
               <button
                 type="button"
                 onClick={runSetupCheck}
-                className="flex-shrink-0 inline-flex items-center gap-1.5 border border-white/[0.1] text-black dark:text-white/50 px-4 py-2 rounded-lg text-[14px] font-semibold hover:border-white/20 hover:text-black dark:text-white/70 transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.1] px-4 py-2 text-[14px] font-semibold text-black/50 transition-colors hover:border-white/20 hover:text-black dark:text-white/50 dark:hover:text-white/70"
               >
                 📋 Test Setup
               </button>
@@ -385,60 +493,68 @@ export default function CommunityFormPage() {
           </div>
         </div>
 
-        {/* ─── Wizard Progress Header ─── */}
-        <div className="mb-10 relative">
-          <div className="absolute top-7 left-0 right-0 h-0.5 bg-white/[0.05] -z-10 rounded-full" />
-          <div className="flex justify-between items-center relative z-10 w-full px-2">
-            {[
-              { num: 1, label: 'Platform' },
-              { num: 2, label: 'Setup' },
-              { num: 3, label: 'Plans' },
-              { num: 4, label: 'Automations' }
-            ].map(step => {
-              const isActive = currentStep === step.num
-              const isPast = currentStep > step.num
-              const isClickable = isEditing || isPast // Can only jump if editing or already completed
+        <div className="overflow-hidden rounded-[28px] border border-gray-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#111]">
+          <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)]">
+            <aside className="border-b border-gray-100 bg-white px-6 py-6 dark:border-white/5 dark:bg-[#0d0d0d] lg:border-b-0 lg:border-r lg:px-6 lg:py-7">
+              <p className="mb-2 text-[12px] font-black uppercase tracking-[0.2em] text-[#c8f135]">{String(currentStep).padStart(2, '0')} of 04</p>
+              <h2 className="text-[24px] font-black leading-tight text-black dark:text-white">
+                {stepItems.find(s => s.num === currentStep)?.label}
+              </h2>
+              <p className="mt-2 text-[13px] leading-relaxed text-black/45 dark:text-white/35">
+                {currentStep === 1 && 'Choose where members will access your paid community.'}
+                {currentStep === 2 && 'Connect the group and confirm access delivery.'}
+                {currentStep === 3 && 'Create the subscription plan members will pay for.'}
+                {currentStep === 4 && 'Review the setup and adjust optional automations before saving.'}
+              </p>
 
-              return (
-                <div key={step.num} className="flex flex-col items-center gap-2">
-                  <button
-                    type="button"
-                    disabled={!isClickable}
-                    onClick={() => setCurrentStep(step.num)}
-                    className={`
-                      w-8 h-8 rounded-full flex items-center justify-center text-[14px] font-bold transition-all
-                      ${isActive ? 'bg-[#c8f135] text-black shadow-[0_0_15px_rgba(159,255,87,0.3)]'
-                        : isPast ? 'bg-[#c8f135]/20 text-[#c8f135] border border-[#c8f135]/30'
-                        : 'bg-white dark:bg-[#111] text-black dark:text-white/30 border border-white/[0.1] hover:border-white/20'
-                      }
-                      ${!isClickable ? 'cursor-not-allowed' : 'cursor-pointer'}
-                    `}
-                  >
-                    {isPast ? <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg> : step.num}
-                  </button>
-                  <span className={`text-[14px] font-semibold tracking-wide uppercase transition-colors ${isActive ? 'text-black dark:text-white' : isPast ? 'text-[#c8f135]/70' : 'text-black dark:text-white/30'}`}>
-                    {step.label}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
+              <div className="mt-6 space-y-2">
+                {stepItems.map(step => {
+                  const isActive = currentStep === step.num
+                  const isPast = currentStep > step.num
+                  const isClickable = isEditing || isPast
+                  return (
+                    <button
+                      key={step.num}
+                      type="button"
+                      disabled={!isClickable}
+                      onClick={() => setCurrentStep(step.num)}
+                      className={`flex w-full items-start gap-3 rounded-xl p-2.5 text-left transition ${
+                        isActive
+                          ? 'bg-gray-50 dark:bg-white/[0.06]'
+                          : isClickable
+                            ? 'hover:bg-gray-50 dark:hover:bg-white/[0.04]'
+                            : 'opacity-45'
+                      }`}
+                    >
+                      <span className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-[13px] font-black ${
+                        isActive
+                          ? 'border-[#c8f135]/40 bg-[#c8f135]/15 text-[#c8f135]'
+                          : isPast
+                            ? 'border-[#c8f135]/20 bg-[#c8f135]/10 text-[#c8f135]'
+                            : 'border-gray-200 bg-white text-gray-400 dark:border-white/10 dark:bg-black/20 dark:text-white/30'
+                      }`}>{isPast ? '✓' : step.num}</span>
+                      <span className="min-w-0">
+                        <span className={`block text-[14px] font-black ${isActive ? 'text-black dark:text-white' : 'text-gray-500 dark:text-white/45'}`}>{step.short}</span>
+                        <span className="mt-0.5 block text-[12px] leading-snug text-gray-400 dark:text-white/25">{step.description}</span>
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </aside>
 
-        <form 
-          onSubmit={handleSubmit} 
-          onKeyDown={(e) => {
-            // Prevent Enter from submitting the form on steps 1-3
-            if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
-              e.preventDefault()
-            }
-          }}
-          className="space-y-6 overflow-hidden"
-        >
+            <section className="min-w-0 bg-gray-50/70 px-4 py-5 dark:bg-[#0a0a0a] sm:px-7 sm:py-8 lg:px-8">
+              <form
+                onSubmit={handleSubmit}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') e.preventDefault()
+                }}
+                className="space-y-6 overflow-visible"
+              >
 
           {/* Step 1: Platform Selection */}
           <div className={currentStep === 1 ? 'block animate-in fade-in slide-in-from-right-4 duration-300 space-y-6' : 'hidden'}>
-            <div className="bg-white dark:bg-[#111] border border-white/[0.07] rounded-xl p-7 space-y-5">
+            <div className="bg-white dark:bg-[#111] border border-white/[0.07] rounded-xl p-4 sm:p-5 space-y-4">
               <div>
                 <h2 className="text-[18px] font-black text-black dark:text-white">Choose your platform</h2>
                 <p className="text-[14px] text-black dark:text-white/40 mt-1">Select where your community will be hosted.</p>
@@ -455,26 +571,26 @@ export default function CommunityFormPage() {
                   </span>
                 )}
               </div>
-              <div className={`grid grid-cols-1 sm:grid-cols-2 gap-7 ${isEditing ? 'pointer-events-none opacity-70' : ''}`}>
+              <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${isEditing ? 'pointer-events-none opacity-70' : ''}`}>
 
                 {/* Telegram Card */}
                 <button
                   type="button"
                   onClick={() => !isEditing && setPlatform('telegram')}
-                  className={`group relative overflow-hidden text-left rounded-2xl border-2 p-7 transition-all duration-300 ${
+                  className={`group relative overflow-hidden text-left rounded-xl border p-4 sm:p-5 transition-all duration-300 ${
                     form.platform === 'telegram'
                       ? 'border-[#229ED9] bg-[#229ED9]/[0.07] shadow-[0_0_30px_rgba(34,158,217,0.12)]'
                       : 'border-gray-200 dark:border-white/10 bg-white/[0.02] opacity-60 hover:opacity-80 hover:border-white/[0.12]'
                   }`}
                 >
                   {/* watermark logo */}
-                  <img src={telegramLogo} alt="" className="absolute right-4 top-1/2 -translate-y-1/2 w-20 h-20 opacity-[0.06] select-none pointer-events-none" />
+                  <img src={telegramLogo} alt="" className="absolute right-4 top-1/2 -translate-y-1/2 hidden w-20 h-20 opacity-[0.06] select-none pointer-events-none" />
                   <div className="relative z-10">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+                    <div className="flex items-start gap-3 mb-2">
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
                         form.platform === 'telegram' ? 'bg-[#229ED9]/20' : 'bg-white/[0.04]'
                       }`}>
-                        <img src={telegramLogo} alt="Telegram" className="w-6 h-6" />
+                        <img src={telegramLogo} alt="Telegram" className="w-5 h-5" />
                       </div>
                       <div>
                         <p className="text-[14px] font-bold text-black dark:text-white">Telegram</p>
@@ -484,7 +600,7 @@ export default function CommunityFormPage() {
                       </div>
                     </div>
                     <p className="text-[14px] text-black dark:text-white/40 leading-relaxed">Bot auto-adds &amp; removes members. Fully automated, no phone number needed.</p>
-                    <div className="mt-4 flex flex-wrap gap-1.5">
+                    <div className="mt-3 hidden flex-wrap gap-1.5 sm:flex">
                       {['Instant delivery','Bot-managed','Reliable'].map(t => (
                         <span key={t} className="text-[10px] px-2 py-0.5 rounded-full bg-[#229ED9]/10 text-[#229ED9]/80 border border-[#229ED9]/15 font-medium">{t}</span>
                       ))}
@@ -496,20 +612,20 @@ export default function CommunityFormPage() {
                 <button
                   type="button"
                   onClick={() => !isEditing && setPlatform('whatsapp')}
-                  className={`group relative overflow-hidden text-left rounded-2xl border-2 p-7 transition-all duration-300 ${
+                  className={`group relative overflow-hidden text-left rounded-xl border p-4 sm:p-5 transition-all duration-300 ${
                     form.platform === 'whatsapp'
                       ? 'border-[#25D366] bg-[#25D366]/[0.07] shadow-[0_0_30px_rgba(37,211,102,0.10)]'
                       : 'border-gray-200 dark:border-white/10 bg-white/[0.02] opacity-60 hover:opacity-80 hover:border-white/[0.12]'
                   }`}
                 >
                   {/* watermark logo */}
-                  <img src={whatsappLogo} alt="" className="absolute right-4 top-1/2 -translate-y-1/2 w-20 h-20 opacity-[0.06] select-none pointer-events-none" />
+                  <img src={whatsappLogo} alt="" className="absolute right-4 top-1/2 -translate-y-1/2 hidden w-20 h-20 opacity-[0.06] select-none pointer-events-none" />
                   <div className="relative z-10">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+                    <div className="flex items-start gap-3 mb-2">
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
                         form.platform === 'whatsapp' ? 'bg-[#25D366]/20' : 'bg-white/[0.04]'
                       }`}>
-                        <img src={whatsappLogo} alt="WhatsApp" className="w-6 h-6" />
+                        <img src={whatsappLogo} alt="WhatsApp" className="w-5 h-5" />
                       </div>
                       <div>
                         <p className="text-[14px] font-bold text-black dark:text-white">WhatsApp</p>
@@ -519,7 +635,7 @@ export default function CommunityFormPage() {
                       </div>
                     </div>
                     <p className="text-[14px] text-black dark:text-white/40 leading-relaxed">Via dedicated WhatsApp number. Managed via whatsapp-web.js on your server.</p>
-                    <div className="mt-4 flex flex-wrap gap-1.5">
+                    <div className="mt-3 hidden flex-wrap gap-1.5 sm:flex">
                       {['Requires number','Invite-based','Manual setup'].map(t => (
                         <span key={t} className="text-[10px] px-2 py-0.5 rounded-full bg-[#25D366]/10 text-[#25D366]/80 border border-[#25D366]/15 font-medium">{t}</span>
                       ))}
@@ -535,39 +651,41 @@ export default function CommunityFormPage() {
           <div className={currentStep === 2 ? 'block animate-in fade-in slide-in-from-right-4 duration-300 space-y-6' : 'hidden'}>
             
             {/* Community Details */}
-            <div className="bg-white dark:bg-[#111] border border-white/[0.07] rounded-xl p-7 space-y-5">
+            <div className="bg-white dark:bg-[#111] border border-white/[0.07] rounded-xl p-4 sm:p-5 space-y-4">
               <h2 className="text-[15px] font-bold text-black dark:text-white mb-2">Community Profile</h2>
 
-              <div>
-                <label className="block text-[14px] font-bold text-black dark:text-white/45 mb-2 uppercase tracking-widest">Community Name *</label>
-                <input
-                  type="text" name="name" required={currentStep === 2} value={form.name} onChange={handleFormChange}
-                  className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-black dark:text-white placeholder-white/20 focus:outline-none focus:border-[#c8f135]/40 focus:ring-1 focus:ring-[#c8f135]/15 transition-colors"
-                  placeholder="e.g. Crypto Inner Circle"
-                />
-                {form.name && !isEditing && (
-                  <p className="text-[14px] text-black dark:text-white/30 mt-2 font-mono">
-                    {window.location.origin}/join/{slug}
-                  </p>
-                )}
-              </div>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-start">
+                <div>
+                  <label className="block text-[14px] font-bold text-black dark:text-white/45 mb-2 uppercase tracking-widest">Community Name *</label>
+                  <input
+                    type="text" name="name" required={currentStep === 2} value={form.name} onChange={handleFormChange}
+                    className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-black dark:text-white placeholder-white/20 focus:outline-none focus:border-[#c8f135]/40 focus:ring-1 focus:ring-[#c8f135]/15 transition-colors"
+                    placeholder="e.g. Crypto Inner Circle"
+                  />
+                  {form.name && !isEditing && (
+                    <p className="text-[12px] text-black dark:text-white/30 mt-2 font-mono break-all">
+                      {window.location.origin}/join/{slug}
+                    </p>
+                  )}
+                </div>
 
-              <div>
-                <label className="block text-[14px] font-bold text-black dark:text-white/45 mb-2 uppercase tracking-widest">Description</label>
-                <textarea
-                  name="description" value={form.description} onChange={handleFormChange} rows={3}
-                  className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-black dark:text-white placeholder-white/20 focus:outline-none focus:border-[#c8f135]/40 focus:ring-1 focus:ring-[#c8f135]/15 transition-colors resize-none"
-                  placeholder="What will members get access to?"
-                />
+                <div>
+                  <label className="block text-[14px] font-bold text-black dark:text-white/45 mb-2 uppercase tracking-widest">Description</label>
+                  <textarea
+                    name="description" value={form.description} onChange={handleFormChange} rows={2}
+                    className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-black dark:text-white placeholder-white/20 focus:outline-none focus:border-[#c8f135]/40 focus:ring-1 focus:ring-[#c8f135]/15 transition-colors resize-none"
+                    placeholder="What will members get access to?"
+                  />
+                </div>
               </div>
             </div>
 
           {/* ─── Telegram Setup Section ─── */}
           {form.platform === 'telegram' && (
-            <div className="rounded-2xl border border-[#229ED9]/25 bg-[#229ED9]/[0.04] relative overflow-hidden">
-              <img src={telegramLogo} alt="" className="absolute -right-6 -bottom-6 w-36 h-36 opacity-[0.04] pointer-events-none select-none" />
+            <div className="rounded-xl border border-[#229ED9]/25 bg-[#229ED9]/[0.04] relative overflow-hidden">
+              <img src={telegramLogo} alt="" className="absolute -right-4 -bottom-4 hidden w-28 h-28 sm:block opacity-[0.04] pointer-events-none select-none" />
 
-              <div className="flex items-center gap-3 px-7 py-5 border-b border-[#229ED9]/10">
+              <div className="flex items-center gap-3 px-5 py-4 border-b border-[#229ED9]/10">
                 <div className="w-9 h-9 rounded-xl bg-[#229ED9]/15 flex items-center justify-center">
                   <img src={telegramLogo} alt="Telegram" className="w-5 h-5" />
                 </div>
@@ -577,7 +695,7 @@ export default function CommunityFormPage() {
                 </div>
               </div>
 
-              <div className="px-7 py-6 space-y-6">
+              <div className="px-5 py-5 space-y-5">
                 <div className="rounded-xl border border-[#229ED9]/15 bg-[#229ED9]/[0.04] p-4">
                   <div className="flex items-start gap-3">
                     <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[13px] font-black ${form.telegram_chat_id ? 'bg-[#c8f135] text-black' : 'bg-[#229ED9]/20 text-[#229ED9]'}`}>
@@ -657,71 +775,128 @@ export default function CommunityFormPage() {
 
           {/* ─── WhatsApp Setup Section ─── */}
           {form.platform === 'whatsapp' && (
-            <div
-              className="rounded-2xl border-2 border-[#25D366]/30 bg-[#25D366]/[0.03] relative overflow-hidden"
-              style={{ boxShadow: '0 0 40px rgba(37,211,102,0.05)' }}
-            >
-              {/* Corner watermark */}
-              <img src={whatsappLogo} alt="" className="absolute -right-6 -bottom-6 w-36 h-36 opacity-[0.04] pointer-events-none select-none" />
+            <div className="rounded-xl border border-[#25D366]/25 bg-[#25D366]/[0.03] relative overflow-hidden">
+              <img src={whatsappLogo} alt="" className="absolute -right-4 -bottom-4 hidden w-28 h-28 sm:block opacity-[0.04] pointer-events-none select-none" />
 
-              {/* Header */}
-              <div className="flex items-center gap-3 px-7 py-5 border-b border-[#25D366]/10">
+              <div className="flex items-center gap-3 px-5 py-4 border-b border-[#25D366]/10">
                 <div className="w-9 h-9 rounded-xl bg-[#25D366]/15 flex items-center justify-center">
                   <img src={whatsappLogo} alt="WhatsApp" className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-[14px] font-black text-black dark:text-white">WhatsApp Group Setup</p>
-                  <p className="text-[14px] text-[#25D366]/70">Requires a dedicated WhatsApp number</p>
+                  <p className="text-[14px] font-black text-black dark:text-white">WhatsApp Setup</p>
+                  <p className="text-[14px] text-[#25D366]/70">Choose a reliable access mode first. Automation can be added later.</p>
                 </div>
               </div>
 
-              <div className="px-7 py-6 space-y-6">
+              <div className="px-5 py-5 space-y-5">
+                <div>
+                  <label className="block text-[14px] font-bold text-black dark:text-white/40 mb-3 uppercase tracking-widest">Setup mode</label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setForm(prev => ({ ...prev, whatsapp_setup_mode: 'basic' }))}
+                      className={`text-left rounded-2xl border p-4 transition-all ${form.whatsapp_setup_mode === 'basic' ? 'border-[#25D366]/45 bg-[#25D366]/10' : 'border-white/[0.08] bg-white/[0.02] hover:border-white/[0.14]'}`}
+                    >
+                      <div className="flex items-center justify-between gap-3 mb-2">
+                        <p className="text-[14px] font-black text-black dark:text-white">Basic WhatsApp Access</p>
+                        <span className="rounded-full bg-[#25D366]/10 px-2 py-0.5 text-[10px] font-black text-[#25D366]">Recommended</span>
+                      </div>
+                      <p className="text-[13px] leading-relaxed text-black dark:text-white/45">
+                        Use the official WhatsApp API to send invite links, payment confirmations, AI replies, and renewal reminders. No QR or device pairing required.
+                      </p>
+                    </button>
 
-                {/* Requirements notice */}
-                <div className="flex gap-3 bg-yellow-400/5 border border-yellow-400/15 rounded-xl p-7">
-                  <span className="text-yellow-400 text-[16px] flex-shrink-0">⚠</span>
-                  <div className="text-[14px] text-black dark:text-white/50 space-y-1 leading-relaxed">
-                    <p className="text-yellow-400 font-bold text-[14px] mb-1.5">Requirements</p>
-                    <p>Use a <span className="text-black dark:text-white/80">dedicated WhatsApp number</span> — never your personal number.</p>
-                    <p>Authenticate the number at <span className="text-black dark:text-white/60 font-mono text-[14px]">/api/whatsapp/qr</span> before continuing.</p>
+                    <button
+                      type="button"
+                      onClick={() => setForm(prev => ({ ...prev, whatsapp_setup_mode: 'advanced' }))}
+                      className={`text-left rounded-2xl border p-4 transition-all ${form.whatsapp_setup_mode === 'advanced' ? 'border-yellow-400/45 bg-yellow-400/10' : 'border-white/[0.08] bg-white/[0.02] hover:border-white/[0.14]'}`}
+                    >
+                      <div className="flex items-center justify-between gap-3 mb-2">
+                        <p className="text-[14px] font-black text-black dark:text-white">Advanced Group Automation</p>
+                        <span className="rounded-full bg-yellow-400/10 px-2 py-0.5 text-[10px] font-black text-yellow-400">Beta</span>
+                      </div>
+                      <p className="text-[13px] leading-relaxed text-black dark:text-white/45">
+                        Attempts auto-add/remove, group metadata, and invite rotation through linked-device automation. More powerful, but less reliable than the official API.
+                      </p>
+                    </button>
                   </div>
                 </div>
 
-                {/* Group invite link */}
+                <div className="rounded-xl border border-blue-400/20 bg-blue-400/10 px-4 py-3 text-[13px] leading-relaxed text-blue-700 dark:text-blue-300">
+                  {form.whatsapp_setup_mode === 'basic'
+                    ? 'Basic mode is enough to launch: paste your group invite link and Membba will send it to paying members through the official WhatsApp provider when configured.'
+                    : 'Advanced mode requires the WhatsApp bot device to be linked first. If linking fails, use Basic mode and enable automation later.'}
+                </div>
+
                 <div>
                   <label className="text-[14px] font-bold text-black dark:text-white/40 mb-2 uppercase tracking-widest flex items-center gap-1.5">
                     Group Invite Link *
-                    <Tooltip content="Membba uses this link to join/register your WhatsApp group and later deliver invites to paying members." />
+                    <Tooltip content="Members receive this invite after payment. In Basic mode it is sent by the official WhatsApp API; in Advanced mode Membba can also attempt group automation." />
                   </label>
-                  <input
-                    type="url"
-                    name="whatsapp_group_invite_link"
-                    value={form.whatsapp_group_invite_link}
-                    onChange={handleFormChange}
-                    className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-[#25D366]/20 rounded-xl px-4 py-3 text-[14px] text-black dark:text-white placeholder-white/20 focus:outline-none focus:border-[#25D366]/50 focus:ring-1 focus:ring-[#25D366]/15 transition-colors"
-                    placeholder="https://chat.whatsapp.com/xxxxxxxxxx"
-                  />
-                </div>
-
-                {/* Register button */}
-                {isEditing ? (
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <input
+                      type="url"
+                      name="whatsapp_group_invite_link"
+                      value={form.whatsapp_group_invite_link}
+                      onChange={handleFormChange}
+                      onBlur={() => { if (form.whatsapp_group_invite_link && !waInviteCheck) verifyWhatsAppInviteLink() }}
+                      className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-[#25D366]/20 rounded-xl px-4 py-3 text-[14px] text-black dark:text-white placeholder-white/20 focus:outline-none focus:border-[#25D366]/50 focus:ring-1 focus:ring-[#25D366]/15 transition-colors"
+                      placeholder="https://chat.whatsapp.com/xxxxxxxxxx"
+                    />
                     <button
                       type="button"
-                      onClick={handleRegisterWhatsAppGroup}
-                      disabled={registeringGroup}
-                      className="inline-flex items-center gap-2 bg-[#25D366] text-black dark:text-white text-[14px] font-bold px-5 py-2.5 rounded-xl hover:bg-[#1da851] disabled:opacity-50 transition-colors"
+                      onClick={verifyWhatsAppInviteLink}
+                      disabled={checkingWaInvite}
+                      className="rounded-xl border border-[#25D366]/30 px-4 py-3 text-[13px] font-bold text-[#25D366] hover:bg-[#25D366]/10 disabled:opacity-50"
                     >
-                      <img src={whatsappLogo} alt="" className="w-4 h-4 invert brightness-0" />
-                      {registeringGroup ? 'Joining group...' : 'Register Group'}
+                      {checkingWaInvite ? 'Checking…' : 'Verify'}
                     </button>
-                    {waGroupId && <span className="text-[14px] text-[#c8f135] font-semibold">✅ Registered ({waGroupId})</span>}
-                    {!waGroupId && <span className="text-[14px] text-yellow-400/70">⚠ Not yet registered</span>}
                   </div>
-                ) : (
-                  <p className="text-[14px] text-black dark:text-white/30">Save the community first, then return here to register the group.</p>
+                  {waInviteCheck?.ok && (
+                    <div className="mt-3 rounded-xl border border-[#25D366]/20 bg-[#25D366]/10 px-4 py-3">
+                      <p className="text-[13px] font-black text-[#25D366]">Invite link ready</p>
+                      <p className="mt-1 text-[12px] text-black dark:text-white/50">
+                        {waInviteCheck.group_name ? `${waInviteCheck.group_name}${waInviteCheck.participants_count ? ` · ${waInviteCheck.participants_count} members` : ''}` : 'Link format is valid and can be sent to paying members.'}
+                      </p>
+                    </div>
+                  )}
+                  {waInviteCheck && waInviteCheck.ok === false && (
+                    <div className="mt-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-[12px] text-red-300">{waInviteCheck.message || 'Invite link could not be verified'}</div>
+                  )}
+                </div>
+
+                {form.whatsapp_setup_mode === 'basic' && (
+                  <div className="rounded-xl border border-[#25D366]/20 bg-[#25D366]/[0.06] px-4 py-3">
+                    <p className="text-[13px] font-black text-[#25D366] mb-1">Ready for official invite delivery</p>
+                    <p className="text-[13px] text-black dark:text-white/45 leading-relaxed">
+                      You can save this community now. When Meta WhatsApp is configured, paying members receive this invite link by WhatsApp automatically.
+                    </p>
+                  </div>
                 )}
 
+                {form.whatsapp_setup_mode === 'advanced' && (
+                  <div className="space-y-3 rounded-xl border border-yellow-400/20 bg-yellow-400/[0.04] px-4 py-3">
+                    <div>
+                      <p className="text-[13px] font-black text-yellow-400 mb-1">Advanced automation requires device linking</p>
+                      <p className="text-[13px] text-black dark:text-white/45 leading-relaxed">
+                        Connect the WhatsApp bot in Settings → Integrations first. Then verify this group so Membba can save its group ID for add/remove automation.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={handleRegisterWhatsAppGroup}
+                        disabled={registeringGroup}
+                        className="inline-flex items-center gap-2 bg-[#25D366] text-black dark:text-white text-[14px] font-bold px-5 py-2.5 rounded-xl hover:bg-[#1da851] disabled:opacity-50 transition-colors"
+                      >
+                        <img src={whatsappLogo} alt="" className="w-4 h-4 invert brightness-0" />
+                        {registeringGroup ? 'Verifying group...' : 'Verify Group for Automation'}
+                      </button>
+                      {waGroupId && <span className="text-[14px] text-[#c8f135] font-semibold">✅ Group ID saved ({waGroupId})</span>}
+                      {!waGroupId && <span className="text-[14px] text-yellow-400/70">⚠ Not verified yet</span>}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -735,7 +910,7 @@ export default function CommunityFormPage() {
           {isEditing && existingPlans.length > 0 && (
             <div className="bg-white dark:bg-[#111] border border-white/[0.07] rounded-xl overflow-hidden">
               {/* Header row */}
-              <div className="grid grid-cols-[1fr_120px_130px_80px] gap-0 border-b border-white/[0.07] px-6 py-3 bg-white/[0.02]">
+              <div className="hidden gap-0 border-b sm:grid sm:grid-cols-[1fr_120px_130px_80px] border-white/[0.07] px-6 py-3 bg-white/[0.02]">
                 <span className="text-[14px] font-bold text-black dark:text-white/30 uppercase tracking-widest">Plan Name</span>
                 <span className="text-[14px] font-bold text-black dark:text-white/30 uppercase tracking-widest">Price</span>
                 <span className="text-[14px] font-bold text-black dark:text-white/30 uppercase tracking-widest">Duration</span>
@@ -744,7 +919,7 @@ export default function CommunityFormPage() {
               {existingPlans.map((p, idx) => (
                 <div
                   key={p.id}
-                  className={`grid grid-cols-[1fr_120px_130px_80px] items-center gap-0 px-6 py-4 group transition-colors hover:bg-white/[0.025] ${
+                  className={`grid grid-cols-1 gap-2 px-5 py-4 sm:grid-cols-[1fr_120px_130px_80px] sm:items-center sm:gap-0 sm:px-6 group transition-colors hover:bg-white/[0.025] ${
                     idx < existingPlans.length - 1 ? 'border-b border-gray-200 dark:border-white/10' : ''
                   }`}
                 >
@@ -758,7 +933,7 @@ export default function CommunityFormPage() {
                     <button
                       type="button"
                       onClick={() => handleDeleteExistingPlan(p.id)}
-                      className="opacity-0 group-hover:opacity-100 text-[14px] text-red-400/70 hover:text-red-400 transition-all font-medium px-2 py-1 rounded-lg hover:bg-red-400/10"
+                      className="sm:opacity-0 sm:group-hover:opacity-100 text-[14px] text-red-400/70 hover:text-red-400 transition-all font-medium px-2 py-1 rounded-lg hover:bg-red-400/10"
                     >
                       Remove
                     </button>
@@ -771,7 +946,7 @@ export default function CommunityFormPage() {
           {/* Plan Builder */}
           <div className="bg-white dark:bg-[#111] border border-white/[0.07] rounded-xl overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between px-7 pt-6 pb-4">
+            <div className="flex items-center justify-between px-5 sm:px-7 pt-6 pb-4">
               <div>
                 <h2 className="text-[15px] font-bold text-black dark:text-white">{isEditing ? 'Add New Plans' : 'Subscription Plans'}</h2>
                 <p className="text-[14px] text-black dark:text-white/35 mt-0.5">Each plan gives members timed access to your community.</p>
@@ -795,7 +970,7 @@ export default function CommunityFormPage() {
                 const durationSelectValue = isCustomDuration ? 'custom' : (plan.duration || '')
 
                 return (
-                  <div key={i} className="px-7 py-6 group relative hover:bg-white/[0.015] transition-colors">
+                  <div key={i} className="px-5 py-6 sm:px-7 group relative hover:bg-white/[0.015] transition-colors">
                     {/* Top row: name + trash */}
                     <div className="flex items-start justify-between gap-7 mb-5">
                       <div className="flex-1">
@@ -824,7 +999,7 @@ export default function CommunityFormPage() {
                     </div>
 
                     {/* Price + Duration grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-7 mb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                       {/* Price */}
                       <div className="flex items-center gap-0 bg-white/[0.03] border border-gray-200 dark:border-white/10 rounded-xl overflow-hidden focus-within:border-white/20 transition-colors">
                         <span className="px-4 py-3.5 text-[15px] font-bold text-black dark:text-white/40 border-r border-gray-200 dark:border-white/10 flex-shrink-0 select-none">₦</span>
@@ -910,7 +1085,7 @@ export default function CommunityFormPage() {
             <button
               type="button"
               onClick={addPlanRow}
-              className="w-full flex items-center gap-3 px-7 py-5 border-t border-dashed border-gray-200 dark:border-white/10 text-black dark:text-white/30 hover:text-black dark:text-white/60 hover:bg-white/[0.025] transition-all group"
+              className="w-full flex items-center gap-3 px-5 sm:px-7 py-5 border-t border-dashed border-gray-200 dark:border-white/10 text-black dark:text-white/30 hover:text-black dark:text-white/60 hover:bg-white/[0.025] transition-all group"
             >
               <span className="w-5 h-5 rounded-md border border-current flex items-center justify-center text-[14px] leading-none group-hover:border-[#c8f135]/50 group-hover:text-[#c8f135]/70 transition-colors">+</span>
               <span className="text-[14px] font-medium">Add a plan</span>
@@ -919,9 +1094,31 @@ export default function CommunityFormPage() {
 
           </div>{/* end Step 3 */}
 
-          {/* Step 4: Automations */}
+          {/* Step 4: Review & Automations */}
           <div className={currentStep === 4 ? 'block animate-in fade-in slide-in-from-right-4 duration-300 space-y-6' : 'hidden overflow-visible'}>
-            <div className="bg-white dark:bg-[#111] border border-white/[0.07] rounded-xl p-7 overflow-visible">
+            <div className="bg-white dark:bg-[#111] border border-white/[0.07] rounded-xl p-4 sm:p-5 overflow-visible">
+              <div className="mb-6">
+                <p className="text-[12px] font-black uppercase tracking-[0.2em] text-[#c8f135] mb-2">Final review</p>
+                <h2 className="text-[19px] font-black text-black dark:text-white">Confirm before saving</h2>
+                <p className="mt-1 text-[14px] leading-relaxed text-black/45 dark:text-white/40">Nothing is locked. Use Back or tap completed steps to make changes before you create the community.</p>
+              </div>
+              <div className="mb-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+                  <p className="text-[11px] font-black uppercase tracking-widest text-gray-400">Community</p>
+                  <p className="mt-1 truncate text-[14px] font-black text-black dark:text-white">{form.name || 'Untitled'}</p>
+                  <p className="mt-0.5 text-[12px] capitalize text-gray-500 dark:text-white/35">{form.platform}</p>
+                </div>
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+                  <p className="text-[11px] font-black uppercase tracking-widest text-gray-400">Access</p>
+                  <p className="mt-1 truncate text-[14px] font-black text-black dark:text-white">{form.platform === 'whatsapp' ? (form.whatsapp_setup_mode === 'advanced' ? 'Advanced beta' : 'Basic access') : 'Telegram bot'}</p>
+                  <p className="mt-0.5 text-[12px] text-gray-500 dark:text-white/35">{form.platform === 'whatsapp' ? (waGroupId ? 'Group verified' : 'Invite link ready') : (form.telegram_chat_id ? 'Group connected' : 'Setup needed')}</p>
+                </div>
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+                  <p className="text-[11px] font-black uppercase tracking-widest text-gray-400">Plans</p>
+                  <p className="mt-1 text-[14px] font-black text-black dark:text-white">{[...existingPlans, ...plans.filter(p => p.name || p.price || p.duration)].length || 0}</p>
+                  <p className="mt-0.5 text-[12px] text-gray-500 dark:text-white/35">paid access option(s)</p>
+                </div>
+              </div>
               <div className="flex items-start justify-between mb-5 gap-7">
                 <div className="flex-1">
                   <h2 className="text-[15px] font-bold text-black dark:text-white mb-1">Welcome Message</h2>
@@ -950,7 +1147,7 @@ export default function CommunityFormPage() {
                       Variables: <code className="bg-white/5 border border-white/[0.05] px-1.5 py-0.5 rounded text-[#c8f135]">{"{name}"}</code> <code className="bg-white/5 border border-white/[0.05] px-1.5 py-0.5 rounded text-[#c8f135]">{"{community}"}</code> <br className="hidden lg:block"/> <code className="bg-white/5 border border-white/[0.05] px-1.5 py-0.5 rounded text-[#c8f135] mt-1 lg:mt-0 inline-block">{"{plan}"}</code> <code className="bg-white/5 border border-white/[0.05] px-1.5 py-0.5 rounded text-[#c8f135]">{"{expires_on}"}</code>
                     </p>
                   </div>
-                  <div className="bg-gray-50 dark:bg-[#0a0a0a] border border-white/[0.05] rounded-xl p-7 shadow-inner">
+                  <div className="bg-gray-50 dark:bg-[#0a0a0a] border border-white/[0.05] rounded-xl p-5 sm:p-7 shadow-inner">
                     <p className="text-[14px] font-bold text-black dark:text-white/20 mb-3 uppercase tracking-widest">Live Preview</p>
                     <p className="text-[14px] text-black dark:text-white/70 whitespace-pre-wrap leading-relaxed">
                       {form.welcome_message
@@ -966,13 +1163,13 @@ export default function CommunityFormPage() {
             </div>
 
           {/* Invite Link & Message Automation Settings */}
-          <div className="bg-white dark:bg-[#111] border border-white/[0.07] rounded-xl p-7 space-y-6 overflow-visible">
+          <div className="bg-white dark:bg-[#111] border border-white/[0.07] rounded-xl p-4 sm:p-5 space-y-5 overflow-visible">
             <div>
               <h2 className="text-[15px] font-bold text-black dark:text-white">Invite Link Settings</h2>
               <p className="text-[14px] text-black dark:text-white/35 mt-1">Control how the bot delivers invite links to paying members.</p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-7">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Invite link expiry */}
               <div>
                 <label className="text-[14px] font-bold text-black dark:text-white/45 mb-2 uppercase tracking-widest flex items-center gap-1.5">
@@ -1026,7 +1223,7 @@ export default function CommunityFormPage() {
           </div>{/* end Step 4 */}
 
           {/* ─── Wizard Bottom Action Bar ─── */}
-          <div className="flex items-center justify-between pt-8 pb-4 mt-8 border-t border-white/[0.05]">
+          <div className="sticky bottom-0 z-20 -mx-4 flex items-center justify-between gap-3 border-t border-gray-200 bg-gray-50/95 px-4 py-4 backdrop-blur dark:border-white/[0.05] dark:bg-[#0a0a0a]/95 sm:static sm:mx-0 sm:mt-8 sm:px-0 sm:pt-8">
             <button
               type="button"
               onClick={handlePrev}
@@ -1036,10 +1233,19 @@ export default function CommunityFormPage() {
               ← Back
             </button>
             <div className="flex gap-2 sm:gap-3">
+              {!isEditing && (
+                <button
+                  type="button"
+                  onClick={saveDraftNow}
+                  className="hidden rounded-xl border border-gray-200 px-4 py-2.5 text-[14px] font-semibold text-black/55 transition-colors hover:border-gray-300 hover:text-black dark:border-white/[0.1] dark:text-white/40 dark:hover:border-white/20 dark:hover:text-white/80 sm:inline-flex"
+                >
+                  Save draft
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => navigate('/dashboard/communities')}
-                className="px-4 border border-white/[0.1] sm:px-5 py-2.5 rounded-xl text-[14px] font-semibold text-black dark:text-white/40 hover:text-black dark:text-white/80 hover:border-white/20 transition-colors"
+                className="px-4 border border-gray-200 sm:px-5 py-2.5 rounded-xl text-[14px] font-semibold text-black/55 hover:text-black hover:border-gray-300 dark:border-white/[0.1] dark:text-white/40 dark:hover:text-white/80 dark:hover:border-white/20 transition-colors"
                >
                  Cancel
                </button>
@@ -1062,9 +1268,11 @@ export default function CommunityFormPage() {
               )}
             </div>
           </div>
-        </form>
+              </form>
+            </section>
+          </div>
+        </div>
       </div>
-    </>
 
       {/* TSK-105/TSK-106: Test Setup Modal with sequential fading */}
       {setupModal && (

@@ -12,6 +12,7 @@ import {
 import { supabase } from '../lib/supabase'
 import API_BASE from '../lib/api'
 import Tooltip from '../components/Tooltip'
+import WhatsAppModeBadge from '../components/WhatsAppModeBadge'
 
 const intentLabels = {
   payment_issue: 'Payment issue',
@@ -60,6 +61,7 @@ export default function AIInboxPage() {
   const [status, setStatus] = useState('open')
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState(null)
+  const [loadError, setLoadError] = useState(null)
 
   async function getToken() {
     const { data } = await supabase.auth.getSession()
@@ -69,7 +71,7 @@ export default function AIInboxPage() {
     return refreshed?.data?.session?.access_token || null
   }
 
-  async function apiFetch(path, opts = {}) {
+  async function apiFetch(path, opts = {}, didRetry = false) {
     const token = await getToken()
     if (!token) throw new Error('Your session has expired. Please log out and sign in again.')
 
@@ -83,6 +85,14 @@ export default function AIInboxPage() {
       body: opts.body ? JSON.stringify(opts.body) : undefined,
     })
     const data = await res.json().catch(() => ({}))
+
+    // Supabase access tokens can expire while the dashboard still looks signed in.
+    // If the backend rejects once, force-refresh the session and retry one time.
+    if (res.status === 401 && !didRetry) {
+      const refreshed = await supabase.auth.refreshSession().catch(() => null)
+      if (refreshed?.data?.session?.access_token) return apiFetch(path, opts, true)
+    }
+
     if (!res.ok) throw new Error(data.error || data.message || 'Request failed')
     return data
   }
@@ -91,9 +101,11 @@ export default function AIInboxPage() {
   async function load() {
     setLoading(true)
     try {
+      setLoadError(null)
       const data = await apiFetch(`/api/ai/escalations?status=${status}`)
       setItems(data || [])
     } catch (err) {
+      setLoadError(err.message || 'Failed to load AI inbox')
       toast.error(err.message || 'Failed to load AI inbox')
     } finally {
       setLoading(false)
@@ -188,6 +200,13 @@ export default function AIInboxPage() {
       <div className="overflow-hidden rounded-[16px] border border-gray-200 bg-white dark:border-white/10 dark:bg-[#111]">
         {loading ? (
           <div className="p-12 text-center text-[14px] text-gray-400">Loading AI inbox…</div>
+        ) : loadError ? (
+          <div className="p-10 text-center">
+            <HiOutlineExclamationTriangle size={32} className="mx-auto mb-3 text-amber-400" />
+            <p className="text-[15px] font-black text-gray-900 dark:text-white">Could not load conversations</p>
+            <p className="mx-auto mt-1 max-w-md text-[13px] leading-relaxed text-gray-500 dark:text-white/35">{loadError === 'Unauthorized' ? 'Your dashboard session token was rejected. Sign out and back in if Refresh does not fix it.' : loadError}</p>
+            <button onClick={load} className="mt-5 rounded-[10px] bg-[#c8f135] px-4 py-2 text-[13px] font-black text-black">Refresh</button>
+          </div>
         ) : items.length === 0 ? (
           <div className="p-14 text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gray-50 dark:bg-white/5">
@@ -221,7 +240,12 @@ export default function AIInboxPage() {
                         </div>
                         <div>
                           <p className="font-bold uppercase tracking-widest text-gray-400 text-[11px]">Community</p>
-                          <p className="mt-1 font-bold text-gray-900 dark:text-white">{sub?.communities?.name || 'Unknown'}</p>
+                          <div className="mt-1 flex flex-wrap items-center gap-2">
+                            <p className="font-bold text-gray-900 dark:text-white">{sub?.communities?.name || 'Unknown'}</p>
+                            {sub?.communities?.platform === 'whatsapp' && (
+                              <WhatsAppModeBadge mode={sub.communities?.whatsapp_setup_mode || 'basic'} size="xs" />
+                            )}
+                          </div>
                         </div>
                         <div>
                           <p className="font-bold uppercase tracking-widest text-gray-400 text-[11px] flex items-center gap-1.5">

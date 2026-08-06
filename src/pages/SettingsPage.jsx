@@ -31,11 +31,12 @@ const labelCls =
   "block text-[12px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-widest mb-1.5";
 
 // ── Small reusable section wrapper ────────────────────────────────────
-function Section({ title, description, children }) {
+function Section({ title, description, children, eyebrow }) {
   return (
     <div className="bg-white dark:bg-[#111] rounded-[14px] border border-gray-200 dark:border-white/10 overflow-hidden">
       {(title || description) && (
         <div className="px-6 py-5 border-b border-gray-100 dark:border-white/5">
+          {eyebrow && <p className="mb-1 text-[11px] font-black uppercase tracking-[0.2em] text-[#c8f135]">{eyebrow}</p>}
           {title && <h3 className="text-[15px] font-bold text-gray-900 dark:text-white">{title}</h3>}
           {description && <p className="text-[13px] text-gray-500 dark:text-white/40 mt-0.5">{description}</p>}
         </div>
@@ -63,6 +64,49 @@ function NotifRow({ label, description, checked, onChange }) {
       </button>
     </div>
   );
+}
+
+function StatusChip({ status = 'idle', children }) {
+  const tone = status === 'ready'
+    ? 'border-[#c8f135]/20 bg-[#c8f135]/10 text-[#c8f135]'
+    : status === 'warning'
+      ? 'border-amber-400/20 bg-amber-400/10 text-amber-600 dark:text-amber-300'
+      : status === 'danger'
+        ? 'border-red-500/20 bg-red-500/10 text-red-500 dark:text-red-300'
+        : 'border-gray-200 bg-gray-50 text-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-white/45'
+  return <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[12px] font-black ${tone}`}>{children}</span>
+}
+
+function IntegrationNav({ active, onSelect }) {
+  const items = [
+    { id: 'overview', label: 'Overview', description: 'What is connected' },
+    { id: 'official', label: 'Official WhatsApp', description: 'Meta Cloud API' },
+    { id: 'advanced', label: 'Advanced WhatsApp', description: 'Baileys group automation' },
+    { id: 'telegram', label: 'Telegram', description: 'Bot setup' },
+    { id: 'payments', label: 'Payments', description: 'Paystack' },
+  ]
+
+  return (
+    <div className="mb-4 overflow-x-auto">
+      <div className="flex min-w-max gap-2">
+        {items.map(item => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => onSelect(item.id)}
+            title={item.description}
+            className={`rounded-[var(--radius-md)] border px-3 py-2 text-[13px] font-medium transition ${
+              active === item.id
+                ? 'border-[var(--color-border-strong)] bg-[var(--color-bg-elevated)] text-[var(--color-text-primary)]'
+                : 'border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-elevated)]'
+            }`}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -117,6 +161,14 @@ export default function SettingsPage() {
   const [waStatus, setWaStatus] = useState("initializing");
   const [tgStatus, setTgStatus] = useState({ configured: false, online: false });
   const [metaStatus, setMetaStatus] = useState({ configured: false });
+  const [metaTest, setMetaTest] = useState({ to: '2348080970430', text: 'Hello from Membba official WhatsApp API.' });
+  const [sendingMetaTest, setSendingMetaTest] = useState(false);
+  const [integrationTab, setIntegrationTab] = useState('overview');
+  const [waTest, setWaTest] = useState({ to: '2348080970430', text: 'Hello from Membba Advanced WhatsApp automation.' });
+  const [sendingWaTest, setSendingWaTest] = useState(false);
+  const [inviteTestLink, setInviteTestLink] = useState('');
+  const [inviteTestResult, setInviteTestResult] = useState(null);
+  const [testingInvite, setTestingInvite] = useState(false);
   const [waQR, setWaQR]         = useState(null);
   const [waPairingCode, setWaPairingCode] = useState(null);
   const [waError, setWaError] = useState(null);
@@ -142,6 +194,67 @@ export default function SettingsPage() {
     const { data } = await supabase.auth.getSession()
     const token = data.session?.access_token
     return { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+  }
+
+
+  async function sendMetaTestMessage() {
+    if (!metaTest.to.trim() || !metaTest.text.trim()) return toast.error('Enter phone and message')
+    setSendingMetaTest(true)
+    try {
+      const res = await fetch(`${API_BASE}/api/meta/send-test`, {
+        method: 'POST',
+        headers: await getAuthHeaders(),
+        body: JSON.stringify({ to: metaTest.to.replace(/\D/g, ''), text: metaTest.text.trim() }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data.ok) throw new Error(data.message || 'Could not send test message')
+      toast.success('Meta WhatsApp test sent')
+    } catch (err) {
+      toast.error(err.message || 'Could not send test message')
+    } finally {
+      setSendingMetaTest(false)
+    }
+  }
+
+  async function sendBaileysTestMessage() {
+    if (!waTest.to.trim() || !waTest.text.trim()) return toast.error('Enter phone and message')
+    setSendingWaTest(true)
+    try {
+      const res = await fetch(`${API_BASE}/api/whatsapp/send-test`, {
+        method: 'POST',
+        headers: await getAuthHeaders(),
+        body: JSON.stringify({ to: waTest.to.replace(/\D/g, ''), text: waTest.text.trim() }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data.ok) throw new Error(data.message || 'Could not send Baileys test message')
+      toast.success('Baileys WhatsApp test sent')
+    } catch (err) {
+      toast.error(err.message || 'Could not send Baileys test message')
+    } finally {
+      setSendingWaTest(false)
+    }
+  }
+
+  async function testInviteLink() {
+    if (!inviteTestLink.trim()) return toast.error('Paste a WhatsApp group invite link')
+    setTestingInvite(true)
+    setInviteTestResult(null)
+    try {
+      const res = await fetch(`${API_BASE}/api/whatsapp/resolve-link`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invite_link: inviteTestLink.trim() }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data.ok) throw new Error(data.message || 'Could not inspect invite link')
+      setInviteTestResult(data)
+      toast.success(data.group_name ? 'Group link inspected' : 'Invite link looks valid')
+    } catch (err) {
+      setInviteTestResult({ ok: false, message: err.message })
+      toast.error(err.message || 'Could not inspect invite link')
+    } finally {
+      setTestingInvite(false)
+    }
   }
 
   async function loadCards() {
@@ -681,7 +794,10 @@ export default function SettingsPage() {
           {/* ── INTEGRATIONS TAB ── */}
           {activeTab === "integrations" && (
             <div className="space-y-4">
-              <Section title="Bot Channels" description="Icon status for the channels Membba can use to reach members">
+              <IntegrationNav active={integrationTab} onSelect={setIntegrationTab} />
+
+              {integrationTab === 'overview' && (
+                <Section title="Connected channels" description="A simple view of what Membba can use right now. Open a specific setup area when you need to change something.">
                 {(() => {
                   const waOnline = waStatus === "connected"
                   const tgOnline = Boolean(tgStatus.online)
@@ -720,16 +836,20 @@ export default function SettingsPage() {
                   )
                 })()}
               </Section>
+              )}
 
               {/* Paystack */}
+              {integrationTab === 'payments' && (
               <Section title="Paystack" description="Your payment processor — managed via Render environment variables">
                 <div className="bg-gray-50 dark:bg-[#1a1a1a] rounded-[10px] px-4 py-3 text-[14px] font-mono text-gray-500 dark:text-white/25 tracking-widest border border-gray-100 dark:border-white/5">
                   sk_live_••••••••••••••••••••••••
                 </div>
                 <p className="text-[12px] text-gray-400 dark:text-white/25 mt-2">Change your key in Render → Environment Variables → PAYSTACK_SECRET_KEY</p>
               </Section>
+              )}
 
               {/* Official WhatsApp API */}
+              {integrationTab === 'official' && (
               <Section title="Official WhatsApp API" description="Meta Cloud API for reliable 1:1 WhatsApp messages, AI replies, invites, and reminders">
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -746,80 +866,136 @@ export default function SettingsPage() {
                 <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-3 text-[12px] leading-relaxed text-gray-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-white/45">
                   Webhook URL: <span className="font-mono">{window.location.origin.replace('5173', '3001')}/api/meta/webhook</span>. In production, use your Render backend URL.
                 </div>
+                <div className="mt-5 rounded-xl border border-gray-200 p-4 dark:border-white/10">
+                  <p className="text-[13px] font-black text-gray-900 dark:text-white">Send test message</p>
+                  <p className="mt-1 text-[12px] text-gray-400 dark:text-white/35">Use this to confirm Meta Cloud API can send from Membba.</p>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-[180px_1fr_auto]">
+                    <input value={metaTest.to} onChange={e => setMetaTest(t => ({ ...t, to: e.target.value }))} placeholder="2348012345678" className={inputCls} />
+                    <input value={metaTest.text} onChange={e => setMetaTest(t => ({ ...t, text: e.target.value }))} placeholder="Test message" className={inputCls} />
+                    <button onClick={sendMetaTestMessage} disabled={!metaStatus.configured || sendingMetaTest} className="btn-primary justify-center disabled:opacity-50">
+                      {sendingMetaTest ? 'Sending…' : 'Send'}
+                    </button>
+                  </div>
+                </div>
               </Section>
+              )}
 
               {/* Telegram */}
+              {integrationTab === 'telegram' && (
               <Section title="Telegram Bot" description="Add @membba_bot to your group and make it an admin">
                 <a href="https://t.me/membba_bot" target="_blank" rel="noreferrer"
                   className="inline-flex items-center gap-2 border border-[#229ED9]/40 text-[#229ED9] px-5 py-2.5 rounded-[10px] text-[14px] font-bold hover:bg-[#229ED9]/5 transition">
                   Open @membba_bot →
                 </a>
               </Section>
+              )}
 
               {/* WhatsApp */}
+              {integrationTab === 'advanced' && (
               <Section
-                title="WhatsApp Bot"
-                description="The WhatsApp client that runs on your dedicated bot number"
+                title="WhatsApp advanced automation"
+                description="Optional Baileys connection for group add/remove, group metadata, and invite rotation. Basic WhatsApp delivery still runs through the official Meta API."
+                eyebrow="Beta channel"
               >
+                <div className="mb-5 rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-[14px] font-black text-gray-950 dark:text-white">Baileys linked device</p>
+                      <p className="mt-1 text-[12px] leading-relaxed text-gray-500 dark:text-white/40">
+                        QR scanning is now the recommended path when you have a second screen. Pairing code remains available for mobile-only setup.
+                      </p>
+                    </div>
+                    <StatusChip status={waStatus === 'connected' ? 'ready' : waStatus === 'pairing_failed' || waStatus === 'logged_out' ? 'danger' : 'idle'}>
+                      {waStatus === 'connected' ? 'Connected' : waStatus.replace(/_/g, ' ')}
+                    </StatusChip>
+                  </div>
+                </div>
+
                 {waStatus !== "connected" && (
                   <div className="mb-5">
                     {isMobileDevice && (
-                      <div className="mb-3 rounded-xl border border-[#25D366]/20 bg-[#25D366]/10 p-3 text-[13px] text-gray-700 dark:text-white/70">
-                        Mobile detected — pairing code is selected because you can’t scan a QR code shown on the same phone.
+                      <div className="mb-3 rounded-2xl border border-[#25D366]/20 bg-[#25D366]/10 p-3 text-[13px] leading-relaxed text-gray-700 dark:text-white/70">
+                        Mobile detected — pairing code is selected because you can’t scan a QR code shown on the same phone. If you have another device available, QR is more reliable.
                       </div>
                     )}
-                    <div className="flex gap-2 mb-3">
-                      {["qr", "pairing_code"].map(m => (
-                        <button key={m} onClick={() => setConnectMethod(m)}
-                          className={`px-3 py-1.5 rounded-[8px] text-[13px] font-bold transition border
-                            ${connectMethod === m ? "bg-[#25D366]/10 text-[#25D366] border-[#25D366]/30" : "text-gray-500 dark:text-white/30 border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5"}`}>
-                          {m === "qr" ? "📷 Scan QR" : "📱 Pairing Code"}
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {[
+                        { id: "qr", title: "Scan QR", note: "Recommended on desktop or when another phone can scan." },
+                        { id: "pairing_code", title: "Pairing code", note: "Backup for mobile-only setup. Use digits with country code." },
+                      ].map(m => (
+                        <button key={m.id} onClick={() => setConnectMethod(m.id)}
+                          className={`rounded-2xl border p-4 text-left transition ${
+                            connectMethod === m.id
+                              ? "border-[#25D366]/40 bg-[#25D366]/10 shadow-sm"
+                              : "border-gray-200 bg-white hover:border-gray-300 dark:border-white/10 dark:bg-black/10 dark:hover:border-white/20"
+                          }`}>
+                          <div className="flex items-center justify-between gap-3">
+                            <p className={`text-[14px] font-black ${connectMethod === m.id ? 'text-[#25D366]' : 'text-gray-900 dark:text-white'}`}>{m.title}</p>
+                            {m.id === 'qr' && <span className="rounded-full bg-[#c8f135]/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-[#c8f135]">Recommended</span>}
+                          </div>
+                          <p className="mt-1 text-[12px] leading-relaxed text-gray-500 dark:text-white/35">{m.note}</p>
                         </button>
                       ))}
                     </div>
                     {connectMethod === "pairing_code" && (
-                      <div className="space-y-3">
+                      <div className="mt-4 space-y-3">
                         <input type="tel" value={phoneInput} onChange={e => setPhoneInput(e.target.value)}
                           placeholder="e.g. 2348012345678 (country code, no +)"
                           className={`${inputCls}`} />
                         <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 text-[12px] leading-relaxed text-gray-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-white/45">
-                          After getting the code: WhatsApp → Linked Devices → Link with phone number → paste the code.
+                          After getting the code: WhatsApp → Linked Devices → Link with phone number → paste the code. If WhatsApp rejects it, reset and use QR.
                         </div>
                       </div>
                     )}
                   </div>
                 )}
 
-                <div className="mb-5 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-white/[0.03]">
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-[13px] font-black text-gray-900 dark:text-white">WhatsApp diagnostics</p>
-                      <p className="text-[12px] text-gray-500 dark:text-white/35">Use this to confirm what Baileys is doing under the hood.</p>
-                    </div>
-                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-black ${waStatus === 'connected' ? 'bg-[#25D366]/10 text-[#25D366]' : waStatus === 'needs_pairing_code' ? 'bg-blue-500/10 text-blue-400' : waStatus === 'pairing_failed' || waStatus === 'logged_out' ? 'bg-red-500/10 text-red-400' : 'bg-white/5 text-gray-400'}`}>
-                      {waStatus}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    {[
-                      ['Socket', waDebug?.hasSocket ? 'Active' : 'None'],
-                      ['Registered', waDebug?.registered ? 'Yes' : 'No'],
-                      ['Account', waDebug?.account || 'Not linked'],
-                      ['Pairing phone', waDebug?.pairingPhoneLast4 ? `•••• ${waDebug.pairingPhoneLast4}` : '—'],
-                      ['Pairing requested', waDebug?.pairingRequestedAt ? new Date(waDebug.pairingRequestedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'],
-                      ['Last error', waError || waDebug?.lastError || 'None'],
-                    ].map(([label, value]) => (
-                      <div key={label} className="rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-white/10 dark:bg-black/20">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{label}</p>
-                        <p className="mt-0.5 break-all text-[12px] font-semibold text-gray-800 dark:text-white/70">{value}</p>
+                {waStatus === "connected" && (
+                  <div className="mb-5 rounded-2xl border border-[#25D366]/20 bg-[#25D366]/5 p-4">
+                    <div className="mb-4 flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-[13px] font-black text-gray-950 dark:text-white">Advanced test center</p>
+                        <p className="mt-1 text-[12px] leading-relaxed text-gray-500 dark:text-white/40">Confirm the QR-linked device can send messages and inspect group invite links before relying on automation.</p>
                       </div>
-                    ))}
+                      <StatusChip status="ready">QR linked</StatusChip>
+                    </div>
+
+                    <div className="grid gap-3 lg:grid-cols-2">
+                      <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-black/20">
+                        <p className="text-[12px] font-black uppercase tracking-widest text-gray-400">Test DM</p>
+                        <div className="mt-3 space-y-2">
+                          <input value={waTest.to} onChange={e => setWaTest(t => ({ ...t, to: e.target.value }))} placeholder="2348012345678" className={inputCls} />
+                          <input value={waTest.text} onChange={e => setWaTest(t => ({ ...t, text: e.target.value }))} placeholder="Test message" className={inputCls} />
+                          <button onClick={sendBaileysTestMessage} disabled={sendingWaTest} className="btn-primary w-full justify-center disabled:opacity-50">
+                            {sendingWaTest ? 'Sending…' : 'Send Baileys test'}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-black/20">
+                        <p className="text-[12px] font-black uppercase tracking-widest text-gray-400">Inspect group invite</p>
+                        <div className="mt-3 space-y-2">
+                          <input value={inviteTestLink} onChange={e => setInviteTestLink(e.target.value)} placeholder="https://chat.whatsapp.com/..." className={inputCls} />
+                          <button onClick={testInviteLink} disabled={testingInvite} className="btn-secondary w-full justify-center disabled:opacity-50">
+                            {testingInvite ? 'Checking…' : 'Check invite link'}
+                          </button>
+                          {inviteTestResult && (
+                            <div className={`rounded-xl border p-3 text-[12px] leading-relaxed ${inviteTestResult.ok ? 'border-[#c8f135]/20 bg-[#c8f135]/10 text-gray-700 dark:text-white/70' : 'border-red-500/20 bg-red-500/10 text-red-500'}`}>
+                              {inviteTestResult.ok ? (
+                                <>
+                                  <p><span className="font-black">Group:</span> {inviteTestResult.group_name || 'Valid invite link'}</p>
+                                  {inviteTestResult.group_id && <p className="font-mono break-all">{inviteTestResult.group_id}</p>}
+                                  {inviteTestResult.participants_count && <p>{inviteTestResult.participants_count} participants</p>}
+                                  {inviteTestResult.inspect_error && <p className="text-amber-500">Inspection note: {inviteTestResult.inspect_error}</p>}
+                                </>
+                              ) : inviteTestResult.message}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <button onClick={fetchWaStatus} className="btn-secondary text-[12px]">Refresh diagnostics</button>
-                    <button onClick={handleResetWhatsAppSession} disabled={restarting} className="btn-secondary text-[12px]">{restarting ? 'Resetting…' : 'Reset session only'}</button>
-                  </div>
-                </div>
+                )}
 
                 <div className="flex flex-wrap gap-2">
                   {waStatus !== "connected" && (
@@ -840,6 +1016,7 @@ export default function SettingsPage() {
                   </button>
                 </div>
               </Section>
+              )}
             </div>
           )}
 

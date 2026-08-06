@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { FaTelegram, FaWhatsapp } from 'react-icons/fa'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import {
@@ -15,6 +16,7 @@ import {
   Sparkles,
   SquareFunction,
   WalletCards,
+  Cloud,
 } from 'lucide-react'
 
 const NAV = [
@@ -96,6 +98,32 @@ function BotStatus({ online }) {
   )
 }
 
+function ChannelStatusBar({ telegramOnline, whatsappOnline, metaOnline }) {
+  const items = [
+    { id: 'telegram', title: telegramOnline ? 'Telegram bot online' : 'Telegram not connected', online: telegramOnline, color: '#229ED9', Icon: FaTelegram },
+    { id: 'whatsapp', title: whatsappOnline ? 'WhatsApp advanced connected' : 'WhatsApp advanced offline', online: whatsappOnline, color: '#25D366', Icon: FaWhatsapp },
+    { id: 'api', title: metaOnline ? 'Official WhatsApp API configured' : 'Official WhatsApp API not configured', online: metaOnline, color: '#c8f135', Icon: Cloud },
+  ]
+  return (
+    <button
+      type="button"
+      onClick={() => { window.location.href = '/dashboard/settings?tab=integrations' }}
+      className="hidden items-center gap-1.5 rounded-full border border-[var(--color-border-default)] bg-[var(--color-bg-elevated)] px-2 py-1 md:flex"
+      title="Messaging channel status"
+    >
+      {items.map(item => {
+        const Icon = item.Icon
+        return (
+          <span key={item.id} className="relative flex h-7 w-7 items-center justify-center rounded-full border border-[var(--color-border-subtle)] bg-[var(--color-bg-sidebar)]" title={item.title}>
+            <Icon size={15} style={{ color: item.online ? item.color : 'var(--color-text-muted)' }} />
+            <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full border border-[var(--color-bg-elevated)]" style={{ backgroundColor: item.online ? item.color : 'var(--color-danger)' }} />
+          </span>
+        )
+      })}
+    </button>
+  )
+}
+
 export default function DashboardLayout({ children, pageTitle }) {
   const { user, signOut } = useAuth()
   const { theme, setTheme } = useTheme()
@@ -105,6 +133,7 @@ export default function DashboardLayout({ children, pageTitle }) {
   const [activeParent, setActiveParent] = useState(null)
   const [closedParent, setClosedParent] = useState(null)
   const [botOnline, setBotOnline] = useState(true)
+  const [channelStatus, setChannelStatus] = useState({ telegram: false, whatsapp: false, meta: false })
   const [avatarOpen, setAvatarOpen] = useState(false)
   const avatarMenuRef = useRef(null)
 
@@ -162,10 +191,24 @@ export default function DashboardLayout({ children, pageTitle }) {
     let alive = true
     const check = async () => {
       try {
-        const res = await fetch('/api/health')
-        if (alive) setBotOnline(res.ok)
+        const [health, telegram, whatsapp, meta] = await Promise.allSettled([
+          fetch('/api/health'),
+          fetch('/api/telegram/status').then(r => r.json()),
+          fetch('/api/whatsapp/status').then(r => r.json()),
+          fetch('/api/meta/status').then(r => r.json()),
+        ])
+        if (!alive) return
+        setBotOnline(health.status === 'fulfilled' && health.value.ok)
+        setChannelStatus({
+          telegram: telegram.status === 'fulfilled' && Boolean(telegram.value?.online),
+          whatsapp: whatsapp.status === 'fulfilled' && whatsapp.value?.status === 'connected',
+          meta: meta.status === 'fulfilled' && Boolean(meta.value?.configured),
+        })
       } catch {
-        if (alive) setBotOnline(false)
+        if (alive) {
+          setBotOnline(false)
+          setChannelStatus({ telegram: false, whatsapp: false, meta: false })
+        }
       }
     }
     check()
@@ -291,6 +334,7 @@ export default function DashboardLayout({ children, pageTitle }) {
             </div>
           </div>
           <div className="relative flex items-center gap-3" ref={avatarMenuRef}>
+            <ChannelStatusBar telegramOnline={channelStatus.telegram} whatsappOnline={channelStatus.whatsapp} metaOnline={channelStatus.meta} />
             <BotStatus online={botOnline} />
             <button type="button" onClick={() => setAvatarOpen(v => !v)} aria-label="Open account menu" className="rounded-full">
               <UserAvatar user={user} />

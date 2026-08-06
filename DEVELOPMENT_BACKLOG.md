@@ -1,6 +1,6 @@
 # Membba Development Backlog
 
-Last updated: 2026-08-04
+Last updated: 2026-08-06
 
 Legend:
 - [x] Done / implemented
@@ -34,13 +34,25 @@ Legend:
   - Recommended: `Membba <noreply@yourdomain.com>`.
   - Requires custom SMTP/domain configuration in Supabase.
 
-### WhatsApp / Baileys
-- [ ] WhatsApp linked-device flow fails with `Couldn't link device. Please try again later`.
-  - Tried QR and pairing code after clearing `baileys_sessions`.
-  - Render was suspended and `ENABLE_WHATSAPP=false`, but phone-side linking still failed.
-  - Possible causes: WhatsApp rate-limit, account/device restriction, linked device state, Baileys compatibility.
-- [ ] Consider fallback provider for production WhatsApp.
-  - Options: WhatsApp Cloud API, 360dialog, Twilio WhatsApp, WATI, Whapi, etc.
+### WhatsApp / Meta / Baileys
+- [~] Hybrid WhatsApp provider model is in place.
+  - Meta WhatsApp Cloud API is the reliable official 1:1 delivery backbone for invites, payment confirmations, AI replies, reminders, and admin alerts.
+  - Baileys is kept as optional Advanced Group Automation (Beta) for group add/remove, metadata, invite rotation, and participant events.
+  - Meta and Baileys are separate connections; Meta cannot be reused for Baileys group automation.
+- [~] WhatsApp Basic vs Advanced setup modes are implemented.
+  - Communities page shows setup mode badges.
+  - Payment Success, Members drawer/list, and Ops creator detail now show WhatsApp Basic/Advanced status.
+  - Needs final live QA with real WhatsApp payments after deployment.
+- [~] WhatsApp Baileys linked-device flow now works through QR scanning.
+  - User successfully connected Baileys using QR code scanning on 2026-08-06.
+  - Pairing-code path previously generated codes but WhatsApp rejected linking; treat pairing code as mobile fallback, not the primary path.
+  - Settings now labels QR as recommended when a second screen/device is available.
+  - Settings integrations are now broken into clearer sub-sections: Overview, Official WhatsApp, Advanced WhatsApp, Telegram, and Payments.
+  - Advanced WhatsApp now has a test center for Baileys DM sending and group invite inspection.
+  - Do not make Basic mode depend on Baileys; keep Baileys labelled Advanced/Beta.
+- [~] Meta webhook route exists locally but Render still needs redeploy.
+  - Local `/api/meta/webhook` verification returns the challenge correctly.
+  - Render previously returned 404 because the new backend code was not deployed yet.
 
 ### AI / Automations
 - [x] AI First Responder toggle is enforced inside WhatsApp DM handler.
@@ -76,7 +88,11 @@ Legend:
 - [~] Tooltips use portal and should avoid clipping.
   - Implemented `Tooltip` portal component.
   - Needs visual QA across all pages.
-- [ ] Community setup page is large and may need simplification later.
+- [~] Community setup page is being simplified.
+  - Create/Edit Community now uses a clearer two-panel setup flow with mobile-friendly stacking.
+  - Draft autosave UI added for new communities.
+  - Final step is now a review + automations step instead of a confusing auto-skip feeling.
+  - Further visual QA still needed on real mobile widths.
 - [~] Automations page is more honest/data-driven.
   - Added readiness cards, test AI reply tool, real-ish metrics.
   - Still needs better final UX polish.
@@ -120,8 +136,12 @@ Legend:
   - Still pending and recommended.
 
 ### 4. WhatsApp strategy decision
-- [ ] Continue debugging Baileys later OR switch to more stable provider.
-- [ ] For MVP reliability, investigate WhatsApp Cloud API/provider route.
+- [x] Use hybrid provider strategy.
+  - Meta Cloud API = official/reliable 1:1 delivery backbone.
+  - Baileys = optional Advanced Group Automation (Beta), not required for Basic WhatsApp access.
+- [~] Deploy and verify Meta webhook in production.
+  - Local route works; Render deployment is still pending.
+- [ ] Continue Baileys pairing diagnostics later without blocking WhatsApp Basic mode.
 
 ### 5. Production readiness
 - [x] Clean schema/migrations.

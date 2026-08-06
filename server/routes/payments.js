@@ -46,7 +46,7 @@ function requirePaystack(res) {
 async function getPaymentByReference(reference) {
   const { data, error } = await supabase
     .from('payments')
-    .select('*, plans(id, price, duration_minutes), communities(id, name, slug, platform)')
+    .select('*, plans(id, price, duration_minutes), communities(id, name, slug, platform, whatsapp_setup_mode)')
     .eq('paystack_reference', reference)
     .maybeSingle()
 
@@ -76,7 +76,7 @@ router.post('/initialize', async (req, res) => {
   try {
     const { data: plan, error: planErr } = await supabase
       .from('plans')
-      .select('*, communities(id, name, slug, platform, telegram_chat_id, whatsapp_group_invite_link, whatsapp_group_id, is_active)')
+      .select('*, communities(id, name, slug, platform, telegram_chat_id, whatsapp_group_invite_link, whatsapp_group_id, whatsapp_setup_mode, is_active)')
       .eq('id', plan_id)
       .eq('is_active', true)
       .single()
@@ -214,7 +214,7 @@ router.get('/verify/:reference', async (req, res) => {
   try {
     const { data: existing } = await supabase
       .from('subscriptions')
-      .select('id, status, expires_at, communities(name, slug, platform)')
+      .select('id, status, expires_at, communities(name, slug, platform, whatsapp_setup_mode)')
       .eq('paystack_reference', reference)
       .maybeSingle()
 
@@ -225,6 +225,7 @@ router.get('/verify/:reference', async (req, res) => {
         subscription: existing,
         platform: existing.communities?.platform || 'telegram',
         invite_link: null,
+        invite_delivery: { status: 'already_processed', message: 'This payment was already processed. Check your messages or contact the community admin if access did not arrive.' },
       })
     }
 
@@ -249,6 +250,7 @@ router.get('/verify/:reference', async (req, res) => {
       success: true,
       subscription: result.subscription,
       invite_link: result.inviteLink || null,
+      invite_delivery: result.inviteDelivery || result.subscription?.inviteDelivery || null,
       platform: platform || result.platform || 'telegram',
     })
   } catch (err) {
@@ -311,8 +313,11 @@ async function handleSuccessfulPayment({ reference, plan_id, community_id, teleg
 
   await logPaymentEvent({ reference, event: 'subscription_created', status: 'success', message: 'Subscription processed after successful payment', payload: { subscription_id: result.id, communityId, planId } })
 
-  const { inviteLink, ...subscription } = result
-  return { subscription, inviteLink, platform: existingPayment?.communities?.platform }
+  const { inviteLink, inviteDelivery, ...subscription } = result
+  const subscriptionWithCommunity = existingPayment?.communities
+    ? { ...subscription, communities: existingPayment.communities }
+    : subscription
+  return { subscription: subscriptionWithCommunity, inviteLink, inviteDelivery, platform: existingPayment?.communities?.platform }
 }
 
 export default router

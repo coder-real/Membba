@@ -126,7 +126,7 @@ export function getWhatsAppDebug()  {
   return {
     status,
     hasSocket: Boolean(sock),
-    registered: Boolean(sock?.authState?.creds?.registered),
+    registered: Boolean(sock?.authState?.creds?.registered || sock?.authState?.creds?.me?.id),
     account: sock?.authState?.creds?.me?.id || null,
     pairingRequestedAt,
     pairingPhoneLast4: pairingPhoneNumber ? pairingPhoneNumber.slice(-4) : null,
@@ -221,10 +221,11 @@ export async function initWhatsApp(opts = {}) {
     // Pairing-code path: request the code shortly after the socket is created.
     // Requesting inside every connection.update event can race with WhatsApp and
     // produce "Connection Closed" before the socket is ready.
-    if (usePairingCode && phoneNumber && !state.creds.registered) {
+    const hasLinkedIdentity = Boolean(state.creds.registered || state.creds.me?.id)
+    if (usePairingCode && phoneNumber && !hasLinkedIdentity) {
       setTimeout(async () => {
         try {
-          if (!sock || sock.authState.creds.registered) return
+          if (!sock || sock.authState.creds.registered || sock.authState.creds.me?.id) return
           const cleanPhone = phoneNumber.replace(/\D/g, '')
           const code = await sock.requestPairingCode(cleanPhone)
           pairingCode = code
@@ -274,15 +275,19 @@ export async function initWhatsApp(opts = {}) {
         : null
 
       const didLogOut = statusCode === DisconnectReason.loggedOut
+      const connectionReplaced = statusCode === DisconnectReason.connectionReplaced
 
-      if (didLogOut) {
-        // Permanent logout — don't auto-restart. User must explicitly reconnect
-        // via the dashboard. Auto-restarting on logout creates an infinite loop.
-        status = 'logged_out'
-        lastError = 'WhatsApp logged out. Reset the session and reconnect.'
+      if (didLogOut || connectionReplaced) {
+        // Permanent/manual attention states — don't auto-restart. Auto-restarting
+        // after connectionReplaced creates an infinite loop when another server
+        // or WhatsApp Web session takes over the same linked device.
+        status = connectionReplaced ? 'connection_replaced' : 'logged_out'
+        lastError = connectionReplaced
+          ? 'WhatsApp connection was replaced by another active session. Stop the other session, then restart this one.'
+          : 'WhatsApp logged out. Reset the session and reconnect.'
         currentQRDataUrl = null
         pairingCode = null
-        console.warn('[whatsapp] logged out — waiting for manual reconnect')
+        console.warn(`[whatsapp] ${status} — waiting for manual reconnect`)
       } else {
         status = 'reconnecting'
         lastError = statusCode ? `Disconnected (${statusCode})` : 'Disconnected'
@@ -485,12 +490,48 @@ export async function sendWhatsAppMessage(phone, text) {
   }
 }
 
+
+export function parseWhatsAppInviteLink(inviteLink) {
+  const raw = String(inviteLink || '').trim()
+  const code = raw.split('chat.whatsapp.com/')[1]?.split(/[?#]/)[0]
+  return code || null
+}
+
+export async function resolveInviteLink(inviteLink) {
+  const code = parseWhatsAppInviteLink(inviteLink)
+  if (!code) throw new Error('Invalid WhatsApp invite link')
+
+  const result = {
+    ok: true,
+    invite_code: code,
+    connected: status === 'connected',
+    group_id: null,
+    group_name: null,
+    participants_count: null,
+  }
+
+  if (sock && status === 'connected') {
+    try {
+      const info = await sock.groupGetInviteInfo(code)
+      result.group_id = info?.id || null
+      result.group_name = info?.subject || null
+      result.participants_count = info?.size || info?.participants?.length || null
+    } catch (err) {
+      // Some invite links cannot be inspected until accepted. Return validation success
+      // but include the inspection error for diagnostics.
+      result.inspect_error = err.message
+    }
+  }
+
+  return result
+}
+
 // ── Join a group via invite link ──────────────────────────────────────────────
 export async function joinGroup(inviteLink) {
   if (!sock || status !== 'connected') {
     throw new Error('WhatsApp client not ready — scan the QR code first')
   }
-  const code = inviteLink.split('chat.whatsapp.com/')[1]?.split(/[?#]/)[0]
+  const code = parseWhatsAppInviteLink(inviteLink)
   if (!code) throw new Error('Invalid WhatsApp invite link')
 
   const result = await sock.groupAcceptInvite(code)

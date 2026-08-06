@@ -36,7 +36,7 @@ async function getPaymentBundle(reference) {
   const [{ data: subscription }, { data: events }] = await Promise.all([
     supabase
       .from('subscriptions')
-      .select('*, communities(name, slug, platform), plans(name)')
+      .select('*, communities(name, slug, platform, whatsapp_setup_mode), plans(name)')
       .eq('paystack_reference', reference)
       .maybeSingle(),
     supabase
@@ -401,7 +401,7 @@ router.get('/creators/:id', async (req, res) => {
       supabase.auth.admin.getUserById(creatorId),
       supabase
         .from('communities')
-        .select('id, creator_id, name, slug, platform, is_active, telegram_chat_id, whatsapp_group_id, whatsapp_group_invite_link, created_at')
+        .select('id, creator_id, name, slug, platform, is_active, telegram_chat_id, whatsapp_group_id, whatsapp_group_invite_link, whatsapp_setup_mode, created_at')
         .eq('creator_id', creatorId)
         .order('created_at', { ascending: false }),
       supabase
@@ -424,13 +424,13 @@ router.get('/creators/:id', async (req, res) => {
       const [{ data: payRows, error: payErr }, { data: subRows, error: subErr }] = await Promise.all([
         supabase
           .from('payments')
-          .select('*, communities(name, slug, platform), plans(name)')
+          .select('*, communities(name, slug, platform, whatsapp_setup_mode), plans(name)')
           .in('community_id', communityIds)
           .order('created_at', { ascending: false })
           .limit(100),
         supabase
           .from('subscriptions')
-          .select('*, communities(name, slug, platform), plans(name)')
+          .select('*, communities(name, slug, platform, whatsapp_setup_mode), plans(name)')
           .in('community_id', communityIds)
           .order('created_at', { ascending: false })
           .limit(100),
@@ -603,7 +603,7 @@ router.post('/subscriptions/:id/extend', async (req, res) => {
       .from('subscriptions')
       .update({ status: 'active', expires_at: newExpiry.toISOString() })
       .eq('id', sub.id)
-      .select('*, communities(name, slug, platform), plans(name)')
+      .select('*, communities(name, slug, platform, whatsapp_setup_mode), plans(name)')
       .single()
 
     if (error) throw error
@@ -634,7 +634,7 @@ router.post('/subscriptions/:id/cancel', async (req, res) => {
       .from('subscriptions')
       .update({ status: 'cancelled' })
       .eq('id', sub.id)
-      .select('*, communities(name, slug, platform), plans(name)')
+      .select('*, communities(name, slug, platform, whatsapp_setup_mode), plans(name)')
       .single()
     if (error) throw error
 

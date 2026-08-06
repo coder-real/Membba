@@ -26,6 +26,7 @@ create table if not exists communities (
   platform text not null default 'telegram',
   whatsapp_group_invite_link text,
   whatsapp_group_id text,
+  whatsapp_setup_mode text not null default 'basic',
   welcome_message_enabled boolean not null default true,
   welcome_message text,
   invite_link_ttl_minutes integer not null default 60,
@@ -38,6 +39,7 @@ alter table communities
   add column if not exists platform text not null default 'telegram',
   add column if not exists whatsapp_group_invite_link text,
   add column if not exists whatsapp_group_id text,
+  add column if not exists whatsapp_setup_mode text not null default 'basic',
   add column if not exists welcome_message_enabled boolean not null default true,
   add column if not exists welcome_message text,
   add column if not exists invite_link_ttl_minutes integer not null default 60,
@@ -45,6 +47,11 @@ alter table communities
 
 do $$ begin
   alter table communities add constraint communities_platform_check check (platform in ('telegram', 'whatsapp'));
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  alter table communities add constraint communities_whatsapp_setup_mode_check check (whatsapp_setup_mode in ('basic', 'advanced'));
 exception when duplicate_object then null;
 end $$;
 

@@ -12,7 +12,7 @@ if (!supabaseUrl || !serviceKey) {
 const supabase = createClient(supabaseUrl, serviceKey, { realtime: { transport: WebSocket } })
 
 const checks = [
-  ['communities', 'id,creator_id,name,slug,platform,telegram_chat_id,whatsapp_group_invite_link,whatsapp_group_id,welcome_message_enabled,invite_link_ttl_minutes,msg_auto_delete_seconds,is_active,created_at'],
+  ['communities', 'id,creator_id,name,slug,platform,telegram_chat_id,whatsapp_group_invite_link,whatsapp_group_id,whatsapp_setup_mode,welcome_message_enabled,invite_link_ttl_minutes,msg_auto_delete_seconds,is_active,created_at'],
   ['plans', 'id,community_id,name,price,currency,duration_minutes,is_active,created_at'],
   ['payments', 'id,community_id,plan_id,email,telegram_user_id,whatsapp_phone,paystack_reference,amount,status,created_at'],
   ['payment_events', 'id,paystack_reference,event,status,message,payload,created_at'],

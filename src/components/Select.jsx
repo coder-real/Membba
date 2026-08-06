@@ -58,8 +58,8 @@ export default function Select({ value, onChange, options = [], placeholder = 'S
       ref={menuRef}
       className="
         fixed z-50
-        bg-[#141414] border border-white/[0.1] rounded-2xl
-        shadow-[0_8px_40px_rgba(0,0,0,0.6)] overflow-hidden
+        bg-white dark:bg-[#141414] border border-gray-200 dark:border-white/[0.1] rounded-2xl
+        shadow-[0_18px_55px_rgba(0,0,0,0.18)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.6)] overflow-hidden
       "
       style={{
         top: `${position.top}px`,
@@ -80,8 +80,8 @@ export default function Select({ value, onChange, options = [], placeholder = 'S
                 w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl
                 text-[13.5px] text-left transition-colors duration-100 group
                 ${isSelected
-                  ? 'bg-white/[0.08] text-black dark:text-white font-semibold'
-                  : 'text-black dark:text-white/65 hover:text-black dark:text-white hover:bg-white/[0.055]'
+                  ? 'bg-gray-100 dark:bg-white/[0.08] text-black dark:text-white font-semibold'
+                  : 'text-gray-600 dark:text-white/65 hover:text-black dark:hover:text-white hover:bg-gray-50 dark:hover:bg-white/[0.055]'
                 }
               `}
             >
@@ -119,7 +119,7 @@ export default function Select({ value, onChange, options = [], placeholder = 'S
         onClick={() => !disabled && setOpen(o => !o)}
         className={`
           w-full flex items-center justify-between gap-3
-          bg-[#0d0d0d] border rounded-xl px-4 py-3
+          bg-white dark:bg-[#0d0d0d] border rounded-xl px-4 py-3
           text-[14px] text-left transition-all duration-150 outline-none
           ${disabled
             ? 'border-gray-200 dark:border-white/10 text-black dark:text-white/25 cursor-not-allowed'

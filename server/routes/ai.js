@@ -165,7 +165,7 @@ router.get('/escalations', async (req, res) => {
 
     const { data: subs, error: subErr } = await supabase
       .from('subscriptions')
-      .select('whatsapp_phone, status, expires_at, communities(id, name, slug, platform), plans(name)')
+      .select('whatsapp_phone, status, expires_at, communities(id, name, slug, platform, whatsapp_setup_mode), plans(name)')
       .in('community_id', communityIds)
       .not('whatsapp_phone', 'is', null)
 

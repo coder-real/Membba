@@ -45,7 +45,7 @@ export async function createSubscription({
   // Fetch community for platform + config
   const { data: community, error: commErr } = await supabase
     .from('communities')
-    .select('platform, telegram_chat_id, whatsapp_group_id, whatsapp_group_invite_link, name, slug, welcome_message_enabled, welcome_message, invite_link_ttl_minutes, msg_auto_delete_seconds')
+    .select('platform, telegram_chat_id, whatsapp_group_id, whatsapp_group_invite_link, whatsapp_setup_mode, name, slug, welcome_message_enabled, welcome_message, invite_link_ttl_minutes, msg_auto_delete_seconds')
     .eq('id', communityId)
     .single()
 
@@ -88,6 +88,7 @@ export async function createSubscription({
 
   // ── Send invite based on platform ──────────────────────────────────
   let inviteLink = null
+  let inviteDelivery = null
 
   if (platform === 'telegram') {
     if (telegramUserId && community.telegram_chat_id) {
@@ -101,6 +102,7 @@ export async function createSubscription({
           inviteLinkTtlMinutes: community.invite_link_ttl_minutes ?? 60,
           msgAutoDeleteSeconds: community.msg_auto_delete_seconds ?? 120,
         })
+        inviteDelivery = { channel: 'telegram', method: 'bot_dm', status: 'sent' }
       } catch (err) {
         console.error('[subscription] telegram invite failed:', err.message)
       }
@@ -110,12 +112,13 @@ export async function createSubscription({
 
   } else if (platform === 'whatsapp') {
     console.log(`\n[subscription] Platform is WhatsApp. Checking requirements for invite delivery...`)
-    console.log(`[subscription] whatsapp_phone: ${whatsappPhone || false}, invite_link: ${community.whatsapp_group_invite_link || false}, group_id: ${community.whatsapp_group_id || false}`)
+    console.log(`[subscription] whatsapp_phone: ${whatsappPhone || false}, invite_link: ${community.whatsapp_group_invite_link || false}, group_id: ${community.whatsapp_group_id || false}, setup_mode: ${community.whatsapp_setup_mode || 'basic'}`)
 
     if (whatsappPhone && community.whatsapp_group_invite_link) {
       const providerMode = getWhatsAppProviderMode()
-      const providerStatus = getWhatsAppProviderStatus()
+      const setupMode = community.whatsapp_setup_mode || 'basic'
       const shouldTryBaileysGroupAutomation =
+        setupMode === 'advanced' &&
         providerMode !== 'meta' &&
         getWhatsAppStatus() === 'connected' &&
         Boolean(community.whatsapp_group_id)
@@ -131,6 +134,7 @@ export async function createSubscription({
             customMessage
           )
           inviteLink = community.whatsapp_group_invite_link
+          inviteDelivery = { channel: 'whatsapp', method: 'baileys_group_automation', status: 'sent', setupMode }
         } catch (err) {
           console.error('[subscription] baileys whatsapp invite failed:', err.message)
         }
@@ -146,6 +150,7 @@ export async function createSubscription({
         try {
           await sendWhatsAppProviderMessage(whatsappPhone, text)
           inviteLink = community.whatsapp_group_invite_link
+          inviteDelivery = { channel: 'whatsapp', method: providerMode === 'baileys' ? 'baileys_dm' : 'official_api_dm', provider: providerMode, status: 'sent', setupMode }
           console.log(`[subscription] WhatsApp invite delivered via provider:${providerMode}`)
         } catch (err) {
           console.warn(`[subscription] provider invite delivery failed (${providerMode}):`, err.message)
@@ -164,13 +169,14 @@ export async function createSubscription({
           custom_message: customMessage,
         })
         inviteLink = community.whatsapp_group_invite_link
+        inviteDelivery = { channel: 'whatsapp', method: 'pending_queue', provider: providerMode, status: 'queued', setupMode }
       }
     } else {
       console.warn('[subscription] WhatsApp: missing phone or group invite link, skipping invite')
     }
   }
 
-  return { ...sub, inviteLink }
+  return { ...sub, inviteLink, inviteDelivery }
 }
 
 /**

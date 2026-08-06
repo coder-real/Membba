@@ -8,9 +8,11 @@ import {
   getWhatsAppDebug,
   getQRImage,
   joinGroup,
+  resolveInviteLink,
   restartWhatsApp,
   initWhatsApp,
   resetWhatsAppSession,
+  sendWhatsAppMessage,
 } from '../services/whatsapp.js'
 
 const router = express.Router()
@@ -167,6 +169,50 @@ router.get('/qr-data', async (_req, res) => {
     error:       getWhatsAppError() || null,
     debug:       getWhatsAppDebug(),
   })
+})
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/whatsapp/resolve-link
+// Body: { invite_link }
+// Validates a WhatsApp invite link. If Baileys is connected, attempts metadata lookup.
+// Does NOT join the group. Basic WhatsApp mode uses this for pre-save readiness.
+// ─────────────────────────────────────────────────────────────────────────────
+router.post('/resolve-link', async (req, res) => {
+  const { invite_link } = req.body || {}
+  if (!invite_link) return res.status(400).json({ message: 'invite_link is required' })
+  if (!invite_link.includes('chat.whatsapp.com')) return res.status(400).json({ message: 'Invalid WhatsApp invite link' })
+
+  try {
+    const result = await resolveInviteLink(invite_link)
+    res.json(result)
+  } catch (err) {
+    console.error('[whatsapp/resolve-link] error:', err.message)
+    res.status(400).json({ ok: false, message: err.message })
+  }
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/whatsapp/send-test
+// Body: { to, text }
+// Sends a direct Baileys test message through the linked WhatsApp device.
+// ─────────────────────────────────────────────────────────────────────────────
+router.post('/send-test', async (req, res) => {
+  const to = String(req.body?.to || '').replace(/\D/g, '')
+  const text = String(req.body?.text || '').trim()
+
+  if (!to) return res.status(400).json({ message: 'to is required' })
+  if (!/^\d{10,15}$/.test(to)) return res.status(400).json({ message: 'Enter phone with country code, no + or spaces' })
+  if (!text) return res.status(400).json({ message: 'text is required' })
+  if (getWhatsAppStatus() !== 'connected') return res.status(400).json({ message: 'Baileys WhatsApp is not connected' })
+
+  try {
+    await sendWhatsAppMessage(to, text)
+    res.json({ ok: true, status: getWhatsAppStatus() })
+  } catch (err) {
+    console.error('[whatsapp/send-test] error:', err.message)
+    res.status(500).json({ message: err.message || 'Failed to send WhatsApp test message' })
+  }
 })
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -8,6 +8,7 @@ import QRCode from 'qrcode'
 import { FaTelegram, FaWhatsapp } from 'react-icons/fa'
 import { HiOutlineLink, HiOutlinePencilSquare, HiOutlineTrash, HiOutlinePlusCircle, HiOutlineUsers } from 'react-icons/hi2'
 import Skeleton from '../components/ui/Skeleton'
+import WhatsAppModeBadge from '../components/WhatsAppModeBadge'
 import API_BASE from '../lib/api'
 
 const formatDuration = (minutes) => {
@@ -185,7 +186,9 @@ export default function CommunitiesPage() {
                     {c.is_active ? 'Active' : 'Inactive'}
                   </span>
 
-                  {!hasBot && (
+                  {isWhatsApp && <WhatsAppModeBadge mode={c.whatsapp_setup_mode || 'basic'} size="xs" />}
+
+                  {!hasBot && (!isWhatsApp || (c.whatsapp_setup_mode || 'basic') === 'advanced') && (
                     <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] text-[14px] font-bold bg-yellow-400/10 text-yellow-400">
                       ⚠ {isWhatsApp ? 'Group not registered' : 'Bot not configured'}
                     </span>

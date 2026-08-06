@@ -11,6 +11,7 @@ import {
 } from 'react-icons/hi2'
 import { supabase } from '../lib/supabase'
 import API_BASE from '../lib/api'
+import WhatsAppModeBadge from '../components/WhatsAppModeBadge'
 
 function Pill({ children, tone = 'gray' }) {
   const tones = {
@@ -186,7 +187,13 @@ export default function OpsCreatorDetailPage() {
                     <p className="font-bold">{c.name}</p>
                     <p className="text-sm text-gray-500 dark:text-white/40">/{c.slug} · {c.platform}</p>
                   </div>
-                  <div className="flex gap-2"><Pill tone={c.is_active ? 'green' : 'gray'}>{c.is_active ? 'active' : 'inactive'}</Pill>{(c.telegram_chat_id || c.whatsapp_group_id) ? <Pill tone="green">connected</Pill> : <Pill tone="amber">setup needed</Pill>}</div>
+                  <div className="flex flex-wrap gap-2">
+                    <Pill tone={c.is_active ? 'green' : 'gray'}>{c.is_active ? 'active' : 'inactive'}</Pill>
+                    {c.platform === 'whatsapp' && <WhatsAppModeBadge mode={c.whatsapp_setup_mode || 'basic'} prefix />}
+                    {(c.telegram_chat_id || c.whatsapp_group_id || (c.platform === 'whatsapp' && (c.whatsapp_setup_mode || 'basic') === 'basic' && c.whatsapp_group_invite_link))
+                      ? <Pill tone="green">access ready</Pill>
+                      : <Pill tone="amber">setup needed</Pill>}
+                  </div>
                 </div>
               </div>
             )) : <div className="p-8 text-sm text-gray-500">No communities.</div>}
@@ -207,7 +214,11 @@ export default function OpsCreatorDetailPage() {
             <div className="border-b border-gray-100 px-5 py-4 dark:border-white/5"><h2 className="font-black">Recent subscriptions</h2></div>
             {subscriptions.length ? subscriptions.slice(0, 12).map(sub => (
               <div key={sub.id} className="border-b border-gray-100 p-5 last:border-0 dark:border-white/5">
-                <div className="mb-1 flex flex-wrap gap-2"><Pill tone={sub.status === 'active' ? 'green' : sub.status === 'expired' ? 'amber' : 'gray'}>{sub.status}</Pill><Pill>{sub.communities?.platform}</Pill></div>
+                <div className="mb-1 flex flex-wrap gap-2">
+                  <Pill tone={sub.status === 'active' ? 'green' : sub.status === 'expired' ? 'amber' : 'gray'}>{sub.status}</Pill>
+                  <Pill>{sub.communities?.platform}</Pill>
+                  {sub.communities?.platform === 'whatsapp' && <WhatsAppModeBadge mode={sub.communities?.whatsapp_setup_mode || 'basic'} prefix />}
+                </div>
                 <p className="font-bold">{sub.email}</p>
                 <p className="text-sm text-gray-500 dark:text-white/40">{sub.communities?.name} · {sub.plans?.name || 'Plan'} · expires {new Date(sub.expires_at).toLocaleDateString()}</p>
               </div>
@@ -218,7 +229,11 @@ export default function OpsCreatorDetailPage() {
             <div className="border-b border-gray-100 px-5 py-4 dark:border-white/5"><h2 className="font-black">Recent payments</h2></div>
             {payments.length ? payments.slice(0, 12).map(p => (
               <div key={p.id} className="border-b border-gray-100 p-5 last:border-0 dark:border-white/5">
-                <div className="mb-1 flex flex-wrap gap-2"><Pill tone={p.status === 'success' ? 'green' : p.status === 'failed' ? 'red' : 'amber'}>{p.status}</Pill><Pill>{p.communities?.platform}</Pill></div>
+                <div className="mb-1 flex flex-wrap gap-2">
+                  <Pill tone={p.status === 'success' ? 'green' : p.status === 'failed' ? 'red' : 'amber'}>{p.status}</Pill>
+                  <Pill>{p.communities?.platform}</Pill>
+                  {p.communities?.platform === 'whatsapp' && <WhatsAppModeBadge mode={p.communities?.whatsapp_setup_mode || 'basic'} prefix />}
+                </div>
                 <p className="font-bold">{p.email}</p>
                 <p className="text-sm text-gray-500 dark:text-white/40">{p.communities?.name} · ₦{Number(p.amount || 0).toLocaleString()}</p>
                 <p className="mt-1 font-mono text-xs text-gray-400">{p.paystack_reference}</p>

@@ -2,8 +2,17 @@ import express from 'express'
 import { getMetaWhatsAppStatus, parseMetaWebhook, verifyMetaWebhookQuery, markMetaWhatsAppMessageRead } from '../services/metaWhatsApp.js'
 import { sendWhatsAppProviderMessage } from '../services/whatsappProvider.js'
 import { getAIReplyDetailed } from '../services/ai.js'
+import { supabase } from '../lib/supabase.js'
 
 const router = express.Router()
+
+async function getUserId(req) {
+  const token = req.headers.authorization?.replace('Bearer ', '')
+  if (!token) return null
+  const { data, error } = await supabase.auth.getUser(token)
+  if (error) return null
+  return data?.user?.id || null
+}
 
 router.get('/status', (_req, res) => {
   res.json(getMetaWhatsAppStatus())
@@ -42,6 +51,9 @@ router.post('/webhook', async (req, res) => {
 
 // Test/send route for internal diagnostics.
 router.post('/send-test', async (req, res) => {
+  const userId = await getUserId(req)
+  if (!userId) return res.status(401).json({ message: 'Unauthorized' })
+
   const { to, text } = req.body || {}
   if (!to || !text) return res.status(400).json({ message: 'to and text are required' })
 

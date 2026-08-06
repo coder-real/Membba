@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 
 import Avatar from '../components/Avatar'
 import Skeleton from '../components/ui/Skeleton'
+import WhatsAppModeBadge from '../components/WhatsAppModeBadge'
 import toast from 'react-hot-toast'
 
 const TABS = ['all', 'active', 'expired', 'cancelled']
@@ -52,7 +53,7 @@ export default function MembersPage() {
     if (!ids.length) { setLoading(false); return }
     const { data } = await supabase
       .from('subscriptions')
-      .select('*, communities(name, slug, platform), plans(name, price, duration_minutes)')
+      .select('*, communities(name, slug, platform, whatsapp_setup_mode), plans(name, price, duration_minutes)')
       .in('community_id', ids)
       .order('started_at', { ascending: false })
     setSubscriptions(data || [])
@@ -65,7 +66,7 @@ export default function MembersPage() {
       const [{ data: payments }, { data: escalations }] = await Promise.all([
         supabase
           .from('payments')
-          .select('*, communities(name, slug, platform), plans(name)')
+          .select('*, communities(name, slug, platform, whatsapp_setup_mode), plans(name)')
           .eq('email', s.email)
           .eq('community_id', s.community_id)
           .order('created_at', { ascending: false })
@@ -122,6 +123,43 @@ export default function MembersPage() {
     setResending(null)
   }
 
+  const verifyPayment = async (reference) => {
+    if (!reference) return
+    setVerifyingPayment(reference)
+    try {
+      const res = await fetch(`${API_BASE}/api/payments/verify/${encodeURIComponent(reference)}`)
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data.success) throw new Error(data.message || 'Payment could not be verified')
+      toast.success(data.already_processed ? 'Payment already processed' : 'Payment verified')
+      await fetchSubs()
+      if (selected) await loadMemberDetails(selected)
+    } catch (err) {
+      toast.error(err.message || 'Payment could not be verified')
+    } finally {
+      setVerifyingPayment(null)
+    }
+  }
+
+  const extendSubscription = async (s, days = 30) => {
+    setExtending(s.id)
+    try {
+      const res = await fetch(`${API_BASE}/api/members/${s.id}/extend`, {
+        method: 'POST',
+        headers: await getAuthHeaders(),
+        body: JSON.stringify({ days }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.message || 'Failed to extend subscription')
+      toast.success(data.message || `Extended by ${days} days`)
+      setSelected(data.subscription || s)
+      await fetchSubs()
+    } catch (err) {
+      toast.error(err.message || 'Failed to extend subscription')
+    } finally {
+      setExtending(null)
+    }
+  }
+
   const copyRenewalLink = (s) => {
     const slug = s.communities?.slug
     if (!slug) return toast.error('Community slug not available')
@@ -155,7 +193,7 @@ export default function MembersPage() {
   return (
     <>
       <div className="mb-6">
-        <h1 className="text-[24px] font-black text-gray-900 dark:text-[#f2f3f5] tracking-tight">Members</h1>
+        <h1 className="text-[22px] font-black text-gray-900 dark:text-[#f2f3f5] tracking-tight">Members</h1>
         <p className="text-[14px] text-gray-600 dark:text-[#b5bac1] mt-1">All subscribers across your communities</p>
       </div>
 
@@ -169,27 +207,33 @@ export default function MembersPage() {
 
       <div className="bg-white dark:bg-[#111] rounded-[8px] shadow-sm border border-gray-200 dark:border-white/10 overflow-hidden">
         {loading ? (
-          <div className="p-7 space-y-4"><Skeleton width="w-full" height="h-6" /><Skeleton width="w-full" height="h-6" /><Skeleton width="w-full" height="h-6" /></div>
+          <div className="p-5 space-y-3"><Skeleton width="w-full" height="h-6" /><Skeleton width="w-full" height="h-6" /><Skeleton width="w-full" height="h-6" /></div>
         ) : filtered.length === 0 ? (
-          <div className="py-16 text-center px-6">
+          <div className="py-12 text-center px-6">
             <p className="text-[14px] font-semibold text-gray-900 dark:text-[#f2f3f5] mb-1">No {tab !== 'all' ? tab : ''} members</p>
             <p className="text-[14px] text-gray-500 dark:text-[#96989d]">{tab === 'all' ? 'Members will appear here when they subscribe.' : `No members with "${tab}" status.`}</p>
           </div>
         ) : (
           <>
             <div className="hidden md:block overflow-x-auto">
-              <table className="w-full min-w-[820px]">
-                <thead><tr className="border-b border-gray-200 dark:border-white/10">{['Member', 'Community / Plan', 'Platform ID', 'Started', 'Expires', 'Status', 'Actions'].map(h => <th key={h} className="px-5 py-3.5 text-left text-[14px] font-bold text-gray-600 dark:text-[#b5bac1] uppercase tracking-[0.8px]">{h}</th>)}</tr></thead>
+              <table className="w-full min-w-[760px]">
+                <thead><tr className="border-b border-gray-200 dark:border-white/10">{['Member', 'Community / Plan', 'Platform ID', 'Started', 'Expires', 'Status', 'Actions'].map(h => <th key={h} className="px-4 py-3 text-left text-[14px] font-bold text-gray-600 dark:text-[#b5bac1] uppercase tracking-[0.8px]">{h}</th>)}</tr></thead>
                 <tbody className="divide-y divide-white/[0.04]">
                   {filtered.map(s => (
                     <tr key={s.id} onClick={() => setSelected(s)} className={`hover:bg-white/[0.025] transition-colors cursor-pointer ${s.status !== 'active' ? 'opacity-60' : ''}`}>
-                      <td className="px-5 py-3.5"><div className="flex items-center gap-2.5"><Avatar name={s.email} size={24} /><span className="text-[14px] font-semibold text-gray-900 dark:text-[#f2f3f5] max-w-[180px] truncate">{s.email}</span></div></td>
-                      <td className="px-5 py-3.5"><span className="text-[14px] text-gray-800 dark:text-[#dbdee1]">{s.communities?.name}</span>{s.plans?.name && <span className="text-gray-500 dark:text-[#96989d] ml-2 text-[14px]">· {s.plans.name}</span>}</td>
-                      <td className="px-5 py-3.5 font-mono text-[14px] text-gray-500 dark:text-[#96989d]">{s.telegram_user_id || s.whatsapp_phone || '—'}</td>
-                      <td className="px-5 py-3.5 text-[14px] text-gray-500 dark:text-[#96989d]">{new Date(s.started_at).toLocaleDateString()}</td>
-                      <td className="px-5 py-3.5 text-[14px] text-gray-500 dark:text-[#96989d]">{new Date(s.expires_at).toLocaleDateString()}</td>
-                      <td className="px-5 py-3.5"><Pill status={s.status} /></td>
-                      <td className="px-5 py-3.5" onClick={e => e.stopPropagation()}>
+                      <td className="px-4 py-3"><div className="flex items-center gap-2.5"><Avatar name={s.email} size={24} /><span className="text-[14px] font-semibold text-gray-900 dark:text-[#f2f3f5] max-w-[180px] truncate">{s.email}</span></div></td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-[14px] text-gray-800 dark:text-[#dbdee1]">{s.communities?.name}</span>
+                          {s.plans?.name && <span className="text-gray-500 dark:text-[#96989d] text-[14px]">· {s.plans.name}</span>}
+                          {s.communities?.platform === 'whatsapp' && <WhatsAppModeBadge mode={s.communities?.whatsapp_setup_mode || 'basic'} size="xs" />}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-[14px] text-gray-500 dark:text-[#96989d]">{s.telegram_user_id || s.whatsapp_phone || '—'}</td>
+                      <td className="px-4 py-3 text-[14px] text-gray-500 dark:text-[#96989d]">{new Date(s.started_at).toLocaleDateString()}</td>
+                      <td className="px-4 py-3 text-[14px] text-gray-500 dark:text-[#96989d]">{new Date(s.expires_at).toLocaleDateString()}</td>
+                      <td className="px-4 py-3"><Pill status={s.status} /></td>
+                      <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center gap-2">
                           <button onClick={() => setSelected(s)} className="text-[14px] px-2.5 py-1 rounded-[4px] font-medium text-[#c8f135] hover:bg-[#c8f135]/10 transition-colors">View</button>
                           {s.status === 'active' && <button onClick={() => handleRemove(s)} disabled={removing === s.id} className="text-[14px] px-2.5 py-1 rounded-[4px] font-medium text-red-400 hover:bg-red-500/10 disabled:opacity-40 transition-colors">{removing === s.id ? '…' : 'Remove'}</button>}
@@ -203,10 +247,13 @@ export default function MembersPage() {
 
             <div className="md:hidden divide-y divide-white/[0.04]">
               {filtered.map(s => (
-                <div key={s.id} onClick={() => setSelected(s)} className={`px-5 py-4 cursor-pointer ${s.status !== 'active' ? 'opacity-60' : ''}`}>
+                <div key={s.id} onClick={() => setSelected(s)} className={`px-4 py-3.5 cursor-pointer ${s.status !== 'active' ? 'opacity-60' : ''}`}>
                   <div className="flex items-start justify-between gap-2 mb-2"><div className="flex items-center gap-2.5 min-w-0"><Avatar name={s.email} size={24} /><p className="text-[14px] text-gray-900 dark:text-[#f2f3f5] font-semibold truncate">{s.email}</p></div><Pill status={s.status} /></div>
                   <p className="text-[14px] text-gray-800 dark:text-[#dbdee1] mb-1.5 ml-[34px]">{s.communities?.name}{s.plans?.name && <span className="text-gray-500 dark:text-[#96989d]"> · {s.plans.name}</span>}</p>
-                  <p className="text-[14px] text-gray-500 dark:text-[#96989d] ml-[34px]">Expires {new Date(s.expires_at).toLocaleDateString()}</p>
+                  <div className="ml-[34px] flex flex-wrap items-center gap-2">
+                    <p className="text-[14px] text-gray-500 dark:text-[#96989d]">Expires {new Date(s.expires_at).toLocaleDateString()}</p>
+                    {s.communities?.platform === 'whatsapp' && <WhatsAppModeBadge mode={s.communities?.whatsapp_setup_mode || 'basic'} size="xs" />}
+                  </div>
                 </div>
               ))}
             </div>
@@ -231,10 +278,21 @@ export default function MembersPage() {
             <div className="mb-5 flex flex-wrap gap-2">
               <Pill status={selected.status} />
               <span className="rounded-full bg-gray-100 px-2.5 py-1 text-[12px] font-bold text-gray-600 dark:bg-white/5 dark:text-white/50">{selected.communities?.platform || 'platform'}</span>
+              {selected.communities?.platform === 'whatsapp' && (
+                <WhatsAppModeBadge mode={selected.communities?.whatsapp_setup_mode || 'basic'} />
+              )}
             </div>
 
             <div className="rounded-xl border border-gray-200 p-4 dark:border-white/10 mb-5">
               <DetailRow label="Platform ID" value={selected.telegram_user_id || selected.whatsapp_phone} mono />
+              {selected.communities?.platform === 'whatsapp' && (
+                <DetailRow
+                  label="WhatsApp mode"
+                  value={(selected.communities?.whatsapp_setup_mode || 'basic') === 'advanced'
+                    ? 'Advanced group automation (Beta)'
+                    : 'Basic access — official WhatsApp delivery'}
+                />
+              )}
               <DetailRow label="Started" value={new Date(selected.started_at).toLocaleString()} />
               <DetailRow label="Expires" value={new Date(selected.expires_at).toLocaleString()} />
               <DetailRow label="Payment ref" value={selected.paystack_reference} mono />
