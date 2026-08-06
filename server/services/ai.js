@@ -479,8 +479,8 @@ async function maybeEscalate({ phone, text, reply, confident, intent, actionPlan
   const adminJid = process.env.ADMIN_JID
   if (adminJid) {
     try {
-      const { sendWhatsAppMessage } = await import('./whatsapp.js')
-      await sendWhatsAppMessage(
+      const { sendWhatsAppProviderMessage } = await import('./whatsappProvider.js')
+      await sendWhatsAppProviderMessage(
         adminJid.replace('@s.whatsapp.net', ''),
         `⚠️ AI follow-up needed\nIntent: ${intent}\nAction: ${actionPlan?.action || 'review'}\nFrom: ${phone}\nMessage: "${text}"\nAI reply: "${reply}"`
       ).catch(() => {})

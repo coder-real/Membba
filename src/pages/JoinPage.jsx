@@ -19,7 +19,7 @@ const formatDuration = (minutes) => {
 function Spinner() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] flex items-center justify-center">
-      <div className="w-7 h-7 rounded-full border-2 border-white/10 border-t-[#9FFF57] animate-spin" />
+      <div className="w-7 h-7 rounded-full border-2 border-white/10 border-t-[#c8f135] animate-spin" />
     </div>
   )
 }
@@ -170,13 +170,13 @@ export default function JoinPage() {
   const inputCls = [
     'w-full bg-[#0d0d0d] border rounded-xl px-4 py-3 text-[14px] text-black dark:text-white',
     'placeholder-white/20 focus:outline-none transition-all duration-200',
-    'border-gray-200 dark:border-white/10 focus:border-[#9FFF57]/40 focus:ring-2 focus:ring-[#9FFF57]/10',
+    'border-gray-200 dark:border-white/10 focus:border-[#c8f135]/40 focus:ring-2 focus:ring-[#c8f135]/10',
   ].join(' ')
 
   const labelCls = 'block text-[14px] font-bold tracking-widest uppercase text-black dark:text-white/40 mb-2'
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a]" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a]" style={{ fontFamily: "var(--font-manrope)" }}>
 
       {/* Top bar */}
       <div className="border-b border-white/[0.05] px-6 py-4 flex items-center justify-between max-w-xl mx-auto">
@@ -225,16 +225,16 @@ export default function JoinPage() {
                     className={[
                       'w-full text-left rounded-xl border px-5 py-4 transition-all duration-200 group',
                       active
-                        ? 'border-[#9FFF57]/35 bg-[#9FFF57]/[0.04]'
+                        ? 'border-[#c8f135]/35 bg-[#c8f135]/[0.04]'
                         : 'border-white/[0.07] hover:border-white/[0.13] bg-white dark:bg-[#111]',
                     ].join(' ')}
                   >
                     <div className="flex items-start justify-between gap-7">
                       {/* Radio indicator */}
                       <div className={`mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
-                        active ? 'border-[#9FFF57]' : 'border-white/20 group-hover:border-white/35'
+                        active ? 'border-[#c8f135]' : 'border-white/20 group-hover:border-white/35'
                       }`}>
-                        {active && <div className="w-1.5 h-1.5 rounded-full bg-[#9FFF57]" />}
+                        {active && <div className="w-1.5 h-1.5 rounded-full bg-[#c8f135]" />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className={`font-bold text-[14.5px] leading-tight ${active ? 'text-black dark:text-white' : 'text-black dark:text-white/80'}`}>
@@ -245,7 +245,7 @@ export default function JoinPage() {
                         )}
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className={`font-black text-[17px] leading-tight ${active ? 'text-[#9FFF57]' : 'text-black dark:text-white'}`}>
+                        <p className={`font-black text-[17px] leading-tight ${active ? 'text-[#c8f135]' : 'text-black dark:text-white'}`}>
                           ₦{plan.price.toLocaleString()}
                         </p>
                         <p className="text-[14px] text-black dark:text-white/30 font-medium mt-0.5">
@@ -400,7 +400,7 @@ export default function JoinPage() {
                 'w-full py-4 rounded-xl font-black text-[15px] tracking-wide transition-all duration-200',
                 paying || !selectedPlan
                   ? 'bg-white/[0.06] text-black dark:text-white/25 cursor-not-allowed'
-                  : 'bg-[#9FFF57] text-[#0a0a0a] hover:bg-[#aaff62] active:scale-[0.99]',
+                  : 'bg-[#c8f135] text-[#0a0a0a] hover:bg-[#aaff62] active:scale-[0.99]',
               ].join(' ')}
             >
               {paying

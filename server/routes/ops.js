@@ -196,7 +196,7 @@ async function requireOps(req, res) {
   const { user, error } = await getOpsUser(req)
   if (!error) return user
   if (error === 'unauthorized') res.status(401).json({ message: 'Unauthorized' })
-  else res.status(403).json({ message: 'This area is only for Membba operations admins.' })
+  else res.status(403).json({ message: 'This area is only for Membba staff.' })
   return null
 }
 
@@ -243,7 +243,7 @@ router.get('/summary', async (req, res) => {
 
 // ─────────────────────────────────────────────────────
 // GET /api/ops/helpdesk
-// Internal support queue for creator/customer operations.
+// Internal Membba staff queue for assisting creators who report issues.
 // ─────────────────────────────────────────────────────
 router.get('/helpdesk', async (req, res) => {
   const opsUser = await requireOps(req, res)

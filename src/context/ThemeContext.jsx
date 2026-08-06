@@ -1,33 +1,36 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 
 const ThemeContext = createContext(null)
 
+function getSystemDark() {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches
+}
+
 export function ThemeProvider({ children }) {
-  const [dark, setDark] = useState(() => {
-    const stored = localStorage.getItem('membba-theme')
-    if (stored) return stored === 'dark'
-    return window.matchMedia('(prefers-color-scheme: dark)').matches
-  })
+  const [theme, setTheme] = useState(() => localStorage.getItem('membba-theme') || 'system')
+  const [systemDark, setSystemDark] = useState(() => getSystemDark())
+
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const onChange = () => setSystemDark(media.matches)
+    media.addEventListener?.('change', onChange)
+    return () => media.removeEventListener?.('change', onChange)
+  }, [])
+
+  const dark = theme === 'system' ? systemDark : theme === 'dark'
 
   useEffect(() => {
     const root = document.documentElement
-    if (dark) {
-      root.classList.add('dark')
-      root.classList.remove('light')
-    } else {
-      root.classList.add('light')
-      root.classList.remove('dark')
-    }
-    localStorage.setItem('membba-theme', dark ? 'dark' : 'light')
-  }, [dark])
+    root.classList.toggle('dark', dark)
+    root.classList.toggle('light', !dark)
+    localStorage.setItem('membba-theme', theme)
+  }, [dark, theme])
 
-  const toggleTheme = () => setDark(d => !d)
+  const toggleTheme = () => setTheme(dark ? 'light' : 'dark')
 
-  return (
-    <ThemeContext.Provider value={{ dark, toggleTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  )
+  const value = useMemo(() => ({ dark, theme, setTheme, toggleTheme, systemDark }), [dark, theme, systemDark])
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
 }
 
 export const useTheme = () => useContext(ThemeContext)

@@ -92,7 +92,7 @@ export default function Select({ value, onChange, options = [], placeholder = 'S
               )}
               <span className="flex-1 truncate">{opt.label}</span>
               {isSelected && (
-                <svg className="w-3.5 h-3.5 text-[#9FFF57] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <svg className="w-3.5 h-3.5 text-[#c8f135] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               )}

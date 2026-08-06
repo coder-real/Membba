@@ -4,10 +4,13 @@ import {
   getWhatsAppStatus,
   getWhatsAppQR,
   getPairingCode,
+  getWhatsAppError,
+  getWhatsAppDebug,
   getQRImage,
   joinGroup,
   restartWhatsApp,
   initWhatsApp,
+  resetWhatsAppSession,
 } from '../services/whatsapp.js'
 
 const router = express.Router()
@@ -22,6 +25,8 @@ router.get('/status', (_req, res) => {
     status:      getWhatsAppStatus(),
     qr:          getWhatsAppQR() || null,
     pairingCode: getPairingCode() || null,
+    error:       getWhatsAppError() || null,
+    debug:       getWhatsAppDebug(),
   })
 })
 
@@ -31,7 +36,7 @@ router.get('/status', (_req, res) => {
 // Starts the connection using the chosen auth method.
 // ─────────────────────────────────────────────────────────────────────────────
 router.post('/connect', async (req, res) => {
-  const { method, phoneNumber } = req.body || {}
+  const { method, phoneNumber, resetSession } = req.body || {}
   const usePairingCode = method === 'pairing_code'
 
   if (usePairingCode && !phoneNumber) {
@@ -39,6 +44,7 @@ router.post('/connect', async (req, res) => {
   }
 
   try {
+    if (resetSession) await resetWhatsAppSession()
     // Clean up any existing socket and start one new connection with the
     // requested auth method. Do not call initWhatsApp twice here — QR and
     // pairing-code flows depend on these exact options being used on startup.
@@ -60,6 +66,21 @@ router.post('/restart', async (_req, res) => {
   } catch (err) {
     console.error('[whatsapp/restart] error:', err.message)
     res.status(500).json({ message: 'Failed to restart WhatsApp client' })
+  }
+})
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/whatsapp/reset-session
+// Clears stored Baileys auth state so the bot number can be linked fresh.
+// ─────────────────────────────────────────────────────────────────────────────
+router.post('/reset-session', async (_req, res) => {
+  try {
+    await resetWhatsAppSession()
+    res.json({ ok: true, status: getWhatsAppStatus() })
+  } catch (err) {
+    console.error('[whatsapp/reset-session] error:', err.message)
+    res.status(500).json({ message: 'Failed to reset WhatsApp session' })
   }
 })
 
@@ -130,6 +151,10 @@ router.get('/qr', async (req, res) => {
   `)
 })
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/whatsapp/reset-session
+// Clears stored Baileys auth state so the bot number can be linked fresh.
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /api/whatsapp/qr-data   — JSON for the React SettingsPage
 // ─────────────────────────────────────────────────────────────────────────────
@@ -139,6 +164,8 @@ router.get('/qr-data', async (_req, res) => {
     status:      s,
     qr:          getWhatsAppQR() || null,
     pairingCode: getPairingCode() || null,
+    error:       getWhatsAppError() || null,
+    debug:       getWhatsAppDebug(),
   })
 })
 

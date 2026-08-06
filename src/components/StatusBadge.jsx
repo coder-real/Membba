@@ -6,8 +6,8 @@ export default function StatusBadge({ status }) {
   const s = status?.toLowerCase()
 
   const styles = {
-    active:    'bg-[#9FFF57]/12 text-[#9FFF57] border-[#9FFF57]/20',
-    success:   'bg-[#9FFF57]/12 text-[#9FFF57] border-[#9FFF57]/20',
+    active:    'bg-[#c8f135]/12 text-[#c8f135] border-[#c8f135]/20',
+    success:   'bg-[#c8f135]/12 text-[#c8f135] border-[#c8f135]/20',
     expired:   'bg-yellow-400/10 text-yellow-400 border-yellow-400/20',
     pending:   'bg-yellow-400/10 text-yellow-400 border-yellow-400/20',
     cancelled: 'bg-white/[0.05] text-black dark:text-white/40 border-gray-200 dark:border-white/10',
@@ -15,8 +15,8 @@ export default function StatusBadge({ status }) {
   }
 
   const dotColor = {
-    active:    '#9FFF57',
-    success:   '#9FFF57',
+    active:    '#c8f135',
+    success:   '#c8f135',
     expired:   '#FACC15',
     pending:   '#FACC15',
     cancelled: 'rgba(255,255,255,0.3)',

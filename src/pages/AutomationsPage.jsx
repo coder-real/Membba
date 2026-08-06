@@ -30,7 +30,7 @@ function Toggle({ checked, onChange, disabled }) {
       onClick={() => onChange(!checked)}
       aria-label="Toggle"
       className={`relative inline-flex h-[26px] w-[46px] items-center rounded-full transition-colors duration-200 focus:outline-none flex-shrink-0
-        ${checked ? 'bg-[#9FFF57]' : 'bg-gray-200 dark:bg-white/15'}
+        ${checked ? 'bg-[#c8f135]' : 'bg-gray-200 dark:bg-white/15'}
         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
     >
       <span className={`inline-block h-[18px] w-[18px] transform rounded-full bg-white shadow-md transition-transform duration-200
@@ -176,7 +176,7 @@ function PostRow({ post, onCancel }) {
   const isSent    = post.status === 'sent'
   return (
     <div className="flex items-start gap-3 py-3 border-b border-gray-100 dark:border-white/5 last:border-0">
-      <div className={`mt-0.5 flex-shrink-0 ${isSent ? 'text-[#9FFF57]' : isPending ? 'text-amber-400' : 'text-gray-300 dark:text-white/20'}`}>
+      <div className={`mt-0.5 flex-shrink-0 ${isSent ? 'text-[#c8f135]' : isPending ? 'text-amber-400' : 'text-gray-300 dark:text-white/20'}`}>
         {isSent ? <HiOutlineCheckCircle size={16} /> : isPending ? <HiOutlineClock size={16} /> : <HiOutlineXCircle size={16} />}
       </div>
       <div className="flex-1 min-w-0">
@@ -188,7 +188,7 @@ function PostRow({ post, onCancel }) {
             })}
           </span>
           {post.personalize_ai && (
-            <span className="text-[11px] font-bold text-[#9FFF57] flex items-center gap-0.5">
+            <span className="text-[11px] font-bold text-[#c8f135] flex items-center gap-0.5">
               <HiOutlineSparkles size={11} /> AI
             </span>
           )}
@@ -385,10 +385,10 @@ export default function AutomationsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {saving && <span className="text-[13px] text-[#9FFF57] font-bold animate-pulse">Saving…</span>}
+          {saving && <span className="text-[13px] text-[#c8f135] font-bold animate-pulse">Saving…</span>}
           <Link
             to="/dashboard/ai-inbox"
-            className="inline-flex items-center gap-2 rounded-[10px] border border-[#9FFF57]/30 bg-[#9FFF57]/10 px-4 py-2 text-[13px] font-black text-[#76d83b] hover:bg-[#9FFF57]/15 transition"
+            className="inline-flex items-center gap-2 rounded-[10px] border border-[#c8f135]/30 bg-[#c8f135]/10 px-4 py-2 text-[13px] font-black text-[#c8f135] hover:bg-[#c8f135]/15 transition"
             title="Review AI conversations that need creator/admin attention"
           >
             <HiOutlineSparkles size={15} /> Open AI Inbox
@@ -412,7 +412,7 @@ export default function AutomationsPage() {
             <div key={item.label} className="rounded-[14px] border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-[#111]" title={item.hint}>
               <div className="flex items-center justify-between gap-3">
                 <p className="text-[12px] font-black uppercase tracking-widest text-gray-400">{item.label}</p>
-                {item.ok ? <HiOutlineCheckCircle className="text-[#9FFF57]" size={18} /> : <HiOutlineXCircle className="text-amber-400" size={18} />}
+                {item.ok ? <HiOutlineCheckCircle className="text-[#c8f135]" size={18} /> : <HiOutlineXCircle className="text-amber-400" size={18} />}
               </div>
               <p className="mt-2 text-[14px] font-bold text-gray-900 dark:text-white capitalize">{item.value}</p>
             </div>
@@ -426,8 +426,8 @@ export default function AutomationsPage() {
         {/* 1. AI First Responder */}
         <AutomationCard
           icon={HiOutlineChatBubbleLeftEllipsis}
-          iconBg={settings.ai_responder ? 'bg-[#9FFF57]/15' : 'bg-gray-100 dark:bg-white/5'}
-          iconColor={settings.ai_responder ? 'text-[#9FFF57]' : 'text-gray-400 dark:text-white/25'}
+          iconBg={settings.ai_responder ? 'bg-[#c8f135]/15' : 'bg-gray-100 dark:bg-white/5'}
+          iconColor={settings.ai_responder ? 'text-[#c8f135]' : 'text-gray-400 dark:text-white/25'}
           title="AI First Responder"
           description="Automatically replies to member DMs using live subscription context. Escalates to you when unsure."
           tooltip="Uses Groq plus Membba subscription data to answer member messages. Payment, refund, and invite issues are saved in AI Inbox for admin review."
@@ -446,7 +446,7 @@ export default function AutomationsPage() {
                 <p className="text-[13px] font-black text-gray-900 dark:text-white">Test AI Reply</p>
                 <p className="text-[12px] text-gray-500 dark:text-white/35 mt-0.5">Simulate a member DM without needing WhatsApp linked.</p>
               </div>
-              <Link to="/dashboard/ai-inbox" className="text-[12px] font-bold text-[#76d83b] hover:underline">View AI Inbox</Link>
+              <Link to="/dashboard/ai-inbox" className="text-[12px] font-bold text-[#c8f135] hover:underline">View AI Inbox</Link>
             </div>
 
             <form onSubmit={runAiTest} className="grid grid-cols-1 lg:grid-cols-[180px_1fr_auto] gap-3 items-start">
@@ -459,7 +459,7 @@ export default function AutomationsPage() {
                   value={aiTest.phone}
                   onChange={e => setAiTest(t => ({ ...t, phone: e.target.value }))}
                   placeholder="2347040883919"
-                  className="w-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-[10px] px-3 py-2.5 text-[14px] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#9FFF57]/30"
+                  className="w-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-[10px] px-3 py-2.5 text-[14px] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#c8f135]/30"
                 />
               </div>
               <div>
@@ -468,13 +468,13 @@ export default function AutomationsPage() {
                   value={aiTest.text}
                   onChange={e => setAiTest(t => ({ ...t, text: e.target.value }))}
                   placeholder="How do I renew my subscription?"
-                  className="w-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-[10px] px-3 py-2.5 text-[14px] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#9FFF57]/30"
+                  className="w-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-[10px] px-3 py-2.5 text-[14px] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#c8f135]/30"
                 />
               </div>
               <button
                 type="submit"
                 disabled={aiTesting}
-                className="lg:mt-[22px] inline-flex items-center justify-center gap-2 rounded-[10px] bg-[#9FFF57] px-4 py-2.5 text-[13px] font-black text-black hover:bg-[#b0ff6e] disabled:opacity-50"
+                className="lg:mt-[22px] inline-flex items-center justify-center gap-2 rounded-[10px] bg-[#c8f135] px-4 py-2.5 text-[13px] font-black text-black hover:bg-[#d6ff4f] disabled:opacity-50"
               >
                 {aiTesting ? <HiOutlineArrowPath className="animate-spin" size={15} /> : <HiOutlineSparkles size={15} />}
                 {aiTesting ? 'Testing…' : 'Test AI'}
@@ -482,13 +482,13 @@ export default function AutomationsPage() {
             </form>
 
             {aiResult && (
-              <div className="rounded-[13px] border border-[#9FFF57]/20 bg-[#9FFF57]/[0.06] p-4">
+              <div className="rounded-[13px] border border-[#c8f135]/20 bg-[#c8f135]/[0.06] p-4">
                 <div className="flex flex-wrap items-center gap-2 mb-3">
                   <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-gray-700 dark:bg-black/20 dark:text-white/70">Intent: {aiResult.intent}</span>
                   <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-gray-700 dark:bg-black/20 dark:text-white/70">Action: {aiResult.action?.action || 'reply_only'}</span>
                   {aiResult.escalation?.escalated && <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-black text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">Escalated #{aiResult.escalation.escalation_id || 'queued'}</span>}
                 </div>
-                <p className="text-[11px] font-bold uppercase tracking-widest text-[#76d83b] mb-1">AI reply</p>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-[#c8f135] mb-1">AI reply</p>
                 <p className="text-[14px] leading-relaxed text-gray-900 dark:text-white">{aiResult.reply}</p>
                 {aiResult.member && (
                   <p className="mt-3 text-[12px] text-gray-500 dark:text-white/40">
@@ -566,7 +566,7 @@ export default function AutomationsPage() {
             </div>
             <button
               onClick={() => setShowForm(v => !v)}
-              className="flex items-center gap-2 bg-[#9FFF57] hover:bg-[#b0ff6e] text-[#111] font-black text-[13px] px-4 py-2 rounded-[10px] transition shadow-[0_0_12px_rgba(159,255,87,0.2)] hover:shadow-[0_0_20px_rgba(159,255,87,0.4)]"
+              className="flex items-center gap-2 bg-[#c8f135] hover:bg-[#d6ff4f] text-[#111] font-black text-[13px] px-4 py-2 rounded-[10px] transition shadow-[0_0_12px_rgba(159,255,87,0.2)] hover:shadow-[0_0_20px_rgba(159,255,87,0.4)]"
             >
               {showForm ? <HiOutlineXCircle size={15} /> : <HiOutlinePlusCircle size={15} />}
               {showForm ? 'Close' : 'New Broadcast'}
@@ -575,8 +575,8 @@ export default function AutomationsPage() {
 
           {/* Composer */}
           {showForm && (
-            <form onSubmit={schedulePost} className="bg-white dark:bg-[#111] rounded-[16px] border border-[#9FFF57]/30 p-6 sm:p-8 mb-6 space-y-5 relative overflow-hidden shadow-xl">
-              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#9FFF57] to-transparent" />
+            <form onSubmit={schedulePost} className="bg-white dark:bg-[#111] rounded-[16px] border border-[#c8f135]/30 p-6 sm:p-8 mb-6 space-y-5 relative overflow-hidden shadow-xl">
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#c8f135] to-transparent" />
               <h3 className="text-[17px] font-black text-gray-900 dark:text-white">Compose Broadcast</h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -589,7 +589,7 @@ export default function AutomationsPage() {
                     value={newPost.community_id}
                     onChange={e => setNewPost(p => ({ ...p, community_id: e.target.value }))}
                     required
-                    className="bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-[10px] px-3 py-2.5 text-[14px] font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#9FFF57]/40 appearance-none"
+                    className="bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-[10px] px-3 py-2.5 text-[14px] font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#c8f135]/40 appearance-none"
                   >
                     <option value="">Select community…</option>
                     {communities.map(c => <option key={c.id} value={c.id}>{c.name} ({c.platform || 'telegram'})</option>)}
@@ -607,7 +607,7 @@ export default function AutomationsPage() {
                     onChange={e => setNewPost(p => ({ ...p, scheduled_time: e.target.value }))}
                     required
                     min={new Date().toISOString().slice(0, 16)}
-                    className="bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-[10px] px-3 py-2.5 text-[14px] font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#9FFF57]/40"
+                    className="bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-[10px] px-3 py-2.5 text-[14px] font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#c8f135]/40"
                   />
                 </div>
               </div>
@@ -624,21 +624,21 @@ export default function AutomationsPage() {
                   onChange={e => setNewPost(p => ({ ...p, content: e.target.value }))}
                   required maxLength={1000} rows={5}
                   placeholder="Write your announcement here…"
-                  className="bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-[10px] px-4 py-3 text-[14px] text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-white/15 resize-none focus:outline-none focus:ring-2 focus:ring-[#9FFF57]/40"
+                  className="bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-[10px] px-4 py-3 text-[14px] text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-white/15 resize-none focus:outline-none focus:ring-2 focus:ring-[#c8f135]/40"
                 />
               </div>
 
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <label className="flex items-center gap-3 cursor-pointer select-none" onClick={() => setNewPost(p => ({ ...p, personalize_ai: !p.personalize_ai }))}>
-                  <div className={`w-10 h-6 rounded-full p-[3px] flex items-center transition-colors duration-200 ${newPost.personalize_ai ? 'bg-[#9FFF57]' : 'bg-gray-200 dark:bg-white/10'}`}>
+                  <div className={`w-10 h-6 rounded-full p-[3px] flex items-center transition-colors duration-200 ${newPost.personalize_ai ? 'bg-[#c8f135]' : 'bg-gray-200 dark:bg-white/10'}`}>
                     <div className={`w-[18px] h-[18px] rounded-full bg-white shadow transform transition-transform duration-200 ${newPost.personalize_ai ? 'translate-x-4' : ''}`} />
                   </div>
-                  <HiOutlineSparkles size={15} className={newPost.personalize_ai ? 'text-[#9FFF57]' : 'text-gray-400'} />
+                  <HiOutlineSparkles size={15} className={newPost.personalize_ai ? 'text-[#c8f135]' : 'text-gray-400'} />
                   <span className="text-[13px] font-bold text-gray-700 dark:text-[#dbdee1]">AI-personalise tone per group</span>
                 </label>
 
                 <button type="submit" disabled={submitting}
-                  className="w-full sm:w-auto bg-[#9FFF57] hover:bg-[#b0ff6e] text-[#111] font-black px-8 py-2.5 rounded-[10px] text-[14px] flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 shadow-[0_0_14px_rgba(159,255,87,0.25)]">
+                  className="w-full sm:w-auto bg-[#c8f135] hover:bg-[#d6ff4f] text-[#111] font-black px-8 py-2.5 rounded-[10px] text-[14px] flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 shadow-[0_0_14px_rgba(159,255,87,0.25)]">
                   {submitting ? 'Scheduling…' : <><HiOutlineCalendarDays size={17} /> Set Broadcast</>}
                 </button>
               </div>

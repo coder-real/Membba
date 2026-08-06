@@ -125,8 +125,8 @@ export async function sendMorningDigest() {
     const adminPhone = adminJid.replace('@s.whatsapp.net', '')
 
     // Lazy import to avoid circular deps
-    const { sendWhatsAppMessage } = await import('./whatsapp.js')
-    await sendWhatsAppMessage(adminPhone, message)
+    const { sendWhatsAppProviderMessage } = await import('./whatsappProvider.js')
+    await sendWhatsAppProviderMessage(adminPhone, message)
     await logAutomationRun({ type: 'daily_digest', status: 'success', message: 'Morning digest sent', metadata: { adminPhone, totalRevenue: data.totalRevenue, newMembers: data.newMembers.length } })
 
     console.log('[digest] morning briefing sent to admin ✅')

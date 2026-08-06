@@ -102,7 +102,7 @@ export default function CommunitiesPage() {
         </div>
         <Link
           to="/dashboard/communities/new"
-          className="inline-flex items-center gap-2 bg-[#9FFF57] hover:bg-[#b0ff6e] text-black px-4 py-2 rounded-[6px] text-[14px] font-bold transition-colors shadow-sm"
+          className="inline-flex items-center gap-2 bg-[#c8f135] hover:bg-[#d6ff4f] text-black px-4 py-2 rounded-[6px] text-[14px] font-bold transition-colors shadow-sm"
         >
           <HiOutlinePlusCircle size={15} />
           New Community
@@ -151,7 +151,7 @@ export default function CommunitiesPage() {
           <p className="text-[14px] text-gray-500 dark:text-[#96989d] mb-6">
             {tab === 'all' ? 'Create your first paid community to start accepting members.' : `You haven't added any ${tab} groups yet.`}
           </p>
-          <Link to="/dashboard/communities/new" className="inline-flex items-center gap-2 bg-[#9FFF57] hover:bg-[#b0ff6e] text-black px-6 py-2.5 rounded-[6px] text-[14px] font-bold transition-colors">
+          <Link to="/dashboard/communities/new" className="inline-flex items-center gap-2 bg-[#c8f135] hover:bg-[#d6ff4f] text-black px-6 py-2.5 rounded-[6px] text-[14px] font-bold transition-colors">
             <HiOutlinePlusCircle size={15} /> Create Community
           </Link>
         </div>
@@ -179,9 +179,9 @@ export default function CommunitiesPage() {
                   </span>
 
                   <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] text-[14px] font-bold ${
-                    c.is_active ? 'bg-[#9FFF57]/10 text-[#9FFF57]' : 'bg-white/[0.05] text-gray-500 dark:text-[#96989d]'
+                    c.is_active ? 'bg-[#c8f135]/10 text-[#c8f135]' : 'bg-white/[0.05] text-gray-500 dark:text-[#96989d]'
                   }`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${c.is_active ? 'bg-[#9FFF57]' : 'bg-[#4f545c]'}`} />
+                    <span className={`w-1.5 h-1.5 rounded-full ${c.is_active ? 'bg-[#c8f135]' : 'bg-[#4f545c]'}`} />
                     {c.is_active ? 'Active' : 'Inactive'}
                   </span>
 
@@ -193,7 +193,7 @@ export default function CommunitiesPage() {
 
                   {isTelegram && c.telegram_chat_id && typeof botStatus[c.id] === 'boolean' && (
                     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[4px] text-[14px] font-bold ${
-                      botStatus[c.id] ? 'bg-[#9FFF57]/10 text-[#9FFF57]' : 'bg-yellow-400/10 text-yellow-400'
+                      botStatus[c.id] ? 'bg-[#c8f135]/10 text-[#c8f135]' : 'bg-yellow-400/10 text-yellow-400'
                     }`}>
                       {botStatus[c.id] ? '✅ Bot admin' : '⚠️ Bot not detected'}
                     </span>
@@ -209,7 +209,7 @@ export default function CommunitiesPage() {
                   {activePlans.length > 0 ? activePlans.map((p, idx) => (
                     <span key={p.id} className="inline-flex items-center gap-1.5 bg-gray-100 dark:bg-[#1e1f22] text-gray-900 dark:text-[#f2f3f5] rounded-[6px] px-3 py-1.5 text-[14px] font-medium border border-transparent">
                       {p.name}
-                      <span className="text-[#9FFF57] font-bold">₦{p.price.toLocaleString()}</span>
+                      <span className="text-[#c8f135] font-bold">₦{p.price.toLocaleString()}</span>
                       <span className="text-gray-500 dark:text-[#72767d]">· {formatDuration(p.duration_minutes)}</span>
                     </span>
                   )) : (

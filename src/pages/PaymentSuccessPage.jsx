@@ -74,11 +74,11 @@ export default function PaymentSuccessPage() {
   const supportHref = `mailto:support@membba.com?subject=Payment%20Issue%20${reference || ''}&body=Payment%20reference:%20${reference || ''}`
 
   if (status === 'verifying') return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] flex items-center justify-center px-6" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] flex items-center justify-center px-6" style={{ fontFamily: "var(--font-manrope)" }}>
       <div className="text-center max-w-sm w-full">
         <div className="w-14 h-14 mx-auto mb-8 relative">
           <div className="absolute inset-0 rounded-full border-2 border-gray-200 dark:border-white/10" />
-          <div className="absolute inset-0 rounded-full border-2 border-t-[#9FFF57] border-gray-200 dark:border-white/10 animate-spin" />
+          <div className="absolute inset-0 rounded-full border-2 border-t-[#c8f135] border-gray-200 dark:border-white/10 animate-spin" />
         </div>
         <p className="text-[14px] font-bold tracking-[0.15em] uppercase text-black dark:text-white/25 mb-3">Processing</p>
         <h1 className="text-[22px] font-black text-black dark:text-white mb-3">Verifying your payment</h1>
@@ -88,7 +88,7 @@ export default function PaymentSuccessPage() {
   )
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a]" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a]" style={{ fontFamily: "var(--font-manrope)" }}>
       <div className="border-b border-white/[0.05] px-6 py-4 flex items-center justify-between max-w-xl mx-auto">
         <span className="text-[14px] font-black tracking-wider text-black dark:text-white/30 uppercase">Membba</span>
         <div className="flex items-center gap-1.5 text-black dark:text-white/25">
@@ -102,13 +102,13 @@ export default function PaymentSuccessPage() {
       <div className="max-w-xl mx-auto px-6 py-14">
         {status === 'success' && (
           <div>
-            <div className="w-16 h-16 rounded-2xl bg-[#9FFF57]/10 border border-[#9FFF57]/20 flex items-center justify-center mb-7">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9FFF57" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <div className="w-16 h-16 rounded-2xl bg-[#c8f135]/10 border border-[#c8f135]/20 flex items-center justify-center mb-7">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c8f135" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </div>
 
-            <p className="text-[14px] font-bold tracking-[0.15em] uppercase text-[#9FFF57]/60 mb-2">Payment Confirmed</p>
+            <p className="text-[14px] font-bold tracking-[0.15em] uppercase text-[#c8f135]/60 mb-2">Payment Confirmed</p>
             <h1 className="text-[28px] font-black text-black dark:text-white leading-tight mb-3">
               {subscription?.communities?.name
                 ? `You're in, ${subscription.communities.name}!`
@@ -243,7 +243,7 @@ export default function PaymentSuccessPage() {
               <button
                 onClick={() => verifyPayment({ silent: true })}
                 disabled={retrying}
-                className="w-full py-3.5 rounded-xl font-black text-[14px] bg-[#9FFF57] text-black hover:bg-[#b0ff6e] disabled:opacity-50 transition-colors"
+                className="w-full py-3.5 rounded-xl font-black text-[14px] bg-[#c8f135] text-black hover:bg-[#d6ff4f] disabled:opacity-50 transition-colors"
               >
                 {retrying ? 'Checking again…' : 'Retry verification'}
               </button>

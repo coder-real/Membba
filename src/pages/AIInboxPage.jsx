@@ -48,8 +48,8 @@ function IntentPill({ intent }) {
 function StatusPill({ status }) {
   const open = status === 'open'
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-bold ${open ? 'bg-[#9FFF57]/15 text-[#76d83b]' : 'bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-white/35'}`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${open ? 'bg-[#9FFF57]' : 'bg-gray-400'}`} />
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-bold ${open ? 'bg-[#c8f135]/15 text-[#c8f135]' : 'bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-white/35'}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${open ? 'bg-[#c8f135]' : 'bg-gray-400'}`} />
       {open ? 'Open' : 'Resolved'}
     </span>
   )
@@ -138,7 +138,7 @@ export default function AIInboxPage() {
     <>
       <div className="mb-8 mt-2 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#9FFF57]/20 bg-[#9FFF57]/10 px-3 py-1 text-[12px] font-bold text-[#76d83b]">
+          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#c8f135]/20 bg-[#c8f135]/10 px-3 py-1 text-[12px] font-bold text-[#c8f135]">
             <HiOutlineSparkles size={14} /> AI follow-up inbox
           </div>
           <h1 className="text-[28px] font-black tracking-tight text-black dark:text-white flex items-center gap-2">
@@ -178,7 +178,7 @@ export default function AIInboxPage() {
           <button
             key={s}
             onClick={() => setStatus(s)}
-            className={`rounded-[9px] px-3 py-2 text-[13px] font-bold capitalize transition ${status === s ? 'bg-[#9FFF57] text-black' : 'border border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-white/10 dark:text-white/35 dark:hover:bg-white/5'}`}
+            className={`rounded-[9px] px-3 py-2 text-[13px] font-bold capitalize transition ${status === s ? 'bg-[#c8f135] text-black' : 'border border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-white/10 dark:text-white/35 dark:hover:bg-white/5'}`}
           >
             {s}
           </button>
@@ -228,7 +228,7 @@ export default function AIInboxPage() {
                             Subscription
                             <Tooltip content="Resend invite only works for active subscriptions. Expired members should renew first." />
                           </p>
-                          <p className={`mt-1 font-bold ${active ? 'text-[#76d83b]' : 'text-amber-500'}`}>{sub?.status || 'unknown'}{sub?.plans?.name ? ` · ${sub.plans.name}` : ''}</p>
+                          <p className={`mt-1 font-bold ${active ? 'text-[#c8f135]' : 'text-amber-500'}`}>{sub?.status || 'unknown'}{sub?.plans?.name ? ` · ${sub.plans.name}` : ''}</p>
                         </div>
                       </div>
 
@@ -237,8 +237,8 @@ export default function AIInboxPage() {
                           <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-gray-400">Member said</p>
                           <p className="text-[14px] leading-relaxed text-gray-900 dark:text-white">{item.message}</p>
                         </div>
-                        <div className="rounded-[12px] border border-[#9FFF57]/15 bg-[#9FFF57]/5 p-4">
-                          <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-[#76d83b]">AI replied</p>
+                        <div className="rounded-[12px] border border-[#c8f135]/15 bg-[#c8f135]/5 p-4">
+                          <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-[#c8f135]">AI replied</p>
                           <p className="text-[14px] leading-relaxed text-gray-800 dark:text-white/80">{item.ai_reply}</p>
                         </div>
                       </div>
@@ -249,7 +249,7 @@ export default function AIInboxPage() {
                         {sub && (
                           <Link
                             to={`/dashboard/members?subscription=${sub.id}`}
-                            className="inline-flex items-center justify-center gap-2 rounded-[10px] border border-[#9FFF57]/30 bg-[#9FFF57]/10 px-4 py-2.5 text-[13px] font-black text-[#76d83b] transition hover:bg-[#9FFF57]/15"
+                            className="inline-flex items-center justify-center gap-2 rounded-[10px] border border-[#c8f135]/30 bg-[#c8f135]/10 px-4 py-2.5 text-[13px] font-black text-[#c8f135] transition hover:bg-[#c8f135]/15"
                           >
                             Open member
                           </Link>
@@ -258,7 +258,7 @@ export default function AIInboxPage() {
                           <button
                             onClick={() => resendInvite(item.id)}
                             disabled={busyId === item.id}
-                            className="inline-flex items-center justify-center gap-2 rounded-[10px] bg-[#9FFF57] px-4 py-2.5 text-[13px] font-black text-black transition hover:bg-[#b0ff6e] disabled:opacity-50"
+                            className="inline-flex items-center justify-center gap-2 rounded-[10px] bg-[#c8f135] px-4 py-2.5 text-[13px] font-black text-black transition hover:bg-[#d6ff4f] disabled:opacity-50"
                             title={active ? 'Resend or queue the invite for this active member' : 'Only active members can receive invite resend'}
                           >
                             <HiOutlinePaperAirplane size={15} /> Resend invite

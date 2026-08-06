@@ -18,6 +18,10 @@ import PaymentsPage from './pages/PaymentsPage'
 import SettingsPage from './pages/SettingsPage'
 import AutomationsPage from './pages/AutomationsPage'
 import AIInboxPage from './pages/AIInboxPage'
+import OpsLayout from './components/OpsLayout'
+import OpsOverviewPage from './pages/OpsOverviewPage'
+import OpsCasesPage from './pages/OpsCasesPage'
+import OpsCaseDetailPage from './pages/OpsCaseDetailPage'
 import OpsHelpdeskPage from './pages/OpsHelpdeskPage'
 import OpsCreatorDetailPage from './pages/OpsCreatorDetailPage'
 import JoinPage from './pages/JoinPage'
@@ -39,7 +43,7 @@ export default function App() {
                 fontSize: '13px',
                 padding: '10px 14px',
               },
-              success: { iconTheme: { primary: '#9FFF57', secondary: '#0a0a0a' } },
+              success: { iconTheme: { primary: '#c8f135', secondary: '#0a0a0a' } },
               error: { iconTheme: { primary: '#f87171', secondary: '#0a0a0a' } },
             }}
           />
@@ -52,8 +56,17 @@ export default function App() {
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/join/:slug" element={<JoinPage />} />
             <Route path="/payment/success" element={<PaymentSuccessPage />} />
-            <Route path="/ops/helpdesk" element={<ProtectedRoute><OpsHelpdeskPage /></ProtectedRoute>} />
-            <Route path="/ops/creators/:id" element={<ProtectedRoute><OpsCreatorDetailPage /></ProtectedRoute>} />
+            <Route path="/ops/helpdesk" element={<Navigate to="/membba-staff/helpdesk" replace />} />
+            <Route path="/ops/creators/:id" element={<Navigate to="/membba-staff/helpdesk" replace />} />
+
+            {/* Protected — Membba Staff Operations */}
+            <Route path="/membba-staff" element={<ProtectedRoute><OpsLayout /></ProtectedRoute>}>
+              <Route index element={<OpsOverviewPage />} />
+              <Route path="cases" element={<OpsCasesPage />} />
+              <Route path="cases/:id" element={<OpsCaseDetailPage />} />
+              <Route path="helpdesk" element={<OpsHelpdeskPage />} />
+              <Route path="creators/:id" element={<OpsCreatorDetailPage />} />
+            </Route>
 
             {/* Protected — Creator Dashboard */}
             <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>

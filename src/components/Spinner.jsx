@@ -17,7 +17,7 @@ export default function Spinner({ size = 'md', className = '' }) {
           height: dim,
           borderRadius: '50%',
           border: `${thickness}px solid rgba(159,255,87,0.12)`,
-          borderTopColor: '#9FFF57',
+          borderTopColor: '#c8f135',
           animation: 'spin-ring 0.75s linear infinite',
         }}
       />

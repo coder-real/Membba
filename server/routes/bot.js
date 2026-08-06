@@ -1,6 +1,7 @@
 import express from 'express'
 import { supabase } from '../lib/supabase.js'
 import { sendTelegramMessage, deleteTelegramMessage } from '../services/telegram.js'
+import { extractGroupLinkToken, completeTelegramGroupLink } from '../services/telegramGroupLink.js'
 import axios from 'axios'
 
 const router = express.Router()
@@ -26,21 +27,33 @@ router.post('/webhook', async (req, res) => {
   const text = (message.text || '').trim().toLowerCase()
   const firstName = message.from?.first_name || 'there'
 
-  // TSK-106: Detect if bot was added to a group (via new_chat_members or /start in group)
+  // Mobile-first group linking: /start token_xxx in a group should bind
+  // the group chat ID/title back to the creator's pending Membba setup token.
   if (message.chat.type === 'group' || message.chat.type === 'supergroup') {
+    const linkToken = extractGroupLinkToken(message.text || '')
+    if (linkToken) {
+      const result = await completeTelegramGroupLink({
+        token: linkToken,
+        chatId,
+        chatTitle: message.chat.title,
+        messageId: message.message_id,
+      })
+      if (result.linked) return
+    }
+
     const isBotAdded = message.new_chat_members?.some(member => member.username === 'membba_bot' || member.is_bot)
     if (isBotAdded || text.startsWith('/start')) {
       const res = await sendTelegramMessage({
         userId: chatId,
-        text: `✅ *Membba Bot connected!*\n\nYour Group Chat ID is:\n\`${chatId}\`\n\nCopy and paste this into your Membba dashboard to complete setup.\n\n_(This message will automatically self-destruct in 30 seconds for privacy)_`
+        text: `✅ *Membba Bot is in this group*\n\nReturn to Membba to finish setup. If auto-detect does not complete, use Advanced setup and enter this Chat ID:\n\`${chatId}\``
       })
       if (res && res.result && res.result.message_id) {
         setTimeout(() => {
           deleteTelegramMessage({ chatId, messageId: res.result.message_id })
-        }, 30 * 1000)
+        }, 45 * 1000)
       }
     }
-    return // Do not process standard bot features in groups
+    return
   }
 
   // Only handle private messages for the rest — never reply in groups
