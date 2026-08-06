@@ -3,9 +3,13 @@ import { sendTelegramInvite, kickChatMember, sendTelegramMessage } from './teleg
 import {
   sendWhatsAppInvite,
   removeWhatsAppMember,
-  sendWhatsAppMessage,
   getWhatsAppStatus,
 } from './whatsapp.js'
+import {
+  getWhatsAppProviderMode,
+  getWhatsAppProviderStatus,
+  sendWhatsAppProviderMessage,
+} from './whatsappProvider.js'
 
 /**
  * Create a subscription record after payment is confirmed.
@@ -105,24 +109,18 @@ export async function createSubscription({
     }
 
   } else if (platform === 'whatsapp') {
-    console.log(`\n[subscription] Platform is WhatsApp. Checking requirements for auto-add/invite...`)
+    console.log(`\n[subscription] Platform is WhatsApp. Checking requirements for invite delivery...`)
     console.log(`[subscription] whatsapp_phone: ${whatsappPhone || false}, invite_link: ${community.whatsapp_group_invite_link || false}, group_id: ${community.whatsapp_group_id || false}`)
 
-    // A group ID enables direct auto-add. An invite link is still enough to DM/queue
-    // access when the WhatsApp client is connected later.
     if (whatsappPhone && community.whatsapp_group_invite_link) {
-      if (getWhatsAppStatus() !== 'connected') {
-        console.warn('[subscription] WhatsApp client not ready — saving to pending queue.')
-        await supabase.from('whatsapp_pending_invites').insert({
-          phone: whatsappPhone,
-          invite_link: community.whatsapp_group_invite_link,
-          community_name: community.name,
-          community_id: communityId,
-          group_id: community.whatsapp_group_id || null,
-          custom_message: customMessage
-        })
-        inviteLink = community.whatsapp_group_invite_link
-      } else {
+      const providerMode = getWhatsAppProviderMode()
+      const providerStatus = getWhatsAppProviderStatus()
+      const shouldTryBaileysGroupAutomation =
+        providerMode !== 'meta' &&
+        getWhatsAppStatus() === 'connected' &&
+        Boolean(community.whatsapp_group_id)
+
+      if (shouldTryBaileysGroupAutomation) {
         try {
           await sendWhatsAppInvite(
             whatsappPhone,
@@ -134,8 +132,38 @@ export async function createSubscription({
           )
           inviteLink = community.whatsapp_group_invite_link
         } catch (err) {
-          console.error('[subscription] whatsapp invite failed:', err.message)
+          console.error('[subscription] baileys whatsapp invite failed:', err.message)
         }
+      }
+
+      // Reliable 1:1 delivery backbone: Meta Cloud API in meta/hybrid mode.
+      // If Baileys group automation did not run or failed, still try provider DM.
+      if (!inviteLink) {
+        const text = customMessage
+          ? `${customMessage}\n\nJoin here: ${community.whatsapp_group_invite_link}`
+          : `Your payment for ${community.name} is confirmed. Join the group here: ${community.whatsapp_group_invite_link}`
+
+        try {
+          await sendWhatsAppProviderMessage(whatsappPhone, text)
+          inviteLink = community.whatsapp_group_invite_link
+          console.log(`[subscription] WhatsApp invite delivered via provider:${providerMode}`)
+        } catch (err) {
+          console.warn(`[subscription] provider invite delivery failed (${providerMode}):`, err.message)
+        }
+      }
+
+      // Last fallback: queue for Baileys delivery later if provider delivery did not work.
+      if (!inviteLink) {
+        console.warn('[subscription] WhatsApp provider not ready — saving to pending queue.')
+        await supabase.from('whatsapp_pending_invites').insert({
+          phone: whatsappPhone,
+          invite_link: community.whatsapp_group_invite_link,
+          community_name: community.name,
+          community_id: communityId,
+          group_id: community.whatsapp_group_id || null,
+          custom_message: customMessage,
+        })
+        inviteLink = community.whatsapp_group_invite_link
       }
     } else {
       console.warn('[subscription] WhatsApp: missing phone or group invite link, skipping invite')
@@ -186,8 +214,9 @@ export async function processExpiredSubscriptions() {
         if (groupId && phone) {
           if (getWhatsAppStatus() === 'connected') {
             await removeWhatsAppMember(groupId, phone)
-            await sendWhatsAppMessage(phone,
-              `⏰ Your membership to *${communityName}* has expired.\n\nRenew here: ${joinUrl}`
+            await sendWhatsAppProviderMessage(
+              phone,
+              `⏰ Your membership to ${communityName} has expired.\n\nRenew here: ${joinUrl}`
             )
           } else {
             console.warn(`[cron] sub ${sub.id}: WhatsApp not ready, skipping removal`)

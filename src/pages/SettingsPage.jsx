@@ -116,6 +116,7 @@ export default function SettingsPage() {
   // ── WhatsApp Status ────────────────────────────────────────────────
   const [waStatus, setWaStatus] = useState("initializing");
   const [tgStatus, setTgStatus] = useState({ configured: false, online: false });
+  const [metaStatus, setMetaStatus] = useState({ configured: false });
   const [waQR, setWaQR]         = useState(null);
   const [waPairingCode, setWaPairingCode] = useState(null);
   const [waError, setWaError] = useState(null);
@@ -209,6 +210,7 @@ export default function SettingsPage() {
   useEffect(() => {
     fetchWaStatus();
     fetchTelegramStatus();
+    fetchMetaStatus();
     scheduleStatusPoll(6000);
     return () => clearInterval(statusIntervalRef.current);
   }, []);
@@ -221,6 +223,16 @@ export default function SettingsPage() {
     const ref = searchParams.get("reference");
     if (activeTab === "billing" && billingTab === "payment" && ref) verifyBillingCard(ref);
   }, [activeTab, billingTab, searchParams]);
+
+  const fetchMetaStatus = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/meta/status`);
+      const data = await res.json();
+      setMetaStatus(data);
+    } catch {
+      setMetaStatus({ configured: false });
+    }
+  };
 
   const fetchTelegramStatus = async () => {
     try {
@@ -673,7 +685,8 @@ export default function SettingsPage() {
                 {(() => {
                   const waOnline = waStatus === "connected"
                   const tgOnline = Boolean(tgStatus.online)
-                  const anyOnline = waOnline || tgOnline
+                  const metaOnline = Boolean(metaStatus.configured)
+                  const anyOnline = waOnline || tgOnline || metaOnline
                   return (
                     <div className="flex items-center gap-4">
                       <div className="flex flex-col items-center gap-2">
@@ -697,6 +710,12 @@ export default function SettingsPage() {
                         </div>
                         <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Telegram</span>
                       </div>
+                      <div className="flex flex-col items-center gap-2">
+                        <div className={`flex h-12 w-12 items-center justify-center rounded-full border ${metaOnline ? 'border-[var(--color-success)]/30 bg-[var(--color-success-muted)] text-[var(--color-success)]' : 'border-white/10 bg-white/5 text-gray-500'}`}>
+                          <span className="font-black text-[13px]">API</span>
+                        </div>
+                        <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Official API</span>
+                      </div>
                     </div>
                   )
                 })()}
@@ -708,6 +727,25 @@ export default function SettingsPage() {
                   sk_live_••••••••••••••••••••••••
                 </div>
                 <p className="text-[12px] text-gray-400 dark:text-white/25 mt-2">Change your key in Render → Environment Variables → PAYSTACK_SECRET_KEY</p>
+              </Section>
+
+              {/* Official WhatsApp API */}
+              <Section title="Official WhatsApp API" description="Meta Cloud API for reliable 1:1 WhatsApp messages, AI replies, invites, and reminders">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[14px] font-bold text-gray-900 dark:text-white">{metaStatus.configured ? 'Configured' : 'Not configured'}</p>
+                    <p className="mt-1 text-[12px] text-gray-400 dark:text-white/30">
+                      Provider mode: <span className="font-mono">{metaStatus.configured ? 'Meta available' : 'Baileys only'}</span>
+                    </p>
+                    {metaStatus.phone_number_id && <p className="mt-1 text-[12px] text-gray-400 dark:text-white/30 font-mono">Phone ID: {metaStatus.phone_number_id}</p>}
+                  </div>
+                  <span className={`rounded-full px-3 py-1 text-[12px] font-black ${metaStatus.configured ? 'bg-[var(--color-success-muted)] text-[var(--color-success)]' : 'bg-white/5 text-gray-400'}`}>
+                    {metaStatus.configured ? 'Ready' : 'Missing env'}
+                  </span>
+                </div>
+                <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-3 text-[12px] leading-relaxed text-gray-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-white/45">
+                  Webhook URL: <span className="font-mono">{window.location.origin.replace('5173', '3001')}/api/meta/webhook</span>. In production, use your Render backend URL.
+                </div>
               </Section>
 
               {/* Telegram */}
