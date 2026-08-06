@@ -177,7 +177,7 @@ export default function LandingPage() {
               <FeatureCard icon={Sparkles} title="AI first responder">Reply to member DMs with subscription context and escalate payment, refund, or invite issues to the AI Inbox.</FeatureCard>
               <FeatureCard icon={Inbox} title="AI Inbox">Review AI escalations, jump into member drawers, resolve issues, and resend invites for active members.</FeatureCard>
               <FeatureCard icon={Megaphone} title="Scheduled broadcasts">Queue announcements to communities and use AI to personalize the tone per group.</FeatureCard>
-              <FeatureCard icon={Bot} title="Membba Ops">Internal staff tools for creator support, payment lookup, subscription repair, and operational notes.</FeatureCard>
+              <FeatureCard icon={Bot} title="Staff-backed support">When creators report payment or access issues, Membba staff can inspect references, subscriptions, and operational notes internally.</FeatureCard>
             </div>
           </div>
         </section>

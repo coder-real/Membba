@@ -2,8 +2,17 @@ import express from 'express'
 import { checkBotAdminStatus } from '../services/telegram.js'
 import { getWhatsAppStatus } from '../services/whatsapp.js'
 import { supabase } from '../lib/supabase.js'
+import { createTelegramGroupLinkToken, getTelegramGroupLinkStatus, expireOldTelegramGroupTokens } from '../services/telegramGroupLink.js'
 
 const router = express.Router()
+
+async function getCreatorId(req) {
+  const token = req.headers.authorization?.replace('Bearer ', '')
+  if (!token) return null
+  const { data, error } = await supabase.auth.getUser(token)
+  if (error) return null
+  return data?.user?.id || null
+}
 
 // ─────────────────────────────────────────────────────
 // GET /api/telegram/status
@@ -19,6 +28,54 @@ router.get('/status', async (_req, res) => {
     res.json({ configured: true, online: Boolean(data.ok), bot: data.result || null })
   } catch {
     res.json({ configured: true, online: false })
+  }
+})
+
+// ─────────────────────────────────────────────────────
+// POST /api/telegram/group-link-token
+// Creates a short-lived token for mobile-first Telegram group auto-detect.
+// ─────────────────────────────────────────────────────
+router.post('/group-link-token', async (req, res) => {
+  const creatorId = await getCreatorId(req)
+  if (!creatorId) return res.status(401).json({ message: 'Unauthorized' })
+
+  try {
+    await expireOldTelegramGroupTokens()
+    const row = await createTelegramGroupLinkToken({ creatorId, communityId: req.body?.community_id || null })
+    const deepLink = `https://t.me/membba_bot?startgroup=token_${row.token}`
+    res.json({ token: row.token, deepLink, expires_at: row.expires_at })
+  } catch (err) {
+    console.error('[telegram/group-link-token] error:', err.message)
+    res.status(500).json({ message: 'Could not create Telegram connection token' })
+  }
+})
+
+// ─────────────────────────────────────────────────────
+// GET /api/telegram/group-link-status?token=xyz
+// Polls the Telegram group auto-detect token.
+// ─────────────────────────────────────────────────────
+router.get('/group-link-status', async (req, res) => {
+  const creatorId = await getCreatorId(req)
+  if (!creatorId) return res.status(401).json({ message: 'Unauthorized' })
+
+  const token = String(req.query.token || '').trim()
+  if (!token) return res.status(400).json({ message: 'token required' })
+
+  try {
+    await expireOldTelegramGroupTokens()
+    const row = await getTelegramGroupLinkStatus(token, creatorId)
+    if (!row) return res.status(404).json({ message: 'Token not found' })
+    res.json({
+      token: row.token,
+      status: row.status,
+      chat_id: row.chat_id,
+      chat_title: row.chat_title,
+      expires_at: row.expires_at,
+      connected_at: row.connected_at,
+    })
+  } catch (err) {
+    console.error('[telegram/group-link-status] error:', err.message)
+    res.status(500).json({ message: 'Could not check Telegram connection status' })
   }
 })
 

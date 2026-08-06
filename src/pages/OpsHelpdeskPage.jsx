@@ -191,7 +191,7 @@ export default function OpsHelpdeskPage() {
   }
 
   if (loading) {
-    return <div className="min-h-screen bg-gray-50 dark:bg-black p-8 text-gray-500">Loading Membba Ops…</div>
+    return <div className="min-h-screen bg-gray-50 dark:bg-black p-8 text-gray-500">Loading Membba Staff Console…</div>
   }
 
   if (error) {
@@ -199,9 +199,9 @@ export default function OpsHelpdeskPage() {
       <div className="min-h-screen bg-gray-50 dark:bg-black p-6 flex items-center justify-center">
         <div className="max-w-md rounded-2xl border border-red-200 bg-white p-7 text-center dark:border-red-500/20 dark:bg-[#111]">
           <HiOutlineShieldCheck size={36} className="mx-auto mb-3 text-red-400" />
-          <h1 className="text-xl font-black text-gray-900 dark:text-white">Ops access required</h1>
+          <h1 className="text-xl font-black text-gray-900 dark:text-white">Staff access required</h1>
           <p className="mt-2 text-sm text-gray-500 dark:text-white/45">{error}</p>
-          <p className="mt-4 text-xs text-gray-400 dark:text-white/25">Add your email to MEMBBA_ADMIN_EMAILS in the backend environment to access this page.</p>
+          <p className="mt-4 text-xs text-gray-400 dark:text-white/25">This area is only for Membba staff. Add staff emails to MEMBBA_ADMIN_EMAILS in the backend environment.</p>
           <Link to="/dashboard" className="mt-5 inline-block rounded-xl bg-[#c8f135] px-5 py-2.5 text-sm font-black text-black">Back to dashboard</Link>
         </div>
       </div>
@@ -288,7 +288,7 @@ export default function OpsHelpdeskPage() {
               <div className="rounded-xl border border-gray-200 p-4 dark:border-white/10">
                 <h3 className="mb-3 font-black">Creators</h3>
                 {searchResults.creators?.length ? searchResults.creators.map(c => (
-                  <Link to={`/ops/creators/${c.id}`} key={c.id} className="block border-b border-gray-100 py-3 last:border-0 hover:bg-gray-50 dark:border-white/5 dark:hover:bg-white/[0.03]">
+                  <Link to={`/membba-staff/creators/${c.id}`} key={c.id} className="block border-b border-gray-100 py-3 last:border-0 hover:bg-gray-50 dark:border-white/5 dark:hover:bg-white/[0.03]">
                     <p className="font-bold">{c.name}</p>
                     <p className="text-sm text-gray-500 dark:text-white/40">{c.email}</p>
                   </Link>
@@ -301,7 +301,7 @@ export default function OpsHelpdeskPage() {
                   <div key={c.id} className="border-b border-gray-100 py-3 last:border-0 dark:border-white/5">
                     <div className="flex items-center justify-between gap-2"><p className="font-bold">{c.name}</p><Pill tone={c.is_active ? 'green' : 'gray'}>{c.is_active ? 'active' : 'inactive'}</Pill></div>
                     <p className="text-sm text-gray-500 dark:text-white/40">/{c.slug} · {c.platform} · {c.creator?.email || 'Unknown creator'}</p>
-                    {c.creator?.id && <Link to={`/ops/creators/${c.creator.id}`} className="mt-1 inline-block text-xs font-bold text-[#c8f135] hover:underline">Open creator profile</Link>}
+                    {c.creator?.id && <Link to={`/membba-staff/creators/${c.creator.id}`} className="mt-1 inline-block text-xs font-bold text-[#c8f135] hover:underline">Open creator profile</Link>}
                   </div>
                 )) : <p className="text-sm text-gray-500">No communities found.</p>}
               </div>
@@ -374,9 +374,9 @@ export default function OpsHelpdeskPage() {
                 {notesLoading ? <p className="text-sm text-gray-500">Loading notes…</p> : notes.length ? notes.map(n => (
                   <div key={n.id} className="border-b border-gray-100 py-2 last:border-0 dark:border-white/5">
                     <p className="text-sm">{n.note}</p>
-                    <p className="mt-1 text-xs text-gray-400">{n.created_by_email || 'Ops'} · {new Date(n.created_at).toLocaleString()}</p>
+                    <p className="mt-1 text-xs text-gray-400">{n.created_by_email || 'Membba staff'} · {new Date(n.created_at).toLocaleString()}</p>
                   </div>
-                )) : <p className="text-sm text-gray-500">No notes yet. Run ops-notes migration if saving notes fails.</p>}
+                )) : <p className="text-sm text-gray-500">No internal notes yet. Run ops-notes migration if saving notes fails.</p>}
               </div>
             </div>
           )}
@@ -445,7 +445,7 @@ export default function OpsHelpdeskPage() {
                     <div className="text-right text-sm text-gray-500 dark:text-white/40">
                       <p>{p.creator?.name}</p>
                       <p>{p.creator?.email}</p>
-                      {p.creator?.id && <Link to={`/ops/creators/${p.creator.id}`} className="text-xs font-bold text-[#c8f135] hover:underline">Creator profile</Link>}
+                      {p.creator?.id && <Link to={`/membba-staff/creators/${p.creator.id}`} className="text-xs font-bold text-[#c8f135] hover:underline">Creator profile</Link>}
                     </div>
                   </div>
                 </div>
@@ -479,7 +479,7 @@ export default function OpsHelpdeskPage() {
                   </div>
                   <p className="text-sm text-gray-500 dark:text-white/40">/{c.slug} · {c.platform}</p>
                   <p className="mt-1 text-xs text-gray-400">{c.creator?.email || 'Unknown creator'}</p>
-                  {c.creator?.id && <Link to={`/ops/creators/${c.creator.id}`} className="mt-1 inline-block text-xs font-bold text-[#c8f135] hover:underline">Open creator</Link>}
+                  {c.creator?.id && <Link to={`/membba-staff/creators/${c.creator.id}`} className="mt-1 inline-block text-xs font-bold text-[#c8f135] hover:underline">Open creator</Link>}
                 </div>
               ))}
             </div>

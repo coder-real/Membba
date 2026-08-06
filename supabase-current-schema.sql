@@ -190,6 +190,42 @@ drop policy if exists "Service role can manage subscriptions" on subscriptions;
 -- ============================================
 -- TELEGRAM UID CAPTURE TOKENS
 -- ============================================
+
+create table if not exists telegram_group_link_tokens (
+  token text primary key,
+  creator_id uuid references auth.users(id) on delete cascade not null,
+  community_id uuid references communities(id) on delete cascade,
+  chat_id bigint,
+  chat_title text,
+  status text not null default 'pending',
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null,
+  connected_at timestamptz
+);
+
+alter table telegram_group_link_tokens
+  add column if not exists creator_id uuid references auth.users(id) on delete cascade,
+  add column if not exists community_id uuid references communities(id) on delete cascade,
+  add column if not exists chat_id bigint,
+  add column if not exists chat_title text,
+  add column if not exists status text not null default 'pending',
+  add column if not exists created_at timestamptz not null default now(),
+  add column if not exists expires_at timestamptz,
+  add column if not exists connected_at timestamptz;
+
+do $$ begin
+  alter table telegram_group_link_tokens add constraint telegram_group_link_tokens_status_check
+    check (status in ('pending', 'connected', 'expired'));
+exception when duplicate_object then null;
+end $$;
+
+alter table telegram_group_link_tokens enable row level security;
+
+drop policy if exists "creator reads own telegram group link tokens" on telegram_group_link_tokens;
+create policy "creator reads own telegram group link tokens"
+  on telegram_group_link_tokens for select
+  using (creator_id = auth.uid());
+
 create table if not exists telegram_uid_tokens (
   token text primary key,
   uid bigint,
@@ -447,6 +483,12 @@ create index if not exists idx_subscriptions_telegram_user_id on subscriptions(t
 create index if not exists idx_subscriptions_whatsapp_phone on subscriptions(whatsapp_phone);
 create index if not exists idx_subscriptions_paystack_reference on subscriptions(paystack_reference);
 
+
+create index if not exists idx_telegram_group_link_tokens_creator_created_at
+  on telegram_group_link_tokens(creator_id, created_at desc);
+create index if not exists idx_telegram_group_link_tokens_status_expires_at
+  on telegram_group_link_tokens(status, expires_at);
+
 create index if not exists idx_telegram_uid_tokens_created_at on telegram_uid_tokens(created_at);
 
 create index if not exists idx_whatsapp_pending_invites_created_at on whatsapp_pending_invites(created_at);
@@ -464,6 +506,13 @@ create index if not exists idx_ai_escalations_phone_created_at on ai_escalations
 create index if not exists idx_ai_escalations_assignee_status on ai_escalations(assigned_to_email, status, created_at desc);
 
 create index if not exists idx_member_conversations_phone on member_conversations(phone, created_at desc);
+
+
+create index if not exists idx_ops_cases_status_updated_at on ops_cases(status, updated_at desc);
+create index if not exists idx_ops_cases_assigned_status on ops_cases(assigned_to_email, status, updated_at desc);
+create index if not exists idx_ops_cases_creator_updated_at on ops_cases(creator_id, updated_at desc);
+create index if not exists idx_ops_cases_category_status on ops_cases(category, status, updated_at desc);
+create index if not exists idx_ops_case_activity_case_created_at on ops_case_activity(case_id, created_at desc);
 
 create index if not exists idx_ops_notes_entity_created_at on ops_notes(entity_type, entity_id, created_at desc);
 create index if not exists idx_ops_notes_created_at on ops_notes(created_at desc);

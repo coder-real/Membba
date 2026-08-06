@@ -102,18 +102,73 @@ export default function CommunityFormPage() {
   const [waGroupId, setWaGroupId] = useState(null)
   const [setupModal, setSetupModal] = useState(null) // null | { loading: true } | { allPass, checks }
   const [connectQr, setConnectQr] = useState(null)
+  const [telegramLinking, setTelegramLinking] = useState(false)
+  const [telegramAdvanced, setTelegramAdvanced] = useState(false)
+  const [telegramGroup, setTelegramGroup] = useState(null) // { title, chat_id }
+  const [telegramDeepLink, setTelegramDeepLink] = useState(null)
 
-  const openConnectQr = async () => {
-    // Generate QR code to add bot to a group
-    // Note: removed &admin=invite_users... as it often breaks the group search on some Telegram clients
-    const deepLink = `https://t.me/membba_bot?startgroup=setup`
-    try {
-      const dataUrl = await QRCode.toDataURL(deepLink, { width: 300, margin: 2 })
-      setConnectQr({ dataUrl, deepLink })
-    } catch {
-      toast.error('Failed to generate connection QR code')
+  async function getAuthHeaders() {
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+    return {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     }
   }
+
+  const startTelegramGroupLink = async () => {
+    setTelegramLinking(true)
+    setTelegramGroup(null)
+    try {
+      const res = await fetch(`${API_BASE}/api/telegram/group-link-token`, {
+        method: 'POST',
+        headers: await getAuthHeaders(),
+        body: JSON.stringify({ community_id: id || null }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data.token) throw new Error(data.message || 'Could not start Telegram connection')
+
+      setTelegramDeepLink(data.deepLink)
+      try { window.open(data.deepLink, '_blank', 'noopener,noreferrer') } catch { /* Arena/mobile can block popups */ }
+
+      let attempts = 0
+      const interval = setInterval(async () => {
+        attempts++
+        if (attempts > 90) {
+          clearInterval(interval)
+          setTelegramLinking(false)
+          toast.error('Telegram connection timed out. Try again or use manual setup.')
+          return
+        }
+
+        try {
+          const check = await fetch(`${API_BASE}/api/telegram/group-link-status?token=${encodeURIComponent(data.token)}`, {
+            headers: await getAuthHeaders(),
+          })
+          const status = await check.json()
+          if (status.status === 'connected' && status.chat_id) {
+            clearInterval(interval)
+            setTelegramLinking(false)
+            setTelegramGroup({ title: status.chat_title, chat_id: status.chat_id })
+            setForm(prev => ({ ...prev, telegram_chat_id: String(status.chat_id) }))
+            toast.success(`Telegram group connected: ${status.chat_title || status.chat_id}`)
+          }
+          if (status.status === 'expired') {
+            clearInterval(interval)
+            setTelegramLinking(false)
+            toast.error('Telegram connection expired. Try again.')
+          }
+        } catch {
+          // ignore transient polling errors
+        }
+      }, 2000)
+    } catch (err) {
+      setTelegramLinking(false)
+      toast.error(err.message || 'Failed to connect Telegram group')
+    }
+  }
+
+  const openConnectQr = startTelegramGroupLink
 
   const runSetupCheck = async () => {
     setSetupModal({ loading: true, checks: [] })
@@ -158,6 +213,7 @@ export default function CommunityFormPage() {
       msg_auto_delete_seconds: data.msg_auto_delete_seconds ?? 120,
     })
     setWaGroupId(data.whatsapp_group_id || null)
+    if (data.telegram_chat_id) setTelegramGroup({ title: data.name || 'Telegram group', chat_id: data.telegram_chat_id })
 
     const { data: planData } = await supabase
       .from('plans').select('*').eq('community_id', id).eq('is_active', true).order('created_at', { ascending: true })
@@ -508,63 +564,93 @@ export default function CommunityFormPage() {
 
           {/* ─── Telegram Setup Section ─── */}
           {form.platform === 'telegram' && (
-            <div
-              className="rounded-2xl border-2 border-[#229ED9]/30 bg-[#229ED9]/[0.04] relative overflow-hidden"
-              style={{ boxShadow: '0 0 40px rgba(34,158,217,0.06)' }}
-            >
-              {/* Corner watermark */}
+            <div className="rounded-2xl border border-[#229ED9]/25 bg-[#229ED9]/[0.04] relative overflow-hidden">
               <img src={telegramLogo} alt="" className="absolute -right-6 -bottom-6 w-36 h-36 opacity-[0.04] pointer-events-none select-none" />
 
-              {/* Header */}
               <div className="flex items-center gap-3 px-7 py-5 border-b border-[#229ED9]/10">
                 <div className="w-9 h-9 rounded-xl bg-[#229ED9]/15 flex items-center justify-center">
                   <img src={telegramLogo} alt="Telegram" className="w-5 h-5" />
                 </div>
                 <div>
                   <p className="text-[14px] font-black text-black dark:text-white">Telegram Group Setup</p>
-                  <p className="text-[14px] text-[#229ED9]/70">Connect your group in 2 steps</p>
+                  <p className="text-[14px] text-[#229ED9]/70">One-tap mobile setup. No Chat ID copy-paste.</p>
                 </div>
               </div>
 
               <div className="px-7 py-6 space-y-6">
+                <div className="rounded-xl border border-[#229ED9]/15 bg-[#229ED9]/[0.04] p-4">
+                  <div className="flex items-start gap-3">
+                    <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[13px] font-black ${form.telegram_chat_id ? 'bg-[#c8f135] text-black' : 'bg-[#229ED9]/20 text-[#229ED9]'}`}>
+                      {form.telegram_chat_id ? '✓' : '1'}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-[14px] font-bold text-black dark:text-white mb-1">Add Membba Bot to your group</p>
+                      <p className="text-[14px] text-black dark:text-white/45 mb-4 leading-relaxed">
+                        Tap the button, choose your Telegram group, make Membba Bot an admin, then return here. Membba will detect the group automatically.
+                      </p>
 
-                {/* Step 1 */}
-                <div className="flex gap-7">
-                  <div className="flex-shrink-0 w-7 h-7 rounded-full bg-[#229ED9]/20 border border-[#229ED9]/30 flex items-center justify-center text-[#229ED9] text-[14px] font-black">1</div>
-                  <div className="flex-1">
-                    <p className="text-[14px] font-bold text-black dark:text-white mb-1">Add Membba Bot to your group as Admin</p>
-                    <p className="text-[14px] text-black dark:text-white/40 mb-3">Scan the QR or click the button to open Telegram and select your group. The bot will automatically send your Chat ID.</p>
-                    <button
-                      type="button"
-                      onClick={openConnectQr}
-                      className="inline-flex items-center gap-2 bg-[#229ED9] text-black dark:text-white text-[14px] font-bold px-5 py-2.5 rounded-xl hover:bg-[#1a8fc4] transition-colors"
-                    >
-                      <img src={telegramLogo} alt="" className="w-4 h-4 invert brightness-0" />
-                      Connect via Bot
-                    </button>
+                      {telegramGroup || form.telegram_chat_id ? (
+                        <div className="rounded-xl border border-[#c8f135]/20 bg-[#c8f135]/10 px-4 py-3">
+                          <p className="text-[13px] font-black text-[#c8f135]">Group connected</p>
+                          <p className="mt-1 text-[13px] text-black dark:text-white/70">
+                            {telegramGroup?.title || 'Telegram group'} <span className="font-mono text-black dark:text-white/40">({form.telegram_chat_id})</span>
+                          </p>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={startTelegramGroupLink}
+                          disabled={telegramLinking}
+                          className="inline-flex items-center gap-2 bg-[#229ED9] text-white text-[14px] font-bold px-5 py-3 rounded-xl hover:bg-[#1a8fc4] disabled:opacity-60 transition-colors"
+                        >
+                          <img src={telegramLogo} alt="" className="w-4 h-4" />
+                          {telegramLinking ? 'Waiting for Telegram…' : 'Add Membba Bot to My Group'}
+                        </button>
+                      )}
+
+                      {telegramLinking && (
+                        <div className="mt-4 rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
+                          <p className="text-[13px] font-bold text-black dark:text-white mb-1">Waiting for Telegram</p>
+                          <p className="text-[13px] text-black dark:text-white/45 leading-relaxed">
+                            After adding the bot, come back here. This step turns green automatically once Telegram sends the group ID to Membba.
+                          </p>
+                          {telegramDeepLink && (
+                            <div className="mt-3 flex gap-2">
+                              <input readOnly value={telegramDeepLink} className="flex-1 min-w-0 rounded-lg border border-white/[0.08] bg-[#0a0a0a] px-2 py-2 font-mono text-[11px] text-white/50" />
+                              <button type="button" onClick={() => { navigator.clipboard.writeText(telegramDeepLink); toast.success('Telegram link copied') }} className="rounded-lg bg-[#229ED9] px-3 py-2 text-[12px] font-bold text-white">Copy</button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                {/* Step 2 */}
-                <div className="flex gap-7">
-                  <div className="flex-shrink-0 w-7 h-7 rounded-full bg-[#229ED9]/20 border border-[#229ED9]/30 flex items-center justify-center text-[#229ED9] text-[14px] font-black">2</div>
-                  <div className="flex-1">
-                    <p className="text-[14px] font-bold text-black dark:text-white mb-1 flex items-center gap-1.5">
-                      Paste your Group Chat ID
-                      <Tooltip content="This is the numeric ID of your Telegram group. Membba Bot uses it to create invite links and remove expired members." />
-                    </p>
-                    <p className="text-[14px] text-black dark:text-white/40 mb-3">The bot will post the ID to your group. Copy it here. It will self-destruct in 5 minutes.</p>
-                    <input
-                      type="text"
-                      name="telegram_chat_id"
-                      value={form.telegram_chat_id || ''}
-                      onChange={handleFormChange}
-                      className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-[#229ED9]/20 rounded-xl px-4 py-3 text-[14px] text-black dark:text-white placeholder-white/20 focus:outline-none focus:border-[#229ED9]/50 focus:ring-1 focus:ring-[#229ED9]/15 transition-colors font-mono"
-                      placeholder="e.g. -1001234567890"
-                    />
-                  </div>
+                <div className="border-t border-white/[0.06] pt-5">
+                  <button
+                    type="button"
+                    onClick={() => setTelegramAdvanced(v => !v)}
+                    className="text-[13px] font-bold text-black dark:text-white/45 hover:text-black dark:hover:text-white"
+                  >
+                    {telegramAdvanced ? 'Hide advanced manual setup' : 'Advanced: enter Chat ID manually'}
+                  </button>
+                  {telegramAdvanced && (
+                    <div className="mt-4">
+                      <p className="text-[14px] font-bold text-black dark:text-white mb-1 flex items-center gap-1.5">
+                        Telegram Chat ID
+                        <Tooltip content="Manual fallback only. Auto-detect is recommended, especially on mobile." />
+                      </p>
+                      <input
+                        type="text"
+                        name="telegram_chat_id"
+                        value={form.telegram_chat_id || ''}
+                        onChange={handleFormChange}
+                        className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-[#229ED9]/20 rounded-xl px-4 py-3 text-[14px] text-black dark:text-white placeholder-white/20 focus:outline-none focus:border-[#229ED9]/50 focus:ring-1 focus:ring-[#229ED9]/15 transition-colors font-mono"
+                        placeholder="e.g. -1001234567890"
+                      />
+                    </div>
+                  )}
                 </div>
-
               </div>
             </div>
           )}

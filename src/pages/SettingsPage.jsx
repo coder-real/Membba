@@ -118,17 +118,24 @@ export default function SettingsPage() {
   const [tgStatus, setTgStatus] = useState({ configured: false, online: false });
   const [waQR, setWaQR]         = useState(null);
   const [waPairingCode, setWaPairingCode] = useState(null);
-  const [connectMethod, setConnectMethod] = useState("qr");
+  const [waError, setWaError] = useState(null);
+  const [waDebug, setWaDebug] = useState(null);
+  const isMobileDevice = searchParams.get("mobile") === "true" || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const [connectMethod, setConnectMethod] = useState(isMobileDevice ? "pairing_code" : "qr");
   const [phoneInput, setPhoneInput]       = useState("");
   const [connecting, setConnecting]       = useState(false);
   const [showQRModal, setShowQRModal]     = useState(false);
   const [restarting, setRestarting]       = useState(false);
+  const [copiedPairing, setCopiedPairing] = useState(false);
   const pollRef            = useRef(null);
   const statusIntervalRef  = useRef(null);
   const statusBackoffRef   = useRef(6000);
   const qrBackoffRef       = useRef(4000);
   const avatarInputRef     = useRef(null);
 
+  useEffect(() => {
+    if (isMobileDevice && waStatus !== "connected") setConnectMethod("pairing_code");
+  }, [isMobileDevice, waStatus]);
 
   async function getAuthHeaders() {
     const { data } = await supabase.auth.getSession()
@@ -246,6 +253,8 @@ export default function SettingsPage() {
       const data = await res.json();
       setWaQR(data.qr || null);
       setWaPairingCode(data.pairingCode || null);
+      setWaError(data.error || null);
+      setWaDebug(data.debug || null);
       setWaStatus(data.status);
       if (data.status === "connected") { setShowQRModal(false); clearInterval(pollRef.current); toast.success("WhatsApp connected! ✅"); }
     } catch {
@@ -256,6 +265,23 @@ export default function SettingsPage() {
   };
   const openQRModal = () => { qrBackoffRef.current = 4000; setShowQRModal(true); fetchQR(); scheduleQRPoll(4000); };
   const closeQRModal = () => { setShowQRModal(false); clearInterval(pollRef.current); qrBackoffRef.current = 4000; };
+
+
+  async function copyPairingCode() {
+    if (!waPairingCode) return
+    try {
+      await navigator.clipboard.writeText(waPairingCode)
+      setCopiedPairing(true)
+      toast.success('Pairing code copied')
+      setTimeout(() => setCopiedPairing(false), 1500)
+    } catch {
+      toast.error('Could not copy code')
+    }
+  }
+
+  function openWhatsAppApp() {
+    window.location.href = 'whatsapp://app'
+  }
 
   const handleRestart = async () => {
     setRestarting(true);
@@ -270,12 +296,58 @@ export default function SettingsPage() {
     try {
       await fetch(`${API_BASE}/api/whatsapp/connect`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ method: connectMethod, phoneNumber: phoneInput.replace(/\D/g, "") }),
+        body: JSON.stringify({ method: connectMethod, phoneNumber: phoneInput.replace(/\D/g, ""), resetSession: true }),
       });
       openQRModal();
     } catch { toast.error("Failed to start WhatsApp connection"); }
     setConnecting(false);
   };
+
+
+  const handleResetWhatsAppSession = async () => {
+    setRestarting(true)
+    try {
+      const res = await fetch(`${API_BASE}/api/whatsapp/reset-session`, { method: 'POST' })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.message || 'Reset failed')
+      setWaStatus(data.status || 'initializing')
+      setWaDebug(data.debug || null)
+      setWaPairingCode(null)
+      setWaQR(null)
+      setWaError(null)
+      toast.success('WhatsApp session reset. Try connecting again.')
+    } catch (err) {
+      toast.error(err.message || 'Reset failed')
+    } finally {
+      setRestarting(false)
+    }
+  }
+
+
+  const handleResetAndReconnectWhatsApp = async () => {
+    setRestarting(true)
+    try {
+      await handleResetWhatsAppSession()
+      if (connectMethod === "pairing_code" && !phoneInput.trim()) {
+        toast.error("Enter your WhatsApp number first")
+        return
+      }
+      await fetch(`${API_BASE}/api/whatsapp/connect`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ method: connectMethod, phoneNumber: phoneInput.replace(/\D/g, ""), resetSession: true }),
+      })
+      setShowQRModal(true)
+      qrBackoffRef.current = 4000
+      fetchQR()
+      scheduleQRPoll(4000)
+      toast.success("Requested a fresh connection code")
+    } catch (err) {
+      toast.error(err.message || "Could not request new code")
+    } finally {
+      setRestarting(false)
+    }
+  }
 
   // ── Avatar upload ──────────────────────────────────────────────────
   const handleAvatarChange = async (e) => {
@@ -653,22 +725,63 @@ export default function SettingsPage() {
               >
                 {waStatus !== "connected" && (
                   <div className="mb-5">
+                    {isMobileDevice && (
+                      <div className="mb-3 rounded-xl border border-[#25D366]/20 bg-[#25D366]/10 p-3 text-[13px] text-gray-700 dark:text-white/70">
+                        Mobile detected — pairing code is selected because you can’t scan a QR code shown on the same phone.
+                      </div>
+                    )}
                     <div className="flex gap-2 mb-3">
                       {["qr", "pairing_code"].map(m => (
                         <button key={m} onClick={() => setConnectMethod(m)}
                           className={`px-3 py-1.5 rounded-[8px] text-[13px] font-bold transition border
                             ${connectMethod === m ? "bg-[#25D366]/10 text-[#25D366] border-[#25D366]/30" : "text-gray-500 dark:text-white/30 border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5"}`}>
-                          {m === "qr" ? "📷 Scan QR" : "📱 Phone Number"}
+                          {m === "qr" ? "📷 Scan QR" : "📱 Pairing Code"}
                         </button>
                       ))}
                     </div>
                     {connectMethod === "pairing_code" && (
-                      <input type="tel" value={phoneInput} onChange={e => setPhoneInput(e.target.value)}
-                        placeholder="e.g. 2348012345678 (country code, no +)"
-                        className={`${inputCls} mb-3`} />
+                      <div className="space-y-3">
+                        <input type="tel" value={phoneInput} onChange={e => setPhoneInput(e.target.value)}
+                          placeholder="e.g. 2348012345678 (country code, no +)"
+                          className={`${inputCls}`} />
+                        <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 text-[12px] leading-relaxed text-gray-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-white/45">
+                          After getting the code: WhatsApp → Linked Devices → Link with phone number → paste the code.
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}
+
+                <div className="mb-5 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[13px] font-black text-gray-900 dark:text-white">WhatsApp diagnostics</p>
+                      <p className="text-[12px] text-gray-500 dark:text-white/35">Use this to confirm what Baileys is doing under the hood.</p>
+                    </div>
+                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-black ${waStatus === 'connected' ? 'bg-[#25D366]/10 text-[#25D366]' : waStatus === 'needs_pairing_code' ? 'bg-blue-500/10 text-blue-400' : waStatus === 'pairing_failed' || waStatus === 'logged_out' ? 'bg-red-500/10 text-red-400' : 'bg-white/5 text-gray-400'}`}>
+                      {waStatus}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {[
+                      ['Socket', waDebug?.hasSocket ? 'Active' : 'None'],
+                      ['Registered', waDebug?.registered ? 'Yes' : 'No'],
+                      ['Account', waDebug?.account || 'Not linked'],
+                      ['Pairing phone', waDebug?.pairingPhoneLast4 ? `•••• ${waDebug.pairingPhoneLast4}` : '—'],
+                      ['Pairing requested', waDebug?.pairingRequestedAt ? new Date(waDebug.pairingRequestedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'],
+                      ['Last error', waError || waDebug?.lastError || 'None'],
+                    ].map(([label, value]) => (
+                      <div key={label} className="rounded-lg border border-gray-200 bg-white px-3 py-2 dark:border-white/10 dark:bg-black/20">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{label}</p>
+                        <p className="mt-0.5 break-all text-[12px] font-semibold text-gray-800 dark:text-white/70">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button onClick={fetchWaStatus} className="btn-secondary text-[12px]">Refresh diagnostics</button>
+                    <button onClick={handleResetWhatsAppSession} disabled={restarting} className="btn-secondary text-[12px]">{restarting ? 'Resetting…' : 'Reset session only'}</button>
+                  </div>
+                </div>
 
                 <div className="flex flex-wrap gap-2">
                   {waStatus !== "connected" && (
@@ -685,7 +798,7 @@ export default function SettingsPage() {
                   )}
                   <button onClick={handleRestart} disabled={restarting}
                     className="border border-gray-200 dark:border-white/10 text-gray-600 dark:text-[#dbdee1] px-4 py-2 rounded-[10px] text-[14px] font-semibold hover:bg-gray-50 dark:hover:bg-white/5 disabled:opacity-50 transition">
-                    {restarting ? "Restarting…" : "↺ Restart Client"}
+                    {restarting ? "Restarting…" : "↺ Restart current session"}
                   </button>
                 </div>
               </Section>
@@ -719,10 +832,31 @@ export default function SettingsPage() {
 
             {waStatus === "connected" ? (
               <div className="py-8"><p className="text-[40px] mb-3">✅</p><p className="text-[16px] font-bold text-[#c8f135]">Connected!</p></div>
-            ) : waStatus === "needs_pairing_code" && waPairingCode ? (
+            ) : waPairingCode ? (
               <div className="py-4">
-                <p className="text-[13px] text-gray-500 dark:text-white/40 mb-4">WhatsApp → Linked Devices → Link a Device → Enter code:</p>
+                <p className="text-[13px] text-gray-500 dark:text-white/40 mb-4">WhatsApp → Linked Devices → Link with phone number → enter code:</p>
                 <p className="text-[40px] font-black tracking-[0.15em] text-black dark:text-white">{waPairingCode}</p>
+                {waStatus !== "needs_pairing_code" && (
+                  <div className="mt-3 rounded-xl border border-amber-400/20 bg-amber-400/10 p-3 text-[12px] leading-relaxed text-amber-700 dark:text-amber-300">
+                    Connection is refreshing in the background. Keep this code open and try it in WhatsApp. If it fails, reset and request a new code.
+                  </div>
+                )}
+                <div className="mt-5 grid grid-cols-1 gap-2">
+                  <button onClick={copyPairingCode} className="btn-primary w-full justify-center">{copiedPairing ? 'Copied' : 'Copy Code'}</button>
+                  <button onClick={openWhatsAppApp} className="btn-secondary w-full justify-center">Open WhatsApp</button>
+                  <button onClick={handleResetAndReconnectWhatsApp} disabled={restarting} className="btn-secondary w-full justify-center">{restarting ? 'Requesting…' : 'Reset and get new code'}</button>
+                </div>
+                <p className="mt-4 text-[12px] leading-relaxed text-gray-500 dark:text-white/35">If WhatsApp does not open directly, open it manually and go to Linked Devices.</p>
+              </div>
+            ) : (waStatus === "pairing_failed" || waStatus === "logged_out") ? (
+              <div className="py-6">
+                <p className="text-[34px] mb-3">⚠️</p>
+                <p className="text-[16px] font-bold text-red-400">WhatsApp connection needs reset</p>
+                <p className="mt-2 text-[13px] leading-relaxed text-gray-500 dark:text-white/45">{waError || 'The saved WhatsApp session is stale or logged out. Reset it, then request a new pairing code.'}</p>
+                <div className="mt-5 grid gap-2">
+                  <button onClick={handleResetAndReconnectWhatsApp} disabled={restarting} className="btn-primary w-full justify-center">{restarting ? 'Requesting…' : 'Reset and get new code'}</button>
+                  <button onClick={closeQRModal} className="btn-secondary w-full justify-center">Close</button>
+                </div>
               </div>
             ) : waQR ? (
               <>
@@ -733,6 +867,7 @@ export default function SettingsPage() {
               <div className="py-10 flex flex-col items-center gap-3">
                 <HiOutlineArrowPath size={32} className="animate-spin text-[#25D366]" />
                 <p className="text-gray-500 dark:text-white/40 text-[14px]">Starting connection…</p>
+                <p className="mt-1 max-w-xs text-center text-[12px] text-gray-500 dark:text-white/25">If this takes more than 20 seconds, close this and use Reset WhatsApp session before trying again.</p>
               </div>
             )}
           </div>

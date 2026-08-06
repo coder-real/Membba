@@ -109,7 +109,7 @@ export default function OpsCreatorDetailPage() {
           <HiOutlineShieldCheck size={36} className="mx-auto mb-3 text-red-400" />
           <h1 className="text-xl font-black text-gray-900 dark:text-white">Could not load creator</h1>
           <p className="mt-2 text-sm text-gray-500 dark:text-white/45">{error}</p>
-          <Link to="/ops/helpdesk" className="mt-5 inline-block rounded-xl bg-[#c8f135] px-5 py-2.5 text-sm font-black text-black">Back to helpdesk</Link>
+          <Link to="/membba-staff/helpdesk" className="mt-5 inline-block rounded-xl bg-[#c8f135] px-5 py-2.5 text-sm font-black text-black">Back to staff help desk</Link>
         </div>
       </div>
     )
@@ -169,7 +169,7 @@ export default function OpsCreatorDetailPage() {
               {notes?.length ? notes.map(n => (
                 <div key={n.id} className="border-b border-gray-100 py-2 last:border-0 dark:border-white/5">
                   <p className="text-sm">{n.note}</p>
-                  <p className="mt-1 text-xs text-gray-400">{n.created_by_email || 'Ops'} · {new Date(n.created_at).toLocaleString()}</p>
+                  <p className="mt-1 text-xs text-gray-400">{n.created_by_email || 'Membba staff'} · {new Date(n.created_at).toLocaleString()}</p>
                 </div>
               )) : <p className="text-sm text-gray-500">No notes yet.</p>}
             </div>

@@ -18,6 +18,7 @@ const checks = [
   ['payment_events', 'id,paystack_reference,event,status,message,payload,created_at'],
   ['subscriptions', 'id,community_id,plan_id,email,telegram_user_id,whatsapp_phone,paystack_reference,status,started_at,expires_at,created_at'],
   ['telegram_uid_tokens', 'token,uid,created_at'],
+  ['telegram_group_link_tokens', 'token,creator_id,community_id,chat_id,chat_title,status,created_at,expires_at,connected_at'],
   ['baileys_sessions', 'id,data,updated_at'],
   ['whatsapp_pending_invites', 'id,phone,invite_link,community_name,community_id,group_id,custom_message,created_at'],
   ['automation_settings', 'creator_id,ai_responder,daily_digest,scheduler,digest_time,updated_at'],
@@ -26,6 +27,9 @@ const checks = [
   ['ai_escalations', 'id,phone,intent,action,message,ai_reply,status,assigned_to_email,priority,created_at,resolved_at'],
   ['member_conversations', 'id,phone,role,content,created_at'],
   ['ops_notes', 'id,entity_type,entity_id,note,created_by_email,created_at'],
+  ['ops_staff_roles', 'email,role,is_active,created_at'],
+  ['ops_cases', 'id,creator_id,creator_email,category,status,priority,subject,description,resolution_notes,engineering_summary,assigned_to_email,created_by_email,created_at,updated_at,resolved_at,closed_at'],
+  ['ops_case_activity', 'id,case_id,actor_email,action,message,metadata,created_at'],
 ]
 
 let failed = 0

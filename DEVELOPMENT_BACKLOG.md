@@ -159,11 +159,11 @@ Legend:
 - [x] Automations page includes Test AI Reply tool.
 
 ### Membba internal operations app
-- [x] Internal Ops Help Desk route: `/ops/helpdesk`.
-- [x] Ops admin allowlist via `MEMBBA_ADMIN_EMAILS`.
-- [x] Ops global search across creators, communities, payments, and subscriptions.
-- [x] Ops payment lookup and verify/repair subscription tool.
-- [x] Ops subscription actions: extend, cancel, resend invite.
-- [x] Ops internal notes backend + UI for payment lookup.
-- [x] Ops creator detail route: `/ops/creators/:id`.
-- [x] Ops creator detail shows creator profile, metrics, communities, payments, subscriptions, AI issues, automation settings, and notes.
+- [x] Internal Staff Help Desk route: `/membba-staff/helpdesk`.
+- [x] Staff admin allowlist via `MEMBBA_ADMIN_EMAILS`.
+- [x] Staff global search across creators, communities, payments, and subscriptions.
+- [x] Staff payment lookup and verify/repair subscription tool.
+- [x] Staff subscription actions: extend, cancel, resend invite.
+- [x] Staff internal notes backend + UI for payment lookup.
+- [x] Staff creator detail route: `/membba-staff/creators/:id`.
+- [x] Staff creator detail shows creator profile, metrics, communities, payments, subscriptions, AI issues, automation settings, and notes.

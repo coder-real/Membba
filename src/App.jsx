@@ -20,6 +20,8 @@ import AutomationsPage from './pages/AutomationsPage'
 import AIInboxPage from './pages/AIInboxPage'
 import OpsLayout from './components/OpsLayout'
 import OpsOverviewPage from './pages/OpsOverviewPage'
+import OpsCasesPage from './pages/OpsCasesPage'
+import OpsCaseDetailPage from './pages/OpsCaseDetailPage'
 import OpsHelpdeskPage from './pages/OpsHelpdeskPage'
 import OpsCreatorDetailPage from './pages/OpsCreatorDetailPage'
 import JoinPage from './pages/JoinPage'
@@ -60,6 +62,8 @@ export default function App() {
             {/* Protected — Membba Staff Operations */}
             <Route path="/membba-staff" element={<ProtectedRoute><OpsLayout /></ProtectedRoute>}>
               <Route index element={<OpsOverviewPage />} />
+              <Route path="cases" element={<OpsCasesPage />} />
+              <Route path="cases/:id" element={<OpsCaseDetailPage />} />
               <Route path="helpdesk" element={<OpsHelpdeskPage />} />
               <Route path="creators/:id" element={<OpsCreatorDetailPage />} />
             </Route>

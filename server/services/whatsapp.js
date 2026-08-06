@@ -3,6 +3,7 @@ import makeWASocket, {
   DisconnectReason,
   makeCacheableSignalKeyStore,
   fetchLatestBaileysVersion,
+  Browsers,
 } from '@whiskeysockets/baileys'
 import { Boom } from '@hapi/boom'
 import pino from 'pino'
@@ -84,6 +85,9 @@ const useSupabaseAuthState = async () => {
 let status = 'initializing'
 let currentQRDataUrl = null
 let pairingCode = null
+let pairingRequestedAt = null
+let pairingPhoneNumber = null
+let lastError = null
 let sock = null
 let connectionOptions = {}
 let isConnecting = false  // Lock — prevents overlapping initWhatsApp() calls
@@ -117,6 +121,18 @@ const randomDelay = () => delay(Math.random() * 2000 + 500) // 0.5–2.5 s
 export function getWhatsAppStatus() { return status }
 export function getWhatsAppQR()     { return currentQRDataUrl }
 export function getPairingCode()    { return pairingCode }
+export function getWhatsAppError()  { return lastError }
+export function getWhatsAppDebug()  {
+  return {
+    status,
+    hasSocket: Boolean(sock),
+    registered: Boolean(sock?.authState?.creds?.registered),
+    account: sock?.authState?.creds?.me?.id || null,
+    pairingRequestedAt,
+    pairingPhoneLast4: pairingPhoneNumber ? pairingPhoneNumber.slice(-4) : null,
+    lastError,
+  }
+}
 
 // ── Pending invite drain (called on every 'connected') ────────────────────────
 async function drainPendingInvites() {
@@ -189,7 +205,9 @@ export async function initWhatsApp(opts = {}) {
     },
     logger: pino({ level: 'silent' }),     // suppress noisy Baileys output
     printQRInTerminal: false,
-    browser: ['Membba', 'Chrome', '126.0'], // appear as a normal browser session
+    // Use Baileys' built-in browser profile instead of a hand-rolled tuple.
+    // This matches the documented connection examples more closely.
+    browser: Browsers.ubuntu('Membba'),
     connectTimeoutMs: 30_000,
     defaultQueryTimeoutMs: 60_000,
     keepAliveIntervalMs: 25_000,
@@ -207,11 +225,17 @@ export async function initWhatsApp(opts = {}) {
       setTimeout(async () => {
         try {
           if (!sock || sock.authState.creds.registered) return
-          const code = await sock.requestPairingCode(phoneNumber.replace(/\D/g, ''))
+          const cleanPhone = phoneNumber.replace(/\D/g, '')
+          const code = await sock.requestPairingCode(cleanPhone)
           pairingCode = code
+          pairingRequestedAt = new Date().toISOString()
+          pairingPhoneNumber = cleanPhone
+          lastError = null
           status = 'needs_pairing_code'
           console.log('[whatsapp] pairing code ready:', pairingCode)
         } catch (err) {
+          lastError = err.message
+          status = 'pairing_failed'
           console.error('[whatsapp] pairing code request failed:', err.message)
         }
       }, 3000)
@@ -235,8 +259,11 @@ export async function initWhatsApp(opts = {}) {
 
     if (connection === 'open') {
       status = 'connected'
+      lastError = null
       currentQRDataUrl = null
       pairingCode = null
+      pairingRequestedAt = null
+      pairingPhoneNumber = null
       console.log('[whatsapp] client ready — bot is online')
       await drainPendingInvites()
     }
@@ -251,12 +278,14 @@ export async function initWhatsApp(opts = {}) {
       if (didLogOut) {
         // Permanent logout — don't auto-restart. User must explicitly reconnect
         // via the dashboard. Auto-restarting on logout creates an infinite loop.
-        status = 'needs_scan'
+        status = 'logged_out'
+        lastError = 'WhatsApp logged out. Reset the session and reconnect.'
         currentQRDataUrl = null
         pairingCode = null
         console.warn('[whatsapp] logged out — waiting for manual reconnect')
       } else {
         status = 'reconnecting'
+        lastError = statusCode ? `Disconnected (${statusCode})` : 'Disconnected'
         console.warn(`[whatsapp] disconnected (${statusCode}) — reconnecting in 5s...`)
         setTimeout(() => initWhatsApp(connectionOptions), 5000)
       }
@@ -396,11 +425,34 @@ export async function initWhatsApp(opts = {}) {
 }
 
 // ── Restart ───────────────────────────────────────────────────────────────────
+export async function resetWhatsAppSession() {
+  console.log('[whatsapp] clearing Baileys session...')
+  try {
+    if (sock) {
+      try { sock.ev.removeAllListeners(); sock.end(undefined) } catch { /* ignore */ }
+      sock = null
+    }
+    await supabase.from('baileys_sessions').delete().neq('id', '__never__')
+    status = 'initializing'
+    currentQRDataUrl = null
+    pairingCode = null
+    pairingRequestedAt = null
+    pairingPhoneNumber = null
+    lastError = null
+  } catch (err) {
+    lastError = err.message
+    throw err
+  }
+}
+
 export async function restartWhatsApp(opts = null) {
   console.log('[whatsapp] restarting client...')
   status = 'initializing'
+  lastError = null
   currentQRDataUrl = null
   pairingCode = null
+  pairingRequestedAt = null
+  pairingPhoneNumber = null
 
   if (opts) connectionOptions = opts
 

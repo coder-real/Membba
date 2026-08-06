@@ -12,9 +12,9 @@ export default function OpsOverviewPage() {
     <>
       <PageHeader
         eyebrow="Membba Staff"
-        title="Operations overview"
-        description="Monitor platform health, support load, pending payments, and creator activity from one internal console."
-        action={<Button as={Link} to="/membba-staff/helpdesk" variant="primary"><LifeBuoy size={15} /> Open Help Desk</Button>}
+        title="Staff operations overview"
+        description="Internal Membba team view for assisting creators with reported issues, payment checks, AI escalations, and setup problems."
+        action={<Button as={Link} to="/membba-staff/cases" variant="primary"><LifeBuoy size={15} /> Open Cases</Button>}
       />
 
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-6">
@@ -28,14 +28,14 @@ export default function OpsOverviewPage() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card>
-          <CardHeader title="Internal issue queue" description="Internal queue for creator-reported issues, AI escalations, and payment checks." />
+          <CardHeader title="Internal issue queue" description="Internal queue for issues creators report to the Membba team, plus AI escalations and payment checks." />
           <CardBody>
             <div className="space-y-3">
-              <Link to="/membba-staff/helpdesk" className="flex items-center justify-between rounded-[var(--radius-default)] border border-[var(--color-border-default)] p-3 hover:bg-[var(--color-bg-elevated)]">
+              <Link to="/membba-staff/cases" className="flex items-center justify-between rounded-[var(--radius-default)] border border-[var(--color-border-default)] p-3 hover:bg-[var(--color-bg-elevated)]">
                 <span className="flex items-center gap-2 text-[13px] font-medium"><AlertTriangle size={16} /> Open issues</span>
                 <span className="font-mono text-[13px] text-[var(--color-warning)]">{summary?.open_escalations || 0}</span>
               </Link>
-              <Link to="/membba-staff/helpdesk" className="flex items-center justify-between rounded-[var(--radius-default)] border border-[var(--color-border-default)] p-3 hover:bg-[var(--color-bg-elevated)]">
+              <Link to="/membba-staff/cases" className="flex items-center justify-between rounded-[var(--radius-default)] border border-[var(--color-border-default)] p-3 hover:bg-[var(--color-bg-elevated)]">
                 <span className="flex items-center gap-2 text-[13px] font-medium"><CreditCard size={16} /> Payment checks</span>
                 <span className="font-mono text-[13px] text-[var(--color-warning)]">{summary?.pending_payments || 0}</span>
               </Link>
@@ -55,7 +55,7 @@ export default function OpsOverviewPage() {
         </Card>
 
         <Card>
-          <CardHeader title="System notes" description="What Ops should watch today." />
+          <CardHeader title="Staff notes" description="What the Membba team should watch today." />
           <CardBody>
             <div className="space-y-3 text-[13px] text-[var(--color-text-secondary)]">
               <p>WhatsApp/Baileys linking is still parked as an integration issue.</p>

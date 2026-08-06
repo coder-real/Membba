@@ -17,7 +17,8 @@ import API_BASE from '../lib/api'
 
 const OPS_LINKS = [
   { label: 'Overview', path: '/membba-staff', Icon: Activity, end: true },
-  { label: 'Help Desk', path: '/membba-staff/helpdesk', Icon: LifeBuoy },
+  { label: 'Cases', path: '/membba-staff/cases', Icon: Inbox },
+  { label: 'Staff Help Desk', path: '/membba-staff/helpdesk', Icon: LifeBuoy },
 ]
 
 export default function OpsLayout() {
@@ -43,7 +44,7 @@ export default function OpsLayout() {
         headers: { Authorization: `Bearer ${token}` },
       })
       const data = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(data.message || 'Ops access required')
+      if (!res.ok) throw new Error(data.message || 'Staff access required')
       setSummary(data)
       setAllowed(true)
     } catch (err) {
@@ -82,8 +83,8 @@ export default function OpsLayout() {
             <Bot size={18} strokeWidth={1.8} />
           </span>
           <div>
-            <p className="text-[14px] font-bold leading-4">Membba Ops</p>
-            <p className="text-[11px] text-[var(--color-text-muted)]">Staff console</p>
+            <p className="text-[14px] font-bold leading-4">Membba Staff</p>
+            <p className="text-[11px] text-[var(--color-text-muted)]">Internal console</p>
           </div>
         </Link>
 
@@ -104,7 +105,7 @@ export default function OpsLayout() {
 
         <div className="absolute bottom-3 left-3 right-3">
           <Link to="/dashboard" className="btn-secondary w-full justify-center">
-            <ArrowLeft size={15} /> Creator dashboard
+            <ArrowLeft size={15} /> Main app
           </Link>
         </div>
       </aside>
@@ -113,7 +114,7 @@ export default function OpsLayout() {
         <header className="sticky top-0 z-30 flex h-[52px] items-center justify-between border-b border-[var(--color-border-subtle)] bg-[var(--color-bg-sidebar)] px-4 lg:px-8">
           <div className="flex items-center gap-2 text-[13px] text-[var(--color-text-secondary)]">
             <ShieldCheck size={16} />
-            <span>Internal support workspace</span>
+            <span>Membba staff workspace</span>
           </div>
           <div className="hidden items-center gap-4 text-[12px] text-[var(--color-text-muted)] md:flex">
             <span>{summary?.open_escalations || 0} open issues</span>
