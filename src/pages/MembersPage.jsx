@@ -17,6 +17,7 @@ export default function MembersPage() {
   const [subscriptions, setSubscriptions] = useState([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('all')
+  const [query, setQuery] = useState('')
   const [removing, setRemoving] = useState(null)
   const [resending, setResending] = useState(null)
   const [selected, setSelected] = useState(null)
@@ -160,6 +161,24 @@ export default function MembersPage() {
     }
   }
 
+  const resolveEscalation = async (id) => {
+    setResolvingEscalation(id)
+    try {
+      const res = await fetch(`${API_BASE}/api/ai/escalations/${id}/resolve`, {
+        method: 'PATCH',
+        headers: await getAuthHeaders(),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.message || data.error || 'Failed to resolve escalation')
+      setMemberEscalations(prev => prev.map(e => e.id === id ? { ...e, status: 'resolved' } : e))
+      toast.success('Escalation resolved')
+    } catch (err) {
+      toast.error(err.message || 'Failed to resolve escalation')
+    } finally {
+      setResolvingEscalation(null)
+    }
+  }
+
   const copyRenewalLink = (s) => {
     const slug = s.communities?.slug
     if (!slug) return toast.error('Community slug not available')
@@ -168,7 +187,14 @@ export default function MembersPage() {
     toast.success('Renewal link copied')
   }
 
-  const filtered = tab === 'all' ? subscriptions : subscriptions.filter(s => s.status === tab)
+  const normalizedQuery = query.trim().toLowerCase()
+  const filtered = (tab === 'all' ? subscriptions : subscriptions.filter(s => s.status === tab))
+    .filter(s => {
+      if (!normalizedQuery) return true
+      return [s.email, s.communities?.name, s.plans?.name, s.whatsapp_phone, String(s.telegram_user_id || ''), s.paystack_reference]
+        .filter(Boolean)
+        .some(v => String(v).toLowerCase().includes(normalizedQuery))
+    })
 
   const counts = {
     all: subscriptions.length,
@@ -197,12 +223,20 @@ export default function MembersPage() {
         <p className="text-[14px] text-gray-600 dark:text-[#b5bac1] mt-1">All subscribers across your communities</p>
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-6">
-        {TABS.map(t => (
-          <button key={t} onClick={() => setTab(t)} className={`px-3 py-1.5 rounded-[4px] text-[14px] font-medium transition-all capitalize ${tab === t ? 'bg-white/[0.08] text-gray-900 dark:text-[#f2f3f5]' : 'text-gray-500 dark:text-[#96989d] hover:text-gray-800 dark:text-[#dbdee1] hover:bg-white/[0.03]'}`}>
-            {t.charAt(0).toUpperCase() + t.slice(1)} <span className="ml-1.5 text-[14px]">{counts[t]}</span>
-          </button>
-        ))}
+      <div className="mb-3 flex flex-col gap-2 rounded-[8px] border border-gray-200 bg-white p-3 dark:border-white/10 dark:bg-[#111] sm:flex-row sm:items-center sm:justify-between">
+        <input
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Search email, community, phone…"
+          className="min-w-0 flex-1 rounded-[6px] border border-gray-200 bg-gray-50 px-3 py-2 text-[13px] text-gray-900 outline-none focus:border-[#c8f135] dark:border-white/10 dark:bg-black/20 dark:text-white"
+        />
+        <div className="flex flex-wrap gap-2">
+          {TABS.map(t => (
+            <button key={t} onClick={() => setTab(t)} className={`px-3 py-2 rounded-[6px] text-[12px] font-bold transition-all capitalize ${tab === t ? 'bg-[#c8f135] text-black' : 'border border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-white/10 dark:text-white/45 dark:hover:bg-white/5'}`}>
+              {t} <span className="ml-1 opacity-70">{counts[t]}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="bg-white dark:bg-[#111] rounded-[8px] shadow-sm border border-gray-200 dark:border-white/10 overflow-hidden">
@@ -218,7 +252,7 @@ export default function MembersPage() {
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full min-w-[760px]">
                 <thead><tr className="border-b border-gray-200 dark:border-white/10">{['Member', 'Community / Plan', 'Platform ID', 'Started', 'Expires', 'Status', 'Actions'].map(h => <th key={h} className="px-4 py-3 text-left text-[14px] font-bold text-gray-600 dark:text-[#b5bac1] uppercase tracking-[0.8px]">{h}</th>)}</tr></thead>
-                <tbody className="divide-y divide-white/[0.04]">
+                <tbody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                   {filtered.map(s => (
                     <tr key={s.id} onClick={() => setSelected(s)} className={`hover:bg-white/[0.025] transition-colors cursor-pointer ${s.status !== 'active' ? 'opacity-60' : ''}`}>
                       <td className="px-4 py-3"><div className="flex items-center gap-2.5"><Avatar name={s.email} size={24} /><span className="text-[14px] font-semibold text-gray-900 dark:text-[#f2f3f5] max-w-[180px] truncate">{s.email}</span></div></td>
@@ -245,7 +279,7 @@ export default function MembersPage() {
               </table>
             </div>
 
-            <div className="md:hidden divide-y divide-white/[0.04]">
+            <div className="md:hidden divide-y divide-gray-100 dark:divide-white/[0.05]">
               {filtered.map(s => (
                 <div key={s.id} onClick={() => setSelected(s)} className={`px-4 py-3.5 cursor-pointer ${s.status !== 'active' ? 'opacity-60' : ''}`}>
                   <div className="flex items-start justify-between gap-2 mb-2"><div className="flex items-center gap-2.5 min-w-0"><Avatar name={s.email} size={24} /><p className="text-[14px] text-gray-900 dark:text-[#f2f3f5] font-semibold truncate">{s.email}</p></div><Pill status={s.status} /></div>
@@ -258,6 +292,12 @@ export default function MembersPage() {
               ))}
             </div>
           </>
+        )}
+        {!loading && filtered.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-200 px-4 py-3 text-[12px] text-gray-500 dark:border-white/10 dark:text-white/35">
+            <span>{filtered.length} of {subscriptions.length} members</span>
+            <span>Click a row to open member details</span>
+          </div>
         )}
       </div>
 

@@ -38,15 +38,13 @@ export default function DashboardPage() {
     setLoading(false)
   }
 
+  const totalMembers = stats.activeMembers + stats.expiredMembers
   const statCards = [
-    { label: 'TOTAL REVENUE',   value: `₦${stats.totalRevenue.toLocaleString()}`, sub: 'All time earnings',       trend: '↑ 40% vs last month',   trendColor: 'text-[#9FFF57]' },
-    { label: 'ACTIVE MEMBERS',  value: stats.activeMembers,                        sub: 'Current subscribers',     trend: '↑ 5 this week',         trendColor: 'text-[#9FFF57]' },
-    { label: 'COMMUNITIES',     value: stats.communities,                          sub: 'Active groups',           trend: '2 WhatsApp · 1 Telegram',trendColor: 'text-black dark:text-white/40' },
-    { label: 'JUNE EARNINGS',   value: '₦8.5k',                                     sub: 'Projected stats',         trend: 'On track',              trendColor: 'text-black dark:text-white/40' },
+    { label: 'TOTAL REVENUE',   value: `₦${stats.totalRevenue.toLocaleString()}`, sub: 'All time earnings', trend: stats.totalRevenue > 0 ? 'Live from successful payments' : 'No payments yet', trendColor: stats.totalRevenue > 0 ? 'text-[#9FFF57]' : 'text-black dark:text-white/40' },
+    { label: 'ACTIVE MEMBERS',  value: stats.activeMembers, sub: 'Current subscribers', trend: totalMembers > 0 ? `${totalMembers} total members` : 'No subscribers yet', trendColor: stats.activeMembers > 0 ? 'text-[#9FFF57]' : 'text-black dark:text-white/40' },
+    { label: 'COMMUNITIES',     value: stats.communities, sub: 'Active groups', trend: stats.communities > 0 ? 'Ready to accept members' : 'Create your first community', trendColor: stats.communities > 0 ? 'text-[#9FFF57]' : 'text-black dark:text-white/40' },
+    { label: 'EXPIRED MEMBERS', value: stats.expiredMembers, sub: 'Need renewal', trend: stats.expiredMembers > 0 ? 'Follow up recommended' : 'No expired members', trendColor: stats.expiredMembers > 0 ? 'text-[#f0883e]' : 'text-black dark:text-white/40' },
   ]
-
-  // Mock data for the chart layout
-  const fakeChartPoints = "M0,60 L20,55 L40,49 L60,52 L80,45 L100,48 L120,38 L140,40 L160,30 L180,28 L200,29"
 
   return (
     <>
@@ -91,24 +89,24 @@ export default function DashboardPage() {
             <h2 className="text-[14px] font-bold text-gray-900 dark:text-[#f2f3f5] mb-0.5">Revenue over time</h2>
             <p className="text-[14px] text-gray-600 dark:text-[#b5bac1]">Last 30 days - All communities</p>
           </div>
-          <div className="flex-1 w-full mt-8 relative">
-            {/* Minimalist SVG Chart placeholder matching reference */}
-            <svg viewBox="0 0 200 80" className="w-full h-full preserve-aspect-ratio-none" style={{ overflow: 'visible' }}>
-              <defs>
-                <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#9FFF57" stopOpacity="0.2" />
-                  <stop offset="100%" stopColor="#9FFF57" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <path d={`${fakeChartPoints} L200,80 L0,80 Z`} fill="url(#chartGradient)" />
-              <path d={fakeChartPoints} fill="none" stroke="#9FFF57" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              <circle cx="200" cy="29" r="2.5" fill="#9FFF57" />
-            </svg>
-            <div className="absolute bottom-[-20px] left-0 right-0 flex justify-between text-[14px] font-medium text-gray-500 dark:text-[#72767d]">
-              <span>May 20</span>
-              <span>Jun 3</span>
-              <span>Jun 19</span>
-            </div>
+          <div className="flex-1 w-full mt-8 relative flex items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50 dark:border-white/10 dark:bg-white/[0.02]">
+            {loading ? (
+              <Skeleton width="w-3/4" height="h-24" />
+            ) : stats.totalRevenue > 0 ? (
+              <div className="w-full px-6">
+                <div className="mb-4 flex items-end justify-between">
+                  <p className="text-[26px] font-black text-black dark:text-white">₦{stats.totalRevenue.toLocaleString()}</p>
+                  <p className="text-[13px] font-bold text-[#9FFF57]">Total collected</p>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-white/10"><div className="h-full w-full rounded-full bg-[#9FFF57]" /></div>
+                <p className="mt-3 text-[13px] text-gray-500 dark:text-white/35">Detailed revenue charts will appear as more payments come in.</p>
+              </div>
+            ) : (
+              <div className="px-6 text-center">
+                <p className="text-[15px] font-black text-gray-900 dark:text-white">No revenue yet</p>
+                <p className="mt-1 text-[13px] text-gray-500 dark:text-white/35">Revenue will appear here after your first successful payment.</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -137,26 +135,6 @@ export default function DashboardPage() {
                   </span>
                 </div>
               ))}
-              
-              {/* Demo activity items for the visual design */}
-              <div className="flex items-start justify-between gap-3 text-[14px]">
-                <div className="flex items-start gap-2.5 min-w-0">
-                   <div className="w-1.5 h-1.5 rounded-full bg-yellow-400 mt-1.5 flex-shrink-0" />
-                   <p className="text-gray-800 dark:text-[#dbdee1] leading-snug">
-                      <span className="font-semibold">alex@gmail.com</span>'s <span className="text-gray-500 dark:text-[#96989d]">plan expiring soon</span>
-                   </p>
-                </div>
-                <span className="text-gray-500 dark:text-[#72767d] whitespace-nowrap text-[14px]">1 day</span>
-              </div>
-              <div className="flex items-start justify-between gap-3 text-[14px]">
-                <div className="flex items-start gap-2.5 min-w-0">
-                   <div className="w-1.5 h-1.5 rounded-full bg-red-400 mt-1.5 flex-shrink-0" />
-                   <p className="text-gray-800 dark:text-[#dbdee1] leading-snug">
-                      <span className="font-semibold">john@doe.com</span> <span className="text-gray-500 dark:text-[#96989d]">was removed</span>
-                   </p>
-                </div>
-                <span className="text-gray-500 dark:text-[#72767d] whitespace-nowrap text-[14px]">3 days ago</span>
-              </div>
             </div>
           )}
         </div>

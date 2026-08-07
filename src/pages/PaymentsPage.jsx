@@ -16,6 +16,8 @@ export default function PaymentsPage() {
   const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(true)
   const [verifying, setVerifying] = useState(null)
+  const [query, setQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
 
   useEffect(() => { fetchPayments() }, [user])
 
@@ -64,7 +66,15 @@ export default function PaymentsPage() {
   }
 
   const referenceFilter = searchParams.get('reference') || ''
-  const visiblePayments = referenceFilter ? payments.filter(p => p.paystack_reference === referenceFilter) : payments
+  const normalizedQuery = query.trim().toLowerCase()
+  const visiblePayments = (referenceFilter ? payments.filter(p => p.paystack_reference === referenceFilter) : payments)
+    .filter(p => statusFilter === 'all' || p.status === statusFilter)
+    .filter(p => {
+      if (!normalizedQuery) return true
+      return [p.email, p.paystack_reference, p.communities?.name, p.plans?.name, p.whatsapp_phone, String(p.telegram_user_id || '')]
+        .filter(Boolean)
+        .some(v => String(v).toLowerCase().includes(normalizedQuery))
+    })
 
   const totalRevenue   = payments.filter(p => p.status === 'success').reduce((s, p) => s + (p.amount || 0), 0)
   const now            = new Date()
@@ -140,6 +150,22 @@ export default function PaymentsPage() {
         </div>
       )}
 
+      <div className="mb-3 flex flex-col gap-2 rounded-[8px] border border-gray-200 bg-white p-3 dark:border-white/10 dark:bg-[#111] sm:flex-row sm:items-center sm:justify-between">
+        <input
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Search email, reference, community…"
+          className="min-w-0 flex-1 rounded-[6px] border border-gray-200 bg-gray-50 px-3 py-2 text-[13px] text-gray-900 outline-none focus:border-[#c8f135] dark:border-white/10 dark:bg-black/20 dark:text-white"
+        />
+        <div className="flex flex-wrap gap-2">
+          {['all', 'success', 'pending', 'failed'].map(s => (
+            <button key={s} onClick={() => setStatusFilter(s)} className={`rounded-[6px] px-3 py-2 text-[12px] font-bold capitalize transition ${statusFilter === s ? 'bg-[#c8f135] text-black' : 'border border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-white/10 dark:text-white/45 dark:hover:bg-white/5'}`}>
+              {s === 'success' ? 'paid' : s}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="bg-white dark:bg-[#111] rounded-[8px] shadow-sm border border-gray-200 dark:border-white/10 overflow-hidden">
         {loading ? (
           <div className="p-5 space-y-3">
@@ -163,7 +189,7 @@ export default function PaymentsPage() {
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/[0.04]">
+                <tbody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                   {visiblePayments.map(p => (
                     <tr key={p.id} className="hover:bg-white/[0.015] transition-colors cursor-default">
                       <td className="px-4 py-2.5 text-[14px] font-medium text-gray-600 dark:text-[#b5bac1]">
@@ -214,7 +240,7 @@ export default function PaymentsPage() {
               </table>
             </div>
 
-            <div className="lg:hidden divide-y divide-white/[0.04]">
+            <div className="lg:hidden divide-y divide-gray-100 dark:divide-white/[0.05]">
               {visiblePayments.map(p => (
                 <div key={p.id} className="px-4 py-3.5">
                   <div className="flex items-start justify-between gap-3 mb-2">
@@ -252,6 +278,12 @@ export default function PaymentsPage() {
               ))}
             </div>
           </>
+        )}
+        {!loading && visiblePayments.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-200 px-4 py-3 text-[12px] text-gray-500 dark:border-white/10 dark:text-white/35">
+            <span>{visiblePayments.length} of {payments.length} payments</span>
+            <span>Sorted newest first</span>
+          </div>
         )}
       </div>
     </>

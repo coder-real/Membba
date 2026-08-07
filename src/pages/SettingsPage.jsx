@@ -797,45 +797,96 @@ export default function SettingsPage() {
               <IntegrationNav active={integrationTab} onSelect={setIntegrationTab} />
 
               {integrationTab === 'overview' && (
-                <Section title="Connected channels" description="A simple view of what Membba can use right now. Open a specific setup area when you need to change something.">
-                {(() => {
-                  const waOnline = waStatus === "connected"
-                  const tgOnline = Boolean(tgStatus.online)
-                  const metaOnline = Boolean(metaStatus.configured)
-                  const anyOnline = waOnline || tgOnline || metaOnline
-                  return (
-                    <div className="flex items-center gap-4">
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[var(--color-border-default)] bg-[var(--color-bg-elevated)]">
-                          <span
-                            className={`h-7 w-7 ${anyOnline ? 'bg-[var(--color-success)]' : 'bg-[var(--color-danger)]'}`}
-                            style={{ WebkitMask: "url('/bot-icon.svg') center / contain no-repeat", mask: "url('/bot-icon.svg') center / contain no-repeat" }}
-                          />
+                <div className="space-y-4">
+                  <Section title="Primary channels" description="These are the connections that power paid community access, member messages, and automation.">
+                    {(() => {
+                      const waOnline = waStatus === 'connected'
+                      const tgOnline = Boolean(tgStatus.online)
+                      const metaOnline = Boolean(metaStatus.configured)
+                      const cards = [
+                        {
+                          id: 'official',
+                          title: 'Official WhatsApp API',
+                          description: 'Reliable 1:1 delivery for invites, payment confirmations, AI replies, and renewal reminders.',
+                          Icon: FaWhatsapp,
+                          color: '#25D366',
+                          status: metaOnline ? 'Ready' : 'Missing env',
+                          ready: metaOnline,
+                          badge: 'Basic default',
+                        },
+                        {
+                          id: 'advanced',
+                          title: 'WhatsApp Advanced',
+                          description: 'Optional QR-linked Baileys device for group add/remove, metadata, and invite rotation.',
+                          Icon: FaWhatsapp,
+                          color: '#25D366',
+                          status: waOnline ? 'Connected' : 'Optional',
+                          ready: waOnline,
+                          badge: 'Beta',
+                        },
+                        {
+                          id: 'telegram',
+                          title: 'Telegram Bot',
+                          description: 'Bot-admin setup for invite generation, member access, and subscription removal.',
+                          Icon: FaTelegram,
+                          color: '#229ED9',
+                          status: tgOnline ? 'Online' : 'Configured by bot token',
+                          ready: tgOnline,
+                          badge: 'Official bot',
+                        },
+                      ]
+                      return (
+                        <div className="grid gap-3 lg:grid-cols-3">
+                          {cards.map(card => {
+                            const Icon = card.Icon
+                            return (
+                              <button
+                                key={card.id}
+                                type="button"
+                                onClick={() => setIntegrationTab(card.id)}
+                                className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-left transition hover:border-gray-300 hover:bg-white dark:border-white/10 dark:bg-white/[0.03] dark:hover:border-white/20 dark:hover:bg-white/[0.05]"
+                              >
+                                <div className="mb-4 flex items-start justify-between gap-3">
+                                  <div className="flex h-10 w-10 items-center justify-center rounded-xl border" style={{ borderColor: `${card.color}33`, backgroundColor: `${card.color}14`, color: card.color }}>
+                                    <Icon size={22} />
+                                  </div>
+                                  <div className="flex flex-col items-end gap-1.5">
+                                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-black ${card.ready ? 'bg-[#c8f135]/10 text-[#c8f135]' : 'bg-amber-400/10 text-amber-500 dark:text-amber-300'}`}>
+                                      {card.status}
+                                    </span>
+                                    <span className="rounded-full border border-gray-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:border-white/10 dark:text-white/30">{card.badge}</span>
+                                  </div>
+                                </div>
+                                <p className="text-[15px] font-black text-gray-900 dark:text-white">{card.title}</p>
+                                <p className="mt-1 min-h-[54px] text-[13px] leading-relaxed text-gray-500 dark:text-white/40">{card.description}</p>
+                                <p className="mt-4 text-[12px] font-black text-[#c8f135]">Open settings →</p>
+                              </button>
+                            )
+                          })}
                         </div>
-                        <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Bot</span>
-                      </div>
-                      <div className="flex flex-col items-center gap-2">
-                        <div className={`flex h-12 w-12 items-center justify-center rounded-full border ${waOnline ? 'border-[#25D366]/30 bg-[#25D366]/10 text-[#25D366]' : 'border-white/10 bg-white/5 text-gray-500'}`}>
-                          <FaWhatsapp size={25} />
+                      )
+                    })()}
+                  </Section>
+
+                  <Section title="Secondary services" description="Payment and infrastructure services used by Membba.">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <button onClick={() => setIntegrationTab('payments')} className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-gray-50 p-4 text-left hover:bg-white dark:border-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.05]">
+                        <div>
+                          <p className="text-[14px] font-black text-gray-900 dark:text-white">Paystack</p>
+                          <p className="mt-1 text-[12px] text-gray-500 dark:text-white/35">Payment processor for subscriptions and saved cards.</p>
                         </div>
-                        <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">WhatsApp</span>
-                      </div>
-                      <div className="flex flex-col items-center gap-2">
-                        <div className={`flex h-12 w-12 items-center justify-center rounded-full border ${tgOnline ? 'border-[#229ED9]/30 bg-[#229ED9]/10 text-[#229ED9]' : 'border-white/10 bg-white/5 text-gray-500'}`}>
-                          <FaTelegram size={25} />
+                        <StatusChip status="ready">Configured</StatusChip>
+                      </button>
+                      <div className="flex items-center justify-between gap-4 rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-left dark:border-white/10 dark:bg-white/[0.02]">
+                        <div>
+                          <p className="text-[14px] font-black text-gray-900 dark:text-white">Storage & files</p>
+                          <p className="mt-1 text-[12px] text-gray-500 dark:text-white/35">Avatar bucket is managed through Supabase Storage.</p>
                         </div>
-                        <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Telegram</span>
-                      </div>
-                      <div className="flex flex-col items-center gap-2">
-                        <div className={`flex h-12 w-12 items-center justify-center rounded-full border ${metaOnline ? 'border-[var(--color-success)]/30 bg-[var(--color-success-muted)] text-[var(--color-success)]' : 'border-white/10 bg-white/5 text-gray-500'}`}>
-                          <span className="font-black text-[13px]">API</span>
-                        </div>
-                        <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Official API</span>
+                        <StatusChip status="idle">Supabase</StatusChip>
                       </div>
                     </div>
-                  )
-                })()}
-              </Section>
+                  </Section>
+                </div>
               )}
 
               {/* Paystack */}

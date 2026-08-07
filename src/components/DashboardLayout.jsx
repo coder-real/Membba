@@ -98,7 +98,7 @@ function BotStatus({ online }) {
   )
 }
 
-function ChannelStatusBar({ telegramOnline, whatsappOnline, metaOnline }) {
+function ChannelStatusBar({ telegramOnline, whatsappOnline, metaOnline, navigate }) {
   const items = [
     { id: 'telegram', title: telegramOnline ? 'Telegram bot online' : 'Telegram not connected', online: telegramOnline, color: '#229ED9', Icon: FaTelegram },
     { id: 'whatsapp', title: whatsappOnline ? 'WhatsApp advanced connected' : 'WhatsApp advanced offline', online: whatsappOnline, color: '#25D366', Icon: FaWhatsapp },
@@ -107,7 +107,7 @@ function ChannelStatusBar({ telegramOnline, whatsappOnline, metaOnline }) {
   return (
     <button
       type="button"
-      onClick={() => { window.location.href = '/dashboard/settings?tab=integrations' }}
+      onClick={() => navigate('/dashboard/settings?tab=integrations')}
       className="hidden items-center gap-1.5 rounded-full border border-[var(--color-border-default)] bg-[var(--color-bg-elevated)] px-2 py-1 md:flex"
       title="Messaging channel status"
     >
@@ -242,9 +242,10 @@ export default function DashboardLayout({ children, pageTitle }) {
     navigate(item.sections[0]?.items[0]?.path || item.path)
   }
 
-  const ParentButton = ({ item }) => {
+  const ParentButton = ({ item, mobile = false }) => {
     const active = activeNav.id === item.id || activeParent === item.id
     const Icon = item.Icon
+    const collapsed = subnavOpen && !mobile
     return (
       <button
         type="button"
@@ -253,12 +254,12 @@ export default function DashboardLayout({ children, pageTitle }) {
           active
             ? 'border-transparent bg-[var(--color-bg-elevated)] text-[var(--color-text-primary)]'
             : 'border-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-elevated)] hover:text-[var(--color-text-primary)]'
-        } ${subnavOpen ? 'justify-center px-0' : ''}`}
-        title={subnavOpen ? item.label : undefined}
+        } ${collapsed ? 'justify-center px-0' : ''}`}
+        title={collapsed ? item.label : undefined}
       >
         <Icon size={18} strokeWidth={1.5} className="shrink-0" />
-        <span className={`truncate ${subnavOpen ? 'hidden' : 'inline'}`}>{item.label}</span>
-        {subnavOpen && (
+        <span className={`truncate ${collapsed ? 'hidden' : 'inline'}`}>{item.label}</span>
+        {collapsed && (
           <span className="pointer-events-none absolute left-[46px] z-[90] whitespace-nowrap rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-bg-elevated)] px-2 py-1 text-[12px] text-[var(--color-text-primary)] opacity-0 shadow-2xl transition-opacity duration-150 group-hover/nav:opacity-100">
             {item.label}
           </span>
@@ -267,14 +268,14 @@ export default function DashboardLayout({ children, pageTitle }) {
     )
   }
 
-  const Sidebar = () => (
+  const Sidebar = ({ mobile = false } = {}) => (
     <div className="flex h-full flex-col bg-[var(--color-bg-sidebar)] py-3 text-[var(--color-text-primary)]">
-      <div className={`mb-1 flex items-center px-3 ${subnavOpen ? 'justify-center' : 'gap-2'}`}>
+      <div className={`mb-1 flex items-center px-3 ${subnavOpen && !mobile ? 'justify-center' : 'gap-2'}`}>
         <img src="/green.svg" alt="Membba" className="h-7" />
-        <span className={`font-bold tracking-tight ${subnavOpen ? 'hidden' : 'inline'}`}>Membba</span>
+        <span className={`font-bold tracking-tight ${subnavOpen && !mobile ? 'hidden' : 'inline'}`}>Membba</span>
       </div>
       <div className="space-y-1 pt-2">
-        {NAV.map(item => <ParentButton key={item.id} item={item} />)}
+        {NAV.map(item => <ParentButton key={item.id} item={item} mobile={mobile} />)}
       </div>
     </div>
   )
@@ -317,7 +318,7 @@ export default function DashboardLayout({ children, pageTitle }) {
 
       {mobileOpen && <div className="fixed inset-0 z-40 bg-[var(--color-bg-overlay)] backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} />}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 flex flex-col border-r border-[var(--color-border-subtle)] transition-transform duration-300 lg:hidden ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <Sidebar />
+        <Sidebar mobile />
       </aside>
 
       <div className={`flex min-h-screen min-w-0 flex-1 flex-col transition-[margin] duration-200 ease-in-out ${subnavOpen ? 'lg:ml-[252px]' : 'lg:ml-[220px]'}`}>
@@ -334,7 +335,7 @@ export default function DashboardLayout({ children, pageTitle }) {
             </div>
           </div>
           <div className="relative flex items-center gap-3" ref={avatarMenuRef}>
-            <ChannelStatusBar telegramOnline={channelStatus.telegram} whatsappOnline={channelStatus.whatsapp} metaOnline={channelStatus.meta} />
+            <ChannelStatusBar telegramOnline={channelStatus.telegram} whatsappOnline={channelStatus.whatsapp} metaOnline={channelStatus.meta} navigate={navigate} />
             <BotStatus online={botOnline} />
             <button type="button" onClick={() => setAvatarOpen(v => !v)} aria-label="Open account menu" className="rounded-full">
               <UserAvatar user={user} />

@@ -136,6 +136,7 @@ function AutomationCard({
       </div>
 
       {/* Meta row */}
+      {expanded && (
       <div className="border-t border-gray-100 dark:border-white/5 px-5 sm:px-6 py-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
         <MetaChip icon={HiOutlineCalendarDays} label="Schedule" value={schedule} />
         <MetaChip
@@ -167,6 +168,7 @@ function AutomationCard({
           </div>
         )}
       </div>
+      )}
 
       {/* Optional expanded controls (e.g. time picker) — always shows when present */}
       {children && expanded && (
