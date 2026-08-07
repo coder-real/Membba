@@ -204,9 +204,9 @@ export default function MembersPage() {
   }
 
   const Pill = ({ status }) => {
-    if (status === 'active') return <span className="inline-flex items-center gap-1.5 bg-[#c8f135]/10 border border-[#c8f135]/10 px-2 py-0.5 rounded-[4px] text-[14px] font-bold text-[#c8f135]"><span className="w-1.5 h-1.5 rounded-full bg-[#c8f135]" /> Active</span>
-    if (status === 'expired') return <span className="inline-flex items-center gap-1.5 bg-yellow-400/10 border border-yellow-400/10 px-2 py-0.5 rounded-[4px] text-[14px] font-bold text-yellow-400"><span className="w-1.5 h-1.5 rounded-full bg-yellow-400" /> Expired</span>
-    return <span className="inline-flex items-center gap-1.5 bg-white/[0.05] border border-white/[0.05] px-2 py-0.5 rounded-[4px] text-[14px] font-bold text-gray-500 dark:text-[#96989d]"><span className="w-1.5 h-1.5 rounded-full bg-[#4f545c]" /> Cancelled</span>
+    if (status === 'active') return <span className="inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full text-[12px] font-medium text-emerald-400"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Active</span>
+    if (status === 'expired') return <span className="inline-flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-full text-[12px] font-medium text-amber-400"><span className="w-1.5 h-1.5 rounded-full bg-amber-400" /> Expired</span>
+    return <span className="inline-flex items-center gap-1.5 bg-white/5 border border-white/10 px-2.5 py-0.5 rounded-full text-[12px] font-medium text-white/50"><span className="w-1.5 h-1.5 rounded-full bg-white/40" /> Cancelled</span>
   }
 
   const DetailRow = ({ label, value, mono }) => (
@@ -219,8 +219,8 @@ export default function MembersPage() {
   return (
     <>
       <div className="mb-6">
-        <h1 className="text-[22px] font-black text-gray-900 dark:text-[#f2f3f5] tracking-tight">Members</h1>
-        <p className="text-[14px] text-gray-600 dark:text-[#b5bac1] mt-1">All subscribers across your communities</p>
+        <h1 className="page-title text-gray-900 dark:text-[#f2f3f5]">Members</h1>
+        <p className="body-md text-gray-600 dark:text-[#b5bac1] mt-1">All subscribers across your communities</p>
       </div>
 
       <div className="mb-3 flex flex-col gap-2 rounded-[8px] border border-gray-200 bg-white p-3 dark:border-white/10 dark:bg-[#111] sm:flex-row sm:items-center sm:justify-between">
@@ -228,12 +228,12 @@ export default function MembersPage() {
           value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder="Search email, community, phone…"
-          className="min-w-0 flex-1 rounded-[6px] border border-gray-200 bg-gray-50 px-3 py-2 text-[13px] text-gray-900 outline-none focus:border-[#c8f135] dark:border-white/10 dark:bg-black/20 dark:text-white"
+          className="min-w-0 flex-1 rounded-[6px] border border-gray-200 bg-gray-50 px-3 py-2 data-primary text-gray-900 outline-none focus:border-[#c8f135] dark:border-white/10 dark:bg-black/20 dark:text-white"
         />
         <div className="flex flex-wrap gap-2">
           {TABS.map(t => (
-            <button key={t} onClick={() => setTab(t)} className={`px-3 py-2 rounded-[6px] text-[12px] font-bold transition-all capitalize ${tab === t ? 'bg-[#c8f135] text-black' : 'border border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-white/10 dark:text-white/45 dark:hover:bg-white/5'}`}>
-              {t} <span className="ml-1 opacity-70">{counts[t]}</span>
+            <button key={t} onClick={() => setTab(t)} className={`px-3 py-1.5 rounded-[6px] data-primary text-[12px] font-bold transition-all capitalize ${tab === t ? 'bg-[#c8f135] text-black' : 'border border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-white/10 dark:text-white/45 dark:hover:bg-white/5'}`}>
+              {t} <span className="ml-1 opacity-70 data-mono">{counts[t]}</span>
             </button>
           ))}
         </div>
@@ -244,33 +244,33 @@ export default function MembersPage() {
           <div className="p-5 space-y-3"><Skeleton width="w-full" height="h-6" /><Skeleton width="w-full" height="h-6" /><Skeleton width="w-full" height="h-6" /></div>
         ) : filtered.length === 0 ? (
           <div className="py-12 text-center px-6">
-            <p className="text-[14px] font-semibold text-gray-900 dark:text-[#f2f3f5] mb-1">No {tab !== 'all' ? tab : ''} members</p>
-            <p className="text-[14px] text-gray-500 dark:text-[#96989d]">{tab === 'all' ? 'Members will appear here when they subscribe.' : `No members with "${tab}" status.`}</p>
+            <p className="section-title text-gray-900 dark:text-[#f2f3f5] mb-1">No {tab !== 'all' ? tab : ''} members</p>
+            <p className="body-md text-gray-500 dark:text-[#96989d]">{tab === 'all' ? 'Members will appear here when they subscribe.' : `No members with "${tab}" status.`}</p>
           </div>
         ) : (
           <>
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full min-w-[760px]">
-                <thead><tr className="border-b border-gray-200 dark:border-white/10">{['Member', 'Community / Plan', 'Platform ID', 'Started', 'Expires', 'Status', 'Actions'].map(h => <th key={h} className="px-4 py-3 text-left text-[14px] font-bold text-gray-600 dark:text-[#b5bac1] uppercase tracking-[0.8px]">{h}</th>)}</tr></thead>
+                <thead><tr className="border-b border-gray-200 dark:border-white/10">{['Member', 'Community / Plan', 'Platform ID', 'Started', 'Expires', 'Status', 'Actions'].map(h => <th key={h} className="px-4 py-3 text-left table-header text-gray-600 dark:text-[#b5bac1]">{h}</th>)}</tr></thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                   {filtered.map(s => (
                     <tr key={s.id} onClick={() => setSelected(s)} className={`hover:bg-white/[0.025] transition-colors cursor-pointer ${s.status !== 'active' ? 'opacity-60' : ''}`}>
-                      <td className="px-4 py-3"><div className="flex items-center gap-2.5"><Avatar name={s.email} size={24} /><span className="text-[14px] font-semibold text-gray-900 dark:text-[#f2f3f5] max-w-[180px] truncate">{s.email}</span></div></td>
+                      <td className="px-4 py-3"><div className="flex items-center gap-2.5"><Avatar name={s.email} size={24} /><span className="data-primary text-gray-900 dark:text-[#f2f3f5] max-w-[180px] truncate">{s.email}</span></div></td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-[14px] text-gray-800 dark:text-[#dbdee1]">{s.communities?.name}</span>
-                          {s.plans?.name && <span className="text-gray-500 dark:text-[#96989d] text-[14px]">· {s.plans.name}</span>}
+                          <span className="data-primary text-gray-800 dark:text-[#dbdee1]">{s.communities?.name}</span>
+                          {s.plans?.name && <span className="body-md text-gray-500 dark:text-[#96989d]">· {s.plans.name}</span>}
                           {s.communities?.platform === 'whatsapp' && <WhatsAppModeBadge mode={s.communities?.whatsapp_setup_mode || 'basic'} size="xs" />}
                         </div>
                       </td>
-                      <td className="px-4 py-3 font-mono text-[14px] text-gray-500 dark:text-[#96989d]">{s.telegram_user_id || s.whatsapp_phone || '—'}</td>
-                      <td className="px-4 py-3 text-[14px] text-gray-500 dark:text-[#96989d]">{new Date(s.started_at).toLocaleDateString()}</td>
-                      <td className="px-4 py-3 text-[14px] text-gray-500 dark:text-[#96989d]">{new Date(s.expires_at).toLocaleDateString()}</td>
+                      <td className="px-4 py-3 data-mono text-gray-500 dark:text-[#96989d]">{s.telegram_user_id || s.whatsapp_phone || '—'}</td>
+                      <td className="px-4 py-3 data-mono text-gray-500 dark:text-[#96989d]">{new Date(s.started_at).toLocaleDateString()}</td>
+                      <td className="px-4 py-3 data-mono text-gray-500 dark:text-[#96989d]">{new Date(s.expires_at).toLocaleDateString()}</td>
                       <td className="px-4 py-3"><Pill status={s.status} /></td>
                       <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center gap-2">
-                          <button onClick={() => setSelected(s)} className="text-[14px] px-2.5 py-1 rounded-[4px] font-medium text-[#c8f135] hover:bg-[#c8f135]/10 transition-colors">View</button>
-                          {s.status === 'active' && <button onClick={() => handleRemove(s)} disabled={removing === s.id} className="text-[14px] px-2.5 py-1 rounded-[4px] font-medium text-red-400 hover:bg-red-500/10 disabled:opacity-40 transition-colors">{removing === s.id ? '…' : 'Remove'}</button>}
+                          <button onClick={() => setSelected(s)} className="label-xs px-2.5 py-1 rounded-[4px] font-bold text-[#c8f135] hover:bg-[#c8f135]/10 transition-colors">View</button>
+                          {s.status === 'active' && <button onClick={() => handleRemove(s)} disabled={removing === s.id} className="label-xs px-2.5 py-1 rounded-[4px] font-bold text-red-400 hover:bg-red-500/10 disabled:opacity-40 transition-colors">{removing === s.id ? '…' : 'Remove'}</button>}
                         </div>
                       </td>
                     </tr>
@@ -302,8 +302,10 @@ export default function MembersPage() {
       </div>
 
       {selected && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm" onClick={() => setSelected(null)}>
-          <aside className="h-full w-full max-w-lg overflow-y-auto bg-white p-6 shadow-2xl dark:bg-[#111]" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-end lg:items-stretch lg:justify-end bg-black/60 backdrop-blur-sm transition-opacity" onClick={() => setSelected(null)}>
+          <aside className="w-full max-w-lg h-[70vh] sm:h-[65vh] lg:h-full overflow-y-auto bg-white p-6 shadow-2xl dark:bg-[#111] rounded-t-2xl lg:rounded-none border-t border-gray-200 dark:border-white/10 lg:border-t-0 lg:border-l" onClick={e => e.stopPropagation()}>
+            {/* Mobile Grab Handle Bar */}
+            <div className="lg:hidden mx-auto mb-4 h-1.5 w-12 rounded-full bg-gray-300 dark:bg-white/20" />
             <div className="mb-6 flex items-start justify-between gap-4">
               <div className="flex items-center gap-3 min-w-0">
                 <Avatar name={selected.email} size={42} />
@@ -323,7 +325,7 @@ export default function MembersPage() {
               )}
             </div>
 
-            <div className="rounded-xl border border-gray-200 p-4 dark:border-white/10 mb-5">
+            <div className="rounded-none border border-gray-200 p-4 dark:border-white/10 mb-5">
               <DetailRow label="Platform ID" value={selected.telegram_user_id || selected.whatsapp_phone} mono />
               {selected.communities?.platform === 'whatsapp' && (
                 <DetailRow
@@ -340,16 +342,16 @@ export default function MembersPage() {
             </div>
 
             <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <button onClick={() => copyRenewalLink(selected)} className="rounded-xl border border-gray-200 px-4 py-3 text-[13px] font-bold text-gray-700 hover:bg-gray-50 dark:border-white/10 dark:text-white/60 dark:hover:bg-white/5">Copy renewal link</button>
-              <button onClick={() => extendSubscription(selected, 30)} disabled={extending === selected.id} className="rounded-xl bg-[#c8f135] px-4 py-3 text-[13px] font-black text-black disabled:opacity-50">{extending === selected.id ? 'Extending…' : '+30 days'}</button>
-              {selected.status === 'active' && selected.telegram_user_id && !selected.whatsapp_phone && <button onClick={() => handleResend(selected)} disabled={resending === selected.id} className="rounded-xl bg-[#229ED9] px-4 py-3 text-[13px] font-black text-white disabled:opacity-50">{resending === selected.id ? 'Sending…' : 'Resend invite'}</button>}
-              {selected.status === 'active' && <button onClick={() => handleRemove(selected)} disabled={removing === selected.id} className="rounded-xl border border-red-300 px-4 py-3 text-[13px] font-bold text-red-500 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-500/10">{removing === selected.id ? 'Removing…' : 'Remove member'}</button>}
+              <button onClick={() => copyRenewalLink(selected)} className="rounded-none border border-gray-200 px-4 py-3 text-[13px] font-bold text-gray-700 hover:bg-gray-50 dark:border-white/10 dark:text-white/60 dark:hover:bg-white/5">Copy renewal link</button>
+              <button onClick={() => extendSubscription(selected, 30)} disabled={extending === selected.id} className="rounded-none bg-[#c8f135] px-4 py-3 text-[13px] font-black text-black disabled:opacity-50">{extending === selected.id ? 'Extending…' : '+30 days'}</button>
+              {selected.status === 'active' && selected.telegram_user_id && !selected.whatsapp_phone && <button onClick={() => handleResend(selected)} disabled={resending === selected.id} className="rounded-none bg-[#229ED9] px-4 py-3 text-[13px] font-black text-white disabled:opacity-50">{resending === selected.id ? 'Sending…' : 'Resend invite'}</button>}
+              {selected.status === 'active' && <button onClick={() => handleRemove(selected)} disabled={removing === selected.id} className="rounded-none border border-red-300 px-4 py-3 text-[13px] font-bold text-red-500 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-500/10">{removing === selected.id ? 'Removing…' : 'Remove member'}</button>}
             </div>
 
             <section className="mb-6">
               <h3 className="font-black text-gray-900 dark:text-white mb-3">Payment history</h3>
               {detailLoading ? <p className="text-sm text-gray-500">Loading…</p> : memberPayments.length ? memberPayments.map(p => (
-                <div key={p.id} className="rounded-xl border border-gray-200 p-3 mb-2 dark:border-white/10">
+                <div key={p.id} className="rounded-none border border-gray-200 p-3 mb-2 dark:border-white/10">
                   <div className="flex items-center justify-between gap-2"><p className="text-sm font-bold">₦{Number(p.amount || 0).toLocaleString()}</p><span className="text-xs text-gray-500 capitalize">{p.status}</span></div>
                   <div className="mt-1 flex items-center justify-between gap-2">
                     <p className="font-mono text-xs text-gray-400 break-all">{p.paystack_reference}</p>
@@ -372,7 +374,7 @@ export default function MembersPage() {
             <section>
               <h3 className="font-black text-gray-900 dark:text-white mb-3">AI escalations</h3>
               {detailLoading ? <p className="text-sm text-gray-500">Loading…</p> : memberEscalations.length ? memberEscalations.map(e => (
-                <div key={e.id} className="rounded-xl border border-gray-200 p-3 mb-2 dark:border-white/10">
+                <div key={e.id} className="rounded-none border border-gray-200 p-3 mb-2 dark:border-white/10">
                   <div className="flex items-center gap-2 mb-2"><span className="rounded-full bg-amber-400/10 px-2 py-0.5 text-xs font-bold text-amber-500">{e.intent}</span><span className="text-xs text-gray-400">{e.status}</span></div>
                   <p className="text-sm text-gray-900 dark:text-white">{e.message}</p>
                   <p className="text-xs text-gray-400 mt-1">{new Date(e.created_at).toLocaleString()}</p>

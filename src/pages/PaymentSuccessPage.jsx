@@ -18,7 +18,7 @@ function CopyButton({ value, label = 'Copy' }) {
     <button
       type="button"
       onClick={() => { navigator.clipboard.writeText(value || ''); toast.success('Copied') }}
-      className="rounded-lg border border-gray-200 px-3 py-1.5 text-[12px] font-bold text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-white/50 dark:hover:bg-white/5"
+      className="rounded-none border border-gray-200 px-3 py-1.5 text-[12px] font-bold text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-white/50 dark:hover:bg-white/5"
     >
       {label}
     </button>
@@ -126,13 +126,13 @@ export default function PaymentSuccessPage() {
             </p>
 
             {alreadyProcessed && (
-              <div className="mb-5 rounded-xl border border-blue-400/20 bg-blue-400/10 px-5 py-4 text-[14px] text-blue-700 dark:text-blue-300">
+              <div className="mb-5 rounded-none border border-blue-400/20 bg-blue-400/10 px-5 py-4 text-[14px] text-blue-700 dark:text-blue-300">
                 This payment had already been processed, so we didn’t create a duplicate subscription.
               </div>
             )}
 
             {subscription && (
-              <div className="border border-white/[0.07] bg-white dark:bg-[#111] rounded-xl px-5 py-4 mb-7 mt-5">
+              <div className="border border-white/[0.07] bg-white dark:bg-[#111] rounded-none px-5 py-4 mb-7 mt-5">
                 <div className="grid grid-cols-2 gap-y-3">
                   {subscription.communities?.name && (
                     <>
@@ -166,7 +166,7 @@ export default function PaymentSuccessPage() {
                   href={inviteLink}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center justify-center gap-3 w-full py-4 rounded-xl font-black text-[15px] text-black dark:text-white transition-all active:scale-[0.99]"
+                  className="flex items-center justify-center gap-3 w-full py-4 rounded-none font-black text-[15px] text-black dark:text-white transition-all active:scale-[0.99]"
                   style={{ backgroundColor: platColor }}
                 >
                   <PlatIcon size={20} />
@@ -182,7 +182,7 @@ export default function PaymentSuccessPage() {
               </div>
             ) : (
               <>
-                <div className="border rounded-xl px-5 py-4 mb-6 text-[14px] leading-relaxed"
+                <div className="border rounded-none px-5 py-4 mb-6 text-[14px] leading-relaxed"
                   style={{ borderColor: `${platColor}30`, backgroundColor: `${platColor}08` }}>
                   <p className="font-bold mb-1.5" style={{ color: platColor }}>
                     Next step: check your {platLabel}
@@ -226,7 +226,7 @@ export default function PaymentSuccessPage() {
                       <span>{showHelp ? '▲' : '▼'}</span>
                     </button>
                     {showHelp && (
-                      <div className="mt-2 bg-white dark:bg-[#111] border border-white/[0.07] rounded-xl p-7 text-[14px] text-black dark:text-white/50 space-y-2 leading-relaxed">
+                      <div className="mt-2 bg-white dark:bg-[#111] border border-white/[0.07] rounded-none p-7 text-[14px] text-black dark:text-white/50 space-y-2 leading-relaxed">
                         <p>1. Open Telegram and search for <span className="font-mono text-black dark:text-white/70">@membba_bot</span></p>
                         <p>2. Send the command <span className="font-mono text-black dark:text-white/70">/start</span></p>
                         <p>3. Wait a moment — the bot will automatically send you the invite link.</p>
@@ -262,7 +262,7 @@ export default function PaymentSuccessPage() {
             </p>
 
             {reference && (
-              <div className="bg-white dark:bg-[#111] border border-white/[0.07] rounded-xl px-5 py-3.5 mb-5 flex items-center justify-between gap-3">
+              <div className="bg-white dark:bg-[#111] border border-white/[0.07] rounded-none px-5 py-3.5 mb-5 flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-[14px] text-black dark:text-white/30 uppercase tracking-wider font-semibold mb-1">Reference</p>
                   <p className="font-mono text-[14px] text-black dark:text-white/70 break-all">{reference}</p>
@@ -275,12 +275,12 @@ export default function PaymentSuccessPage() {
               <button
                 onClick={() => verifyPayment({ silent: true })}
                 disabled={retrying}
-                className="w-full py-3.5 rounded-xl font-black text-[14px] bg-[#c8f135] text-black hover:bg-[#d6ff4f] disabled:opacity-50 transition-colors"
+                className="w-full py-3.5 rounded-none font-black text-[14px] bg-[#c8f135] text-black hover:bg-[#d6ff4f] disabled:opacity-50 transition-colors"
               >
                 {retrying ? 'Checking again…' : 'Retry verification'}
               </button>
               <a href={supportHref}
-                className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-bold text-[14px] bg-white/[0.06] text-black dark:text-white/70 hover:bg-white/[0.09] transition-colors border border-white/[0.07]">
+                className="flex items-center justify-center gap-2 w-full py-3.5 rounded-none font-bold text-[14px] bg-white/[0.06] text-black dark:text-white/70 hover:bg-white/[0.09] transition-colors border border-white/[0.07]">
                 Contact Support
               </a>
               <Link to="/"

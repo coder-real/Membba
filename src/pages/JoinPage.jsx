@@ -168,7 +168,7 @@ export default function JoinPage() {
   const platLabel  = isWA ? 'WhatsApp' : 'Telegram'
 
   const inputCls = [
-    'w-full bg-[#0d0d0d] border rounded-xl px-4 py-3 text-[14px] text-black dark:text-white',
+    'w-full bg-[#0d0d0d] border rounded-none px-4 py-3 text-[14px] text-black dark:text-white',
     'placeholder-white/20 focus:outline-none transition-all duration-200',
     'border-gray-200 dark:border-white/10 focus:border-[#c8f135]/40 focus:ring-2 focus:ring-[#c8f135]/10',
   ].join(' ')
@@ -208,7 +208,7 @@ export default function JoinPage() {
 
         {/* Plans */}
         {plans.length === 0 ? (
-          <div className="border border-yellow-400/20 bg-yellow-400/5 rounded-xl px-5 py-4 text-[14px] text-yellow-400 mb-8">
+          <div className="border border-yellow-400/20 bg-yellow-400/5 rounded-none px-5 py-4 text-[14px] text-yellow-400 mb-8">
             No active plans available at the moment — check back soon.
           </div>
         ) : (
@@ -223,7 +223,7 @@ export default function JoinPage() {
                     type="button"
                     onClick={() => setSelectedPlan(plan)}
                     className={[
-                      'w-full text-left rounded-xl border px-5 py-4 transition-all duration-200 group',
+                      'w-full text-left rounded-none border px-5 py-4 transition-all duration-200 group',
                       active
                         ? 'border-[#c8f135]/35 bg-[#c8f135]/[0.04]'
                         : 'border-white/[0.07] hover:border-white/[0.13] bg-white dark:bg-[#111]',
@@ -297,7 +297,7 @@ export default function JoinPage() {
                 </label>
 
                 {uidStatus === 'success' ? (
-                  <div className="flex items-center justify-between bg-[#229ED9]/[0.08] border border-[#229ED9]/30 rounded-xl px-4 py-3">
+                  <div className="flex items-center justify-between bg-[#229ED9]/[0.08] border border-[#229ED9]/30 rounded-none px-4 py-3">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-[#229ED9]/20 flex items-center justify-center text-[#229ED9]">
                         <FaTelegram size={16} />
@@ -317,7 +317,7 @@ export default function JoinPage() {
                       type="button"
                       onClick={handleConnectTelegram}
                       disabled={uidPolling}
-                      className={`w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3.5 transition-all outline-none font-bold text-[14px] ${
+                      className={`w-full flex items-center justify-center gap-2 rounded-none px-4 py-3.5 transition-all outline-none font-bold text-[14px] ${
                         uidPolling 
                           ? 'bg-[#229ED9]/10 text-[#229ED9] border border-[#229ED9]/20 cursor-wait' 
                           : 'bg-[#229ED9] text-black dark:text-white hover:bg-[#1a8fc4]'
@@ -346,7 +346,7 @@ export default function JoinPage() {
                           Please open Telegram, tap <b>Start</b>, and then return here.
                         </p>
                         {telegramDeepLink && (
-                          <div className="rounded-xl border border-[#229ED9]/20 bg-[#229ED9]/[0.06] p-3 text-left">
+                          <div className="rounded-none border border-[#229ED9]/20 bg-[#229ED9]/[0.06] p-3 text-left">
                             <p className="text-[12px] font-bold text-[#229ED9] mb-1">If Telegram did not open</p>
                             <p className="text-[12px] text-black dark:text-white/45 mb-2 leading-relaxed">
                               Arena preview blocks popups. Copy this link and open it in a normal browser tab or Telegram.
@@ -375,7 +375,7 @@ export default function JoinPage() {
 
             {/* Notice */}
             {!isWA && uidStatus === 'idle' && (
-              <div className="border border-yellow-400/15 bg-yellow-400/[0.04] rounded-xl px-5 py-4 text-[14px] mt-4">
+              <div className="border border-yellow-400/15 bg-yellow-400/[0.04] rounded-none px-5 py-4 text-[14px] mt-4">
                 <p className="font-bold text-yellow-400 mb-1.5 flex items-center gap-1.5">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                   Required Step
@@ -386,7 +386,7 @@ export default function JoinPage() {
               </div>
             )}
             {isWA && (
-              <div className="border border-[#25D366]/15 bg-[#25D366]/[0.04] rounded-xl px-5 py-4 text-[14px] text-black dark:text-white/45">
+              <div className="border border-[#25D366]/15 bg-[#25D366]/[0.04] rounded-none px-5 py-4 text-[14px] text-black dark:text-white/45">
                 <p className="font-bold text-[#25D366] mb-1">After payment</p>
                 <p>You'll receive a WhatsApp message with your group invite link at the number you entered above.</p>
               </div>
@@ -397,7 +397,7 @@ export default function JoinPage() {
               type="submit"
               disabled={paying || !selectedPlan}
               className={[
-                'w-full py-4 rounded-xl font-black text-[15px] tracking-wide transition-all duration-200',
+                'w-full py-4 rounded-none font-black text-[15px] tracking-wide transition-all duration-200',
                 paying || !selectedPlan
                   ? 'bg-white/[0.06] text-black dark:text-white/25 cursor-not-allowed'
                   : 'bg-[#c8f135] text-[#0a0a0a] hover:bg-[#aaff62] active:scale-[0.99]',

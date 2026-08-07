@@ -6,20 +6,20 @@ export default function StatusBadge({ status }) {
   const s = status?.toLowerCase()
 
   const styles = {
-    active:    'bg-[#c8f135]/12 text-[#c8f135] border-[#c8f135]/20',
-    success:   'bg-[#c8f135]/12 text-[#c8f135] border-[#c8f135]/20',
-    expired:   'bg-yellow-400/10 text-yellow-400 border-yellow-400/20',
-    pending:   'bg-yellow-400/10 text-yellow-400 border-yellow-400/20',
-    cancelled: 'bg-white/[0.05] text-black dark:text-white/40 border-gray-200 dark:border-white/10',
-    failed:    'bg-red-500/10 text-red-400 border-red-500/20',
+    active:    'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    success:   'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    expired:   'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    pending:   'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    cancelled: 'bg-white/5 text-white/50 border-white/10',
+    failed:    'bg-rose-500/10 text-rose-400 border-rose-500/20',
   }
 
   const dotColor = {
-    active:    '#c8f135',
-    success:   '#c8f135',
-    expired:   '#FACC15',
-    pending:   '#FACC15',
-    cancelled: 'rgba(255,255,255,0.3)',
+    active:    '#34d399',
+    success:   '#34d399',
+    expired:   '#fbbf24',
+    pending:   '#fbbf24',
+    cancelled: 'rgba(255,255,255,0.4)',
     failed:    '#f87171',
   }
 
@@ -28,10 +28,10 @@ export default function StatusBadge({ status }) {
   const isActive = s === 'active' || s === 'success'
 
   return (
-    <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full border ${cls}`}>
+    <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${cls}`}>
       <span
         className={isActive ? 'dot-pulse' : ''}
-        style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: dot, display: 'inline-block', flexShrink: 0 }}
+        style={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: dot, display: 'inline-block', flexShrink: 0 }}
       />
       {status}
     </span>

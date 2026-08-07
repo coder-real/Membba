@@ -171,15 +171,15 @@ export default function AIInboxPage() {
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="rounded-[14px] border border-gray-200 bg-white p-5 dark:border-white/10 dark:bg-[#111]">
+        <div className="rounded-none border border-gray-200 bg-white p-5 dark:border-white/10 dark:bg-[#111]">
           <p className="text-[12px] font-bold uppercase tracking-widest text-gray-400">Open</p>
           <p className="mt-1 text-[26px] font-black text-black dark:text-white">{stats.open}</p>
         </div>
-        <div className="rounded-[14px] border border-gray-200 bg-white p-5 dark:border-white/10 dark:bg-[#111]">
+        <div className="rounded-none border border-gray-200 bg-white p-5 dark:border-white/10 dark:bg-[#111]">
           <p className="text-[12px] font-bold uppercase tracking-widest text-gray-400">Payment checks</p>
           <p className="mt-1 text-[26px] font-black text-black dark:text-white">{stats.payment}</p>
         </div>
-        <div className="rounded-[14px] border border-gray-200 bg-white p-5 dark:border-white/10 dark:bg-[#111]">
+        <div className="rounded-none border border-gray-200 bg-white p-5 dark:border-white/10 dark:bg-[#111]">
           <p className="text-[12px] font-bold uppercase tracking-widest text-gray-400">Invite issues</p>
           <p className="mt-1 text-[26px] font-black text-black dark:text-white">{stats.invite}</p>
         </div>
@@ -205,7 +205,7 @@ export default function AIInboxPage() {
             <HiOutlineExclamationTriangle size={32} className="mx-auto mb-3 text-amber-400" />
             <p className="text-[15px] font-black text-gray-900 dark:text-white">Could not load conversations</p>
             <p className="mx-auto mt-1 max-w-md text-[13px] leading-relaxed text-gray-500 dark:text-white/35">{loadError === 'Unauthorized' ? 'Your dashboard session token was rejected. Sign out and back in if Refresh does not fix it.' : loadError}</p>
-            <button onClick={load} className="mt-5 rounded-[10px] bg-[#c8f135] px-4 py-2 text-[13px] font-black text-black">Refresh</button>
+            <button onClick={load} className="mt-5 rounded-none bg-[#c8f135] px-4 py-2 text-[13px] font-black text-black">Refresh</button>
           </div>
         ) : items.length === 0 ? (
           <div className="p-14 text-center">
@@ -273,7 +273,7 @@ export default function AIInboxPage() {
                         {sub && (
                           <Link
                             to={`/dashboard/members?subscription=${sub.id}`}
-                            className="inline-flex items-center justify-center gap-2 rounded-[10px] border border-[#c8f135]/30 bg-[#c8f135]/10 px-4 py-2.5 text-[13px] font-black text-[#c8f135] transition hover:bg-[#c8f135]/15"
+                            className="inline-flex items-center justify-center gap-2 rounded-none border border-[#c8f135]/30 bg-[#c8f135]/10 px-4 py-2.5 text-[13px] font-black text-[#c8f135] transition hover:bg-[#c8f135]/15"
                           >
                             Open member
                           </Link>
@@ -282,7 +282,7 @@ export default function AIInboxPage() {
                           <button
                             onClick={() => resendInvite(item.id)}
                             disabled={busyId === item.id}
-                            className="inline-flex items-center justify-center gap-2 rounded-[10px] bg-[#c8f135] px-4 py-2.5 text-[13px] font-black text-black transition hover:bg-[#d6ff4f] disabled:opacity-50"
+                            className="inline-flex items-center justify-center gap-2 rounded-none bg-[#c8f135] px-4 py-2.5 text-[13px] font-black text-black transition hover:bg-[#d6ff4f] disabled:opacity-50"
                             title={active ? 'Resend or queue the invite for this active member' : 'Only active members can receive invite resend'}
                           >
                             <HiOutlinePaperAirplane size={15} /> Resend invite
@@ -291,7 +291,7 @@ export default function AIInboxPage() {
                         <button
                           onClick={() => resolveItem(item.id)}
                           disabled={busyId === item.id}
-                          className="inline-flex items-center justify-center gap-2 rounded-[10px] border border-gray-200 px-4 py-2.5 text-[13px] font-bold text-gray-700 transition hover:bg-gray-50 disabled:opacity-50 dark:border-white/10 dark:text-white/60 dark:hover:bg-white/5"
+                          className="inline-flex items-center justify-center gap-2 rounded-none border border-gray-200 px-4 py-2.5 text-[13px] font-bold text-gray-700 transition hover:bg-gray-50 disabled:opacity-50 dark:border-white/10 dark:text-white/60 dark:hover:bg-white/5"
                         >
                           <HiOutlineCheckCircle size={15} /> Mark resolved
                         </button>

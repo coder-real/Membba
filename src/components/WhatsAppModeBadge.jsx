@@ -11,8 +11,8 @@ export default function WhatsAppModeBadge({
     : 'px-2.5 py-1 text-[12px]'
 
   const toneClass = isAdvanced
-    ? 'border-yellow-400/20 bg-yellow-400/10 text-yellow-700 dark:text-yellow-300'
-    : 'border-blue-400/20 bg-blue-400/10 text-blue-700 dark:text-blue-300'
+    ? 'border-amber-500/20 bg-amber-500/10 text-amber-300 font-semibold'
+    : 'border-blue-500/20 bg-blue-500/10 text-blue-300 font-semibold'
 
   const text = (() => {
     if (label === 'full') return isAdvanced ? 'Advanced group automation · Beta' : 'Basic access · Official WhatsApp'
@@ -21,7 +21,7 @@ export default function WhatsAppModeBadge({
   })()
 
   return (
-    <span className={`inline-flex shrink-0 items-center rounded-full border font-black ${sizeClass} ${toneClass} ${className}`}>
+    <span className={`inline-flex shrink-0 items-center rounded-full border ${sizeClass} ${toneClass} ${className}`}>
       {text}
     </span>
   )

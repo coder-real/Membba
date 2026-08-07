@@ -43,8 +43,9 @@
   --color-info-muted: rgba(59, 130, 246, 0.10);
 
   /* ─── Typography ─── */
-  --font-manrope: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'Source Code Pro', 'Office Code Pro', Menlo, monospace;
+  --font-inter: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-manrope: var(--font-inter);
+  --font-mono: 'JetBrains Mono', 'Office Code Pro', Menlo, monospace;
 
   --font-display-size: 46px;
   --font-display-weight: 700;
@@ -55,11 +56,11 @@
   --font-subheading-size: 22px;
   --font-subheading-weight: 500;
   --font-subheading-lh: 30px;
-  --font-page-title-size: 24px;
-  --font-page-title-weight: 700;
-  --font-page-title-lh: 32px;
+  --font-page-title-size: 28px;
+  --font-page-title-weight: 800;
+  --font-page-title-lh: 34px;
   --font-card-title-size: 16px;
-  --font-card-title-weight: 600;
+  --font-card-title-weight: 700;
   --font-card-title-lh: 24px;
   --font-body-size: 14px;
   --font-body-weight: 400;
@@ -67,11 +68,11 @@
   --font-body-sm-size: 13px;
   --font-body-sm-weight: 400;
   --font-body-sm-lh: 18px;
-  --font-label-size: 13px;
+  --font-label-size: 12px;
   --font-label-weight: 500;
-  --font-label-lh: 20px;
+  --font-label-lh: 16px;
   --font-label-sm-size: 11px;
-  --font-label-sm-weight: 600;
+  --font-label-sm-weight: 700;
   --font-label-sm-lh: 16px;
   --font-nav-size: 13px;
   --font-nav-weight: 500;
@@ -94,14 +95,14 @@
   --spacing-32: 128px;
   --spacing-40: 160px;
 
-  /* ─── Radius ─── */
+  /* ─── Radius — sharp/square by default ─── */
   --radius-xs: 2px;
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-default: 8px;
-  --radius-lg: 11px;
-  --radius-xl: 12px;
-  --radius-2xl: 16px;
+  --radius-sm: 3px;
+  --radius-md: 3px;
+  --radius-default: 4px;
+  --radius-lg: 4px;
+  --radius-xl: 4px;
+  --radius-2xl: 4px;
 
   /* ─── Elevation ─── */
   --shadow-inset-brand: inset 0px 0px 0px 1px rgba(200, 241, 53, 0.15);
@@ -113,7 +114,7 @@
   *, *::before, *::after { box-sizing: border-box; }
 
   html {
-    font-family: var(--font-manrope);
+    font-family: var(--font-inter);
     font-size: 14px;
     line-height: 20px;
     color: var(--color-text-primary);
@@ -127,24 +128,89 @@
     min-height: 100vh;
     background: var(--color-bg-app);
     color: var(--color-text-primary);
-    font-family: var(--font-manrope);
+    font-family: var(--font-inter);
   }
 
   #root { min-height: 100vh; background: var(--color-bg-app); }
 
+  /* ── Global sharp-corner override — cap all border-radius except pill/avatar ── */
+  *:not(.rounded-full):not(input[type="range"]::-webkit-slider-thumb) {
+    border-radius: min(var(--border-radius, 9999px), 4px);
+  }
+  /* Restore explicit rounded-full to full pill/circle */
+  .rounded-full { border-radius: 9999px !important; }
+  /* Restore avatar / toggle knob shapes */
+  .avatar-circle, [class*="rounded-full"] { border-radius: 9999px !important; }
+
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-manrope);
+    font-family: var(--font-inter);
     color: var(--color-text-primary);
     letter-spacing: -0.02em;
   }
 
-  p { font-family: var(--font-manrope); }
+  p { font-family: var(--font-inter); }
 
   code, pre, .font-mono { font-family: var(--font-mono); }
 
   :focus-visible {
     outline: 2px solid var(--color-brand);
     outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .page-title {
+    font-family: var(--font-inter);
+    font-size: 28px;
+    line-height: 34px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .section-title {
+    font-family: var(--font-inter);
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 700;
+  }
+  .data-primary {
+    font-family: var(--font-inter);
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 600;
+  }
+  .body-md {
+    font-family: var(--font-inter);
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 400;
+  }
+  .label-xs {
+    font-family: var(--font-inter);
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+  }
+  .table-header {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 16px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .data-mono {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .financial {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -181,19 +247,19 @@
     gap: var(--spacing-2);
     background: var(--color-brand);
     color: var(--color-text-on-brand);
-    font-family: var(--font-manrope);
-    font-size: 13px;
-    font-weight: 600;
+    font-family: var(--font-inter);
+    font-size: 14px;
+    font-weight: 700;
     line-height: 20px;
-    padding: 7px var(--spacing-4);
-    border-radius: var(--radius-md);
-    border: none;
+    padding: 8px var(--spacing-5);
+    border-radius: var(--radius-default);
+    border: 1px solid transparent;
     cursor: pointer;
-    transition: opacity 0.15s ease;
+    transition: opacity 0.15s ease, transform 0.1s ease;
   }
 
-  .btn-primary:hover { opacity: 0.88; }
-  .btn-primary:active { opacity: 0.78; }
+  .btn-primary:hover { opacity: 0.92; background: #d4f849; }
+  .btn-primary:active { opacity: 0.82; transform: translateY(1px); }
 
   .btn-secondary {
     display: inline-flex;
@@ -202,12 +268,12 @@
     gap: var(--spacing-2);
     background: var(--color-bg-elevated);
     color: var(--color-text-primary);
-    font-family: var(--font-manrope);
-    font-size: 13px;
-    font-weight: 500;
+    font-family: var(--font-inter);
+    font-size: 14px;
+    font-weight: 600;
     line-height: 20px;
-    padding: 7px var(--spacing-4);
-    border-radius: var(--radius-md);
+    padding: 8px var(--spacing-4);
+    border-radius: var(--radius-default);
     border: 1px solid var(--color-border-default);
     cursor: pointer;
     transition: border-color 0.15s ease, background 0.15s ease;
@@ -221,11 +287,11 @@
     gap: var(--spacing-2);
     background: transparent;
     color: var(--color-text-secondary);
-    font-family: var(--font-manrope);
-    font-size: 13px;
+    font-family: var(--font-inter);
+    font-size: 14px;
     font-weight: 500;
-    padding: 7px var(--spacing-3);
-    border-radius: var(--radius-md);
+    padding: 8px var(--spacing-3);
+    border-radius: var(--radius-default);
     border: none;
     cursor: pointer;
     transition: color 0.15s, background 0.15s;

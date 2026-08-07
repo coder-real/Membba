@@ -115,66 +115,68 @@ export default function CommunitiesPage() {
   return (
     <>
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-7 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-[24px] font-black text-gray-900 dark:text-[#f2f3f5] tracking-tight">Communities</h1>
-          <p className="text-[14px] text-gray-600 dark:text-[#b5bac1] mt-1">
-            {communities.length} active group{communities.length !== 1 ? 's' : ''}
+          <h1 className="page-title text-gray-900 dark:text-white">Communities</h1>
+          <p className="body-md text-gray-600 dark:text-[#b5bac1] mt-1">
+            <span className="data-mono font-bold">{communities.length}</span> active group{communities.length !== 1 ? 's' : ''}
           </p>
         </div>
         <Link
           to="/dashboard/communities/new"
-          className="inline-flex items-center gap-2 bg-[#c8f135] hover:bg-[#d6ff4f] text-black px-4 py-2 rounded-[6px] text-[14px] font-bold transition-colors shadow-sm"
+          className="btn-primary shadow-sm"
         >
-          <HiOutlinePlusCircle size={15} />
-          New Community
+          <HiOutlinePlusCircle size={16} />
+          Create Community
         </Link>
       </div>
 
-      <div className="mb-3 flex flex-col gap-2 rounded-[8px] border border-gray-200 bg-white p-3 dark:border-white/10 dark:bg-[#111]">
-        <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+      <div className="mb-4 flex flex-col gap-3 rounded-none border border-gray-200 bg-white p-3.5 dark:border-white/10 dark:bg-[#111]">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Search communities…"
-            className="min-w-0 flex-1 rounded-[6px] border border-gray-200 bg-gray-50 px-3 py-2 text-[13px] text-gray-900 outline-none focus:border-[#c8f135] dark:border-white/10 dark:bg-black/20 dark:text-white"
+            placeholder="Search communities by name, slug, description…"
+            className="min-w-0 flex-1 rounded-none border border-gray-200 bg-gray-50 px-3.5 py-2 text-[13px] text-gray-900 outline-none focus:border-[#c8f135] dark:border-white/10 dark:bg-black/40 dark:text-white font-sans"
           />
           <div className="flex flex-wrap gap-2">
             {TABS.map(t => (
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className={`px-3 py-2 rounded-[6px] text-[12px] font-bold transition-colors ${
-                  tab === t.id ? 'bg-[#c8f135] text-black' : 'border border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-white/10 dark:text-white/45 dark:hover:bg-white/5'
+                className={`px-3.5 py-1.5 rounded-[6px] text-[13px] font-bold transition-colors ${
+                  tab === t.id ? 'bg-[#c8f135] text-black' : 'border border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-white/10 dark:text-white/50 dark:hover:bg-white/5'
                 }`}
               >
-                {t.label} <span className="ml-1 opacity-70">{t.count}</span>
+                {t.label} <span className="ml-1 data-mono text-[12px] opacity-75">{t.count}</span>
               </button>
             ))}
           </div>
         </div>
-        <div className="flex flex-wrap gap-2 border-t border-gray-100 pt-3 dark:border-white/5">
-          {[
-            { id: 'all', label: 'All statuses' },
-            { id: 'active', label: 'Active' },
-            { id: 'inactive', label: 'Inactive' },
-            { id: 'needs_setup', label: 'Needs setup' },
-          ].map(item => (
-            <button
-              key={item.id}
-              onClick={() => setStatusFilter(item.id)}
-              className={`rounded-[6px] px-3 py-1.5 text-[12px] font-bold transition ${statusFilter === item.id ? 'bg-white/[0.08] text-gray-900 dark:text-white' : 'text-gray-500 hover:bg-gray-50 dark:text-white/45 dark:hover:bg-white/5'}`}
-            >
-              {item.label}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-3 dark:border-white/5">
+          <div className="flex flex-wrap gap-2">
+            {[
+              { id: 'all', label: 'All statuses' },
+              { id: 'active', label: 'Active' },
+              { id: 'inactive', label: 'Inactive' },
+              { id: 'needs_setup', label: 'Needs setup' },
+            ].map(item => (
+              <button
+                key={item.id}
+                onClick={() => setStatusFilter(item.id)}
+                className={`rounded-[6px] px-3 py-1 text-[12px] font-bold transition ${statusFilter === item.id ? 'bg-white/[0.08] text-gray-900 dark:text-white border border-white/10' : 'text-gray-500 hover:bg-gray-50 dark:text-white/45 dark:hover:bg-white/5'}`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {loading ? (
         <div className="space-y-4">
           {[1,2].map(k => (
-            <div key={k} className="bg-white dark:bg-[#111] rounded-[8px] p-7 shadow-sm border border-gray-200 dark:border-white/10">
+            <div key={k} className="bg-white dark:bg-[#111] rounded-none p-7 shadow-sm border border-gray-200 dark:border-white/10">
               <Skeleton width="w-48" height="h-6" className="mb-4" />
               <Skeleton width="w-full" height="h-3" className="mb-2" />
               <Skeleton width="w-3/4" height="h-3" className="mb-6" />
@@ -186,25 +188,25 @@ export default function CommunitiesPage() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-white dark:bg-[#111] rounded-[8px] py-20 text-center px-6 border border-gray-200 dark:border-white/10">
-          <p className="text-[14px] font-bold text-gray-900 dark:text-[#f2f3f5] mb-2">
+        <div className="bg-white dark:bg-[#111] rounded-none py-20 text-center px-6 border border-gray-200 dark:border-white/10">
+          <p className="section-title text-gray-900 dark:text-white mb-2">
             {tab === 'all' ? "No communities yet" : `No ${tab} communities`}
           </p>
-          <p className="text-[14px] text-gray-500 dark:text-[#96989d] mb-6">
+          <p className="body-md text-gray-500 dark:text-[#96989d] mb-6">
             {tab === 'all' ? 'Create your first paid community to start accepting members.' : `You haven't added any ${tab} groups yet.`}
           </p>
-          <Link to="/dashboard/communities/new" className="inline-flex items-center gap-2 bg-[#c8f135] hover:bg-[#d6ff4f] text-black px-6 py-2.5 rounded-[6px] text-[14px] font-bold transition-colors">
-            <HiOutlinePlusCircle size={15} /> Create Community
+          <Link to="/dashboard/communities/new" className="btn-primary">
+            <HiOutlinePlusCircle size={16} /> Create Community
           </Link>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-[8px] border border-gray-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#111]">
+        <div className="overflow-hidden rounded-none border border-gray-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#111]">
           <div className="hidden lg:block overflow-x-auto">
             <table className="w-full min-w-[920px]">
               <thead>
-                <tr className="border-b border-gray-200 dark:border-white/10">
+                <tr className="border-b border-gray-200 bg-gray-50/50 dark:border-white/10 dark:bg-white/[0.02]">
                   {['Community', 'Platform', 'Setup', 'Plans', 'Members', 'Join link', 'Actions'].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-[13px] font-bold uppercase tracking-[0.8px] text-gray-500 dark:text-[#b5bac1]">{h}</th>
+                    <th key={h} className="table-header px-4 py-3.5 text-left text-gray-500 dark:text-[#888888]">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -220,52 +222,59 @@ export default function CommunitiesPage() {
                   const telegramAdminKnown = isTelegram && c.telegram_chat_id && typeof botStatus[c.id] === 'boolean'
                   return (
                     <tr key={c.id} className="transition-colors hover:bg-gray-50 dark:hover:bg-white/[0.025]">
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3.5">
                         <div className="min-w-0">
-                          <p className="truncate text-[14px] font-bold text-gray-900 dark:text-white">{c.name}</p>
-                          <p className="mt-0.5 truncate text-[12px] text-gray-500 dark:text-white/35">/{c.slug}</p>
+                          <p className="truncate data-primary text-gray-900 dark:text-white">{c.name}</p>
+                          <p className="mt-0.5 truncate data-mono text-[12px] text-gray-500 dark:text-white/40">/{c.slug}</p>
                         </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[12px] font-bold ${isWhatsApp ? 'bg-[#25D366]/10 text-[#25D366]' : 'bg-[#229ED9]/10 text-[#229ED9]'}`}>
-                          {isWhatsApp ? <FaWhatsapp size={12} /> : <FaTelegram size={12} />}
+                      <td className="px-4 py-3.5">
+                        <span className={`inline-flex items-center gap-1.5 rounded-[6px] px-2.5 py-1 text-[12px] font-bold ${isWhatsApp ? 'bg-[#25D366]/10 text-[#25D366] border border-[#25D366]/20' : 'bg-[#229ED9]/10 text-[#229ED9] border border-[#229ED9]/20'}`}>
+                          {isWhatsApp ? <FaWhatsapp size={13} /> : <FaTelegram size={13} />}
                           {isWhatsApp ? 'WhatsApp' : 'Telegram'}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3.5">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className={`inline-flex rounded-full px-2.5 py-1 text-[12px] font-black ${hasSetup ? 'bg-[#c8f135]/10 text-[#c8f135]' : 'bg-amber-400/10 text-amber-400'}`}>
-                            {hasSetup ? 'Ready' : 'Needs setup'}
+                          <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 table-header text-[10px] ${hasSetup ? 'bg-[#c8f135]/10 text-[#c8f135] border border-[#c8f135]/20' : 'bg-amber-400/10 text-amber-400 border border-amber-400/20'}`}>
+                            • {hasSetup ? 'READY' : 'NEEDS SETUP'}
                           </span>
                           {isWhatsApp && <WhatsAppModeBadge mode={c.whatsapp_setup_mode || 'basic'} size="xs" />}
                           {telegramAdminKnown && (
-                            <span className={`rounded-full px-2 py-1 text-[11px] font-bold ${botStatus[c.id] ? 'bg-[#c8f135]/10 text-[#c8f135]' : 'bg-amber-400/10 text-amber-400'}`}>
-                              {botStatus[c.id] ? 'Bot admin' : 'Bot missing'}
+                            <span className={`rounded-full px-2 py-0.5 table-header text-[10px] ${botStatus[c.id] ? 'bg-[#c8f135]/10 text-[#c8f135]' : 'bg-amber-400/10 text-amber-400'}`}>
+                              {botStatus[c.id] ? 'BOT ADMIN' : 'BOT MISSING'}
                             </span>
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3.5">
                         {activePlans.length ? (
-                          <div className="flex max-w-[220px] flex-wrap gap-1.5">
+                          <div className="flex max-w-[240px] flex-wrap gap-1.5">
                             {activePlans.slice(0, 2).map(p => (
-                              <span key={p.id} className="rounded-[6px] bg-gray-100 px-2 py-1 text-[12px] font-semibold text-gray-700 dark:bg-white/5 dark:text-white/65">{p.name} · ₦{Number(p.price || 0).toLocaleString()}</span>
+                              <span key={p.id} className="rounded-[6px] bg-gray-100 px-2 py-1 text-[12px] font-medium text-gray-700 dark:bg-white/5 dark:text-white/70 border border-white/5">
+                                {p.name} · <span className="financial text-[#c8f135] font-bold">₦{Number(p.price || 0).toLocaleString()}</span>
+                              </span>
                             ))}
-                            {activePlans.length > 2 && <span className="text-[12px] text-gray-400">+{activePlans.length - 2}</span>}
+                            {activePlans.length > 2 && <span className="data-mono text-[12px] text-gray-400 self-center">+{activePlans.length - 2}</span>}
                           </div>
-                        ) : <span className="text-[12px] font-semibold text-red-400">No plans</span>}
+                        ) : <span className="label-xs text-red-400 font-semibold">No plans</span>}
                       </td>
-                      <td className="px-4 py-3 text-[14px] font-semibold text-gray-700 dark:text-white/70"><HiOutlineUsers className="mr-1 inline" size={14} />{memberCount}</td>
-                      <td className="px-4 py-3">
-                        <button onClick={() => copyLink(c.slug)} className="max-w-[210px] truncate font-mono text-[12px] text-gray-500 hover:text-[#c8f135] dark:text-white/35" title={joinLink(c.slug)}>
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-1.5 data-mono font-bold text-gray-700 dark:text-white/80">
+                          <HiOutlineUsers size={14} className="text-gray-400" />
+                          <span>{memberCount}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <button onClick={() => copyLink(c.slug)} className="max-w-[210px] truncate data-mono text-[12px] text-gray-500 hover:text-[#c8f135] dark:text-white/40 dark:hover:text-[#c8f135] transition-colors" title={joinLink(c.slug)}>
                           {joinLink(c.slug)}
                         </button>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3.5">
                         <div className="flex items-center gap-2">
-                          {isTelegram && <button onClick={() => openQRModal(c)} className="rounded-[6px] border border-gray-200 px-2.5 py-1.5 text-[12px] font-bold text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-white/50 dark:hover:bg-white/5">QR</button>}
-                          <Link to={`/dashboard/communities/${c.id}/edit`} className="rounded-[6px] border border-gray-200 px-2.5 py-1.5 text-[12px] font-bold text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-white/50 dark:hover:bg-white/5">Edit</Link>
-                          <button onClick={() => handleDelete(c.id)} className="rounded-[6px] border border-red-500/20 px-2.5 py-1.5 text-[12px] font-bold text-red-400 hover:bg-red-500/10">Delete</button>
+                          {isTelegram && <button onClick={() => openQRModal(c)} className="rounded-[6px] border border-gray-200 px-2.5 py-1 text-[12px] font-bold text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-white/60 dark:hover:bg-white/5">QR</button>}
+                          <Link to={`/dashboard/communities/${c.id}/edit`} className="rounded-[6px] border border-gray-200 px-2.5 py-1 text-[12px] font-bold text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-white/60 dark:hover:bg-white/5">Edit</Link>
+                          <button onClick={() => handleDelete(c.id)} className="rounded-[6px] border border-red-500/20 px-2.5 py-1 text-[12px] font-bold text-red-400 hover:bg-red-500/10">Delete</button>
                         </div>
                       </td>
                     </tr>
@@ -288,8 +297,8 @@ export default function CommunitiesPage() {
                 <div key={c.id} className="p-4">
                   <div className="mb-3 flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="truncate text-[15px] font-black text-gray-900 dark:text-white">{c.name}</p>
-                      <p className="mt-0.5 text-[12px] text-gray-500 dark:text-white/35">/{c.slug} · {memberCount} member{memberCount !== 1 ? 's' : ''}</p>
+                      <p className="truncate data-primary text-gray-900 dark:text-white">{c.name}</p>
+                      <p className="mt-0.5 data-mono text-[12px] text-gray-500 dark:text-white/40">/{c.slug} · {memberCount} member{memberCount !== 1 ? 's' : ''}</p>
                     </div>
                     <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-[6px] px-2 py-1 text-[12px] font-bold ${isWhatsApp ? 'bg-[#25D366]/10 text-[#25D366]' : 'bg-[#229ED9]/10 text-[#229ED9]'}`}>
                       {isWhatsApp ? <FaWhatsapp size={12} /> : <FaTelegram size={12} />}
@@ -297,11 +306,11 @@ export default function CommunitiesPage() {
                     </span>
                   </div>
                   <div className="mb-3 flex flex-wrap items-center gap-2">
-                    <span className={`rounded-full px-2.5 py-1 text-[12px] font-black ${hasSetup ? 'bg-[#c8f135]/10 text-[#c8f135]' : 'bg-amber-400/10 text-amber-400'}`}>{hasSetup ? 'Ready' : 'Needs setup'}</span>
+                    <span className={`rounded-full px-2.5 py-0.5 table-header text-[10px] ${hasSetup ? 'bg-[#c8f135]/10 text-[#c8f135]' : 'bg-amber-400/10 text-amber-400'}`}>• {hasSetup ? 'READY' : 'NEEDS SETUP'}</span>
                     {isWhatsApp && <WhatsAppModeBadge mode={c.whatsapp_setup_mode || 'basic'} size="xs" />}
-                    {activePlans.length ? <span className="rounded-full bg-gray-100 px-2.5 py-1 text-[12px] font-bold text-gray-600 dark:bg-white/5 dark:text-white/45">{activePlans.length} plan{activePlans.length !== 1 ? 's' : ''}</span> : <span className="rounded-full bg-red-500/10 px-2.5 py-1 text-[12px] font-bold text-red-400">No plans</span>}
+                    {activePlans.length ? <span className="rounded-full bg-gray-100 px-2.5 py-0.5 label-xs text-gray-600 dark:bg-white/5 dark:text-white/50">{activePlans.length} plan{activePlans.length !== 1 ? 's' : ''}</span> : <span className="rounded-full bg-red-500/10 px-2.5 py-0.5 label-xs text-red-400">No plans</span>}
                   </div>
-                  <button onClick={() => copyLink(c.slug)} className="mb-3 block w-full truncate rounded-[6px] bg-gray-50 px-3 py-2 text-left font-mono text-[12px] text-gray-500 dark:bg-white/[0.03] dark:text-white/35">{joinLink(c.slug)}</button>
+                  <button onClick={() => copyLink(c.slug)} className="mb-3 block w-full truncate rounded-[6px] bg-gray-50 px-3 py-2 text-left data-mono text-[12px] text-gray-500 dark:bg-white/[0.03] dark:text-white/40">{joinLink(c.slug)}</button>
                   <div className="flex flex-wrap gap-2">
                     {isTelegram && <button onClick={() => openQRModal(c)} className="rounded-[6px] border border-gray-200 px-3 py-1.5 text-[12px] font-bold text-gray-600 dark:border-white/10 dark:text-white/50">QR Code</button>}
                     <Link to={`/dashboard/communities/${c.id}/edit`} className="rounded-[6px] border border-gray-200 px-3 py-1.5 text-[12px] font-bold text-gray-600 dark:border-white/10 dark:text-white/50">Edit</Link>
@@ -311,8 +320,8 @@ export default function CommunitiesPage() {
               )
             })}
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-200 px-4 py-3 text-[12px] text-gray-500 dark:border-white/10 dark:text-white/35">
-            <span>{filtered.length} of {communities.length} communities</span>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-200 px-4 py-3 label-xs text-gray-500 dark:border-white/10 dark:text-white/40">
+            <span><span className="data-mono font-bold">{filtered.length}</span> of <span className="data-mono font-bold">{communities.length}</span> communities</span>
             <span>Sorted newest first</span>
           </div>
         </div>
@@ -324,7 +333,7 @@ export default function CommunitiesPage() {
           <div className="bg-gray-50 dark:bg-[#0a0a0a] border border-white/[0.05] rounded-[8px] p-8 w-full max-w-xs text-center shadow-2xl relative">
             <button
               onClick={() => setQrModal(null)}
-              className="absolute top-7 right-4 text-gray-500 dark:text-[#96989d] hover:text-gray-800 dark:text-[#dbdee1] transition-colors"
+              className="absolute top-7 right-4 text-gray-500 dark:text-white/40 hover:text-gray-800 dark:hover:text-white transition-colors"
             >
               <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

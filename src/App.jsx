@@ -17,6 +17,7 @@ import MembersPage from './pages/MembersPage'
 import PaymentsPage from './pages/PaymentsPage'
 import SettingsPage from './pages/SettingsPage'
 import AutomationsPage from './pages/AutomationsPage'
+import AutomationDetailPage from './pages/AutomationDetailPage'
 import AIInboxPage from './pages/AIInboxPage'
 import OpsLayout from './components/OpsLayout'
 import OpsOverviewPage from './pages/OpsOverviewPage'
@@ -77,6 +78,7 @@ export default function App() {
               <Route path="members" element={<MembersPage />} />
               <Route path="payments" element={<PaymentsPage />} />
               <Route path="automations" element={<AutomationsPage />} />
+              <Route path="automations/:key" element={<AutomationDetailPage />} />
               <Route path="ai-inbox" element={<AIInboxPage />} />
               <Route path="settings" element={<SettingsPage />} />
             </Route>

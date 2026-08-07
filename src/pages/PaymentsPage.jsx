@@ -91,18 +91,18 @@ export default function PaymentsPage() {
 
   const Pill = ({ status }) => {
     if (status === 'success') return (
-      <span className="inline-flex items-center gap-1.5 bg-[#c8f135]/10 border border-[#c8f135]/10 px-2 py-0.5 rounded-[4px] text-[14px] font-bold text-[#c8f135]">
-        <span className="w-1.5 h-1.5 rounded-full bg-[#c8f135]" /> Paid
+      <span className="inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full text-[12px] font-medium text-emerald-400">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Paid
       </span>
     )
     if (status === 'failed') return (
-      <span className="inline-flex items-center gap-1.5 bg-red-500/10 border border-red-500/10 px-2 py-0.5 rounded-[4px] text-[14px] font-bold text-red-400">
-        <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> Failed
+      <span className="inline-flex items-center gap-1.5 bg-rose-500/10 border border-rose-500/20 px-2.5 py-0.5 rounded-full text-[12px] font-medium text-rose-400">
+        <span className="w-1.5 h-1.5 rounded-full bg-rose-400" /> Failed
       </span>
     )
     return (
-      <span className="inline-flex items-center gap-1.5 bg-yellow-400/10 border border-yellow-400/10 px-2 py-0.5 rounded-[4px] text-[14px] font-bold text-yellow-400">
-        <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" /> Pending
+      <span className="inline-flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-full text-[12px] font-medium text-amber-400">
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-400" /> Pending
       </span>
     )
   }
@@ -111,12 +111,12 @@ export default function PaymentsPage() {
     <>
       <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
         <div>
-          <h1 className="text-[22px] font-black text-gray-900 dark:text-[#f2f3f5] tracking-tight">Payments</h1>
-          <p className="text-[14px] text-gray-600 dark:text-[#b5bac1] mt-1">Transaction history, references, and manual verification</p>
+          <h1 className="page-title text-gray-900 dark:text-[#f2f3f5]">Payments</h1>
+          <p className="body-md text-gray-600 dark:text-[#b5bac1] mt-1">Transaction history, references, and manual verification</p>
         </div>
         <button
           onClick={fetchPayments}
-          className="border border-gray-200 dark:border-white/10 text-gray-800 dark:text-[#dbdee1] px-4 py-2 rounded-[6px] text-[14px] font-medium hover:bg-white/[0.02] transition-colors"
+          className="btn-secondary"
         >
           Refresh
         </button>
@@ -124,14 +124,14 @@ export default function PaymentsPage() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {summaryCards.map(card => (
-          <div key={card.label} className="bg-white dark:bg-[#111] rounded-[8px] p-4 sm:p-5 shadow-sm border border-gray-200 dark:border-white/10 flex flex-col justify-between min-h-[82px] hover:bg-white/[0.02] transition-colors">
-            <p className="text-[14px] font-bold text-gray-600 dark:text-[#b5bac1] uppercase tracking-wide mb-1">{card.label}</p>
+          <div key={card.label} className="bg-white dark:bg-[#111] rounded-none p-5 sm:p-6 shadow-sm border border-gray-200 dark:border-white/10 flex flex-col justify-between min-h-[95px] hover:bg-white/[0.02] transition-colors">
+            <p className="table-header text-gray-500 dark:text-[#b5bac1] mb-2 text-[11px] sm:text-[12px] font-extrabold tracking-wider">{card.label}</p>
             {loading ? (
-              <Skeleton width="w-24" height="h-7" />
+              <Skeleton width="w-24" height="h-9" />
             ) : (
               <div>
-                <p className="text-[22px] font-black text-gray-900 dark:text-[#f2f3f5] leading-none mb-1">{card.value}</p>
-                <p className={`text-[14px] font-bold ${card.subColor}`}>{card.sub}</p>
+                <p className="font-sans text-[30px] sm:text-[36px] font-black text-gray-900 dark:text-[#f2f3f5] leading-none mb-2 tracking-tight">{card.value}</p>
+                <p className={`text-[12px] font-bold ${card.subColor}`}>{card.sub}</p>
               </div>
             )}
           </div>
@@ -139,34 +139,34 @@ export default function PaymentsPage() {
       </div>
 
       {pendingPayments.length > 0 && !loading && (
-        <div className="mb-5 rounded-[12px] border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-[13px] text-amber-700 dark:text-amber-300">
+        <div className="mb-5 rounded-[12px] border border-amber-400/20 bg-amber-400/10 px-4 py-3 body-md text-amber-700 dark:text-amber-300">
           <span className="font-black">Pending payments:</span> If a customer says they paid but access was not created, use the Verify button beside their reference. This asks Paystack again and creates the subscription if payment succeeded.
         </div>
       )}
 
       {referenceFilter && (
-        <div className="mb-5 rounded-[12px] border border-[#c8f135]/20 bg-[#c8f135]/10 px-4 py-3 text-[13px] text-gray-700 dark:text-white/70">
-          Showing payment reference <span className="font-mono font-bold">{referenceFilter}</span>. <button onClick={() => navigate('/dashboard/payments')} className="font-bold text-[#c8f135] hover:underline">Clear filter</button>
+        <div className="mb-5 rounded-[12px] border border-[#c8f135]/20 bg-[#c8f135]/10 px-4 py-3 body-md text-gray-700 dark:text-white/70">
+          Showing payment reference <span className="data-mono font-bold">{referenceFilter}</span>. <button onClick={() => navigate('/dashboard/payments')} className="font-bold text-[#c8f135] hover:underline">Clear filter</button>
         </div>
       )}
 
-      <div className="mb-3 flex flex-col gap-2 rounded-[8px] border border-gray-200 bg-white p-3 dark:border-white/10 dark:bg-[#111] sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-3 flex flex-col gap-2 rounded-none border border-gray-200 bg-white p-3 dark:border-white/10 dark:bg-[#111] sm:flex-row sm:items-center sm:justify-between">
         <input
           value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder="Search email, reference, community…"
-          className="min-w-0 flex-1 rounded-[6px] border border-gray-200 bg-gray-50 px-3 py-2 text-[13px] text-gray-900 outline-none focus:border-[#c8f135] dark:border-white/10 dark:bg-black/20 dark:text-white"
+          className="min-w-0 flex-1 rounded-[6px] border border-gray-200 bg-gray-50 px-3 py-2 data-primary text-gray-900 outline-none focus:border-[#c8f135] dark:border-white/10 dark:bg-black/20 dark:text-white"
         />
         <div className="flex flex-wrap gap-2">
           {['all', 'success', 'pending', 'failed'].map(s => (
-            <button key={s} onClick={() => setStatusFilter(s)} className={`rounded-[6px] px-3 py-2 text-[12px] font-bold capitalize transition ${statusFilter === s ? 'bg-[#c8f135] text-black' : 'border border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-white/10 dark:text-white/45 dark:hover:bg-white/5'}`}>
+            <button key={s} onClick={() => setStatusFilter(s)} className={`rounded-[6px] px-3 py-1.5 data-primary text-[12px] font-bold capitalize transition ${statusFilter === s ? 'bg-[#c8f135] text-black' : 'border border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-white/10 dark:text-white/45 dark:hover:bg-white/5'}`}>
               {s === 'success' ? 'paid' : s}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="bg-white dark:bg-[#111] rounded-[8px] shadow-sm border border-gray-200 dark:border-white/10 overflow-hidden">
+      <div className="bg-white dark:bg-[#111] rounded-none shadow-sm border border-gray-200 dark:border-white/10 overflow-hidden">
         {loading ? (
           <div className="p-5 space-y-3">
             <Skeleton width="w-full" height="h-6" />
@@ -175,8 +175,8 @@ export default function PaymentsPage() {
           </div>
         ) : visiblePayments.length === 0 ? (
           <div className="py-12 text-center px-6">
-            <p className="text-[14px] font-semibold text-gray-900 dark:text-[#f2f3f5] mb-1">No transactions yet</p>
-            <p className="text-[14px] text-gray-500 dark:text-[#96989d]">Payments will appear here when members subscribe.</p>
+            <p className="section-title text-gray-900 dark:text-[#f2f3f5] mb-1">No transactions yet</p>
+            <p className="body-md text-gray-500 dark:text-[#96989d]">Payments will appear here when members subscribe.</p>
           </div>
         ) : (
           <>
@@ -185,41 +185,41 @@ export default function PaymentsPage() {
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-white/10">
                     {['Date', 'Member', 'Community', 'Plan', 'Reference', 'Amount', 'Status', 'Actions'].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-[14px] font-bold text-gray-600 dark:text-[#b5bac1] uppercase tracking-[0.8px]">{h}</th>
+                      <th key={h} className="px-4 py-3 text-left table-header text-gray-600 dark:text-[#b5bac1]">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                   {visiblePayments.map(p => (
                     <tr key={p.id} className="hover:bg-white/[0.015] transition-colors cursor-default">
-                      <td className="px-4 py-2.5 text-[14px] font-medium text-gray-600 dark:text-[#b5bac1]">
+                      <td className="px-4 py-2.5 data-mono text-gray-600 dark:text-[#b5bac1]">
                         {new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </td>
                       <td className="px-4 py-2.5">
                         <div className="flex items-center gap-2.5">
                           <Avatar name={p.email} size={24} />
-                          <span className="text-[14px] font-semibold text-gray-900 dark:text-[#f2f3f5] max-w-[150px] truncate">{p.email}</span>
+                          <span className="data-primary text-gray-900 dark:text-[#f2f3f5] max-w-[150px] truncate">{p.email}</span>
                         </div>
                       </td>
                       <td className="px-4 py-2.5">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-[14px] text-gray-800 dark:text-[#dbdee1]">{p.communities?.name}</span>
+                          <span className="data-primary text-gray-800 dark:text-[#dbdee1]">{p.communities?.name}</span>
                           {p.communities?.platform === 'whatsapp' && <WhatsAppModeBadge mode={p.communities?.whatsapp_setup_mode || 'basic'} size="xs" />}
                         </div>
                       </td>
-                      <td className="px-4 py-2.5 text-[14px] text-gray-800 dark:text-[#dbdee1]">{p.plans?.name || 'Standard'}</td>
+                      <td className="px-4 py-2.5 body-md text-gray-800 dark:text-[#dbdee1]">{p.plans?.name || 'Standard'}</td>
                       <td className="px-4 py-2.5">
-                        <button onClick={() => copyReference(p.paystack_reference)} className="font-mono text-[13px] text-gray-500 hover:text-[#c8f135] dark:text-[#96989d] transition-colors" title="Copy reference">
+                        <button onClick={() => copyReference(p.paystack_reference)} className="data-mono text-[13px] text-gray-500 hover:text-[#c8f135] dark:text-[#96989d] transition-colors" title="Copy reference">
                           {p.paystack_reference}
                         </button>
                       </td>
-                      <td className="px-4 py-2.5 text-[14px] font-bold text-[#c8f135]">₦{p.amount?.toLocaleString()}</td>
+                      <td className="px-4 py-2.5 financial text-[#c8f135]">₦{p.amount?.toLocaleString()}</td>
                       <td className="px-4 py-2.5"><Pill status={p.status} /></td>
                       <td className="px-4 py-2.5">
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => openMember(p)}
-                            className="rounded-[6px] border border-gray-200 px-3 py-1.5 text-[12px] font-bold text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-white/50 dark:hover:bg-white/5"
+                            className="label-xs px-2.5 py-1 rounded-[4px] border border-gray-200 font-bold text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-white/50 dark:hover:bg-white/5"
                           >
                             Member
                           </button>
@@ -227,7 +227,7 @@ export default function PaymentsPage() {
                             <button
                               onClick={() => verifyPayment(p.paystack_reference)}
                               disabled={verifying === p.paystack_reference}
-                              className="rounded-[6px] bg-[#c8f135] px-3 py-1.5 text-[12px] font-black text-black hover:bg-[#d6ff4f] disabled:opacity-50"
+                              className="label-xs px-2.5 py-1 rounded-[4px] bg-[#c8f135] font-black text-black hover:bg-[#d6ff4f] disabled:opacity-50"
                             >
                               {verifying === p.paystack_reference ? 'Checking…' : 'Verify'}
                             </button>

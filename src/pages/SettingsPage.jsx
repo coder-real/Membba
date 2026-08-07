@@ -26,19 +26,19 @@ const TABS = [
 ];
 
 const inputCls =
-  "w-full bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 rounded-[10px] px-4 py-2.5 text-[14px] text-gray-900 dark:text-[#dbdee1] placeholder-gray-400 dark:placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-[#c8f135]/40 transition-all";
+  "w-full bg-white dark:bg-[#0a0a0a] border border-gray-300 dark:border-white/20 rounded-none px-4 py-2.5 text-[14px] text-gray-900 dark:text-[#dbdee1] placeholder-gray-400 dark:placeholder-white/30 focus:outline-none focus:border-[#c8f135] focus:ring-1 focus:ring-[#c8f135] transition-all shadow-sm";
 const labelCls =
-  "block text-[12px] font-bold text-gray-500 dark:text-white/40 uppercase tracking-widest mb-1.5";
+  "block text-[12px] font-bold text-gray-600 dark:text-white/60 uppercase tracking-widest mb-1.5";
 
 // ── Small reusable section wrapper ────────────────────────────────────
 function Section({ title, description, children, eyebrow }) {
   return (
-    <div className="bg-white dark:bg-[#111] rounded-[14px] border border-gray-200 dark:border-white/10 overflow-hidden">
+    <div className="bg-white dark:bg-[#111] rounded-none border border-gray-200 dark:border-white/10 overflow-hidden shadow-sm">
       {(title || description) && (
         <div className="px-6 py-5 border-b border-gray-100 dark:border-white/5">
-          {eyebrow && <p className="mb-1 text-[11px] font-black uppercase tracking-[0.2em] text-[#c8f135]">{eyebrow}</p>}
-          {title && <h3 className="text-[15px] font-bold text-gray-900 dark:text-white">{title}</h3>}
-          {description && <p className="text-[13px] text-gray-500 dark:text-white/40 mt-0.5">{description}</p>}
+          {eyebrow && <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.15em] text-gray-500 dark:text-white/40">{eyebrow}</p>}
+          {title && <h3 className="text-[16px] font-extrabold text-gray-900 dark:text-white">{title}</h3>}
+          {description && <p className="text-[13px] text-gray-500 dark:text-white/50 mt-0.5">{description}</p>}
         </div>
       )}
       <div className="px-6 py-5">{children}</div>
@@ -52,7 +52,7 @@ function NotifRow({ label, description, checked, onChange }) {
     <div className="flex items-start justify-between gap-4 py-4 border-b border-gray-100 dark:border-white/5 last:border-0">
       <div>
         <p className="text-[14px] font-semibold text-gray-900 dark:text-[#dbdee1]">{label}</p>
-        <p className="text-[12px] text-gray-500 dark:text-white/30 mt-0.5">{description}</p>
+        <p className="text-[12px] text-gray-500 dark:text-white/40 mt-0.5">{description}</p>
       </div>
       <button
         type="button"
@@ -68,43 +68,44 @@ function NotifRow({ label, description, checked, onChange }) {
 
 function StatusChip({ status = 'idle', children }) {
   const tone = status === 'ready'
-    ? 'border-[#c8f135]/20 bg-[#c8f135]/10 text-[#c8f135]'
+    ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
     : status === 'warning'
       ? 'border-amber-400/20 bg-amber-400/10 text-amber-600 dark:text-amber-300'
       : status === 'danger'
         ? 'border-red-500/20 bg-red-500/10 text-red-500 dark:text-red-300'
         : 'border-gray-200 bg-gray-50 text-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-white/45'
-  return <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[12px] font-black ${tone}`}>{children}</span>
+  return <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[12px] font-bold ${tone}`}>{children}</span>
 }
 
 function IntegrationNav({ active, onSelect }) {
   const items = [
     { id: 'overview', label: 'Overview', description: 'What is connected' },
     { id: 'official', label: 'Official WhatsApp', description: 'Meta Cloud API' },
-    { id: 'advanced', label: 'Advanced WhatsApp', description: 'Baileys group automation' },
+    { id: 'advanced', label: 'WhatsApp Bot', description: 'Group & device link' },
     { id: 'telegram', label: 'Telegram', description: 'Bot setup' },
     { id: 'payments', label: 'Payments', description: 'Paystack' },
   ]
 
   return (
-    <div className="mb-4 overflow-x-auto">
-      <div className="flex min-w-max gap-2">
+    <div className="relative mb-5 overflow-hidden">
+      <div className="flex min-w-max gap-2 overflow-x-auto pb-1 no-scrollbar">
         {items.map(item => (
           <button
             key={item.id}
             type="button"
             onClick={() => onSelect(item.id)}
             title={item.description}
-            className={`rounded-[var(--radius-md)] border px-3 py-2 text-[13px] font-medium transition ${
+            className={`rounded-[var(--radius-md)] border px-3.5 py-2 text-[13px] font-semibold transition ${
               active === item.id
-                ? 'border-[var(--color-border-strong)] bg-[var(--color-bg-elevated)] text-[var(--color-text-primary)]'
-                : 'border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-elevated)]'
+                ? 'border-[#c8f135] bg-[#c8f135]/10 text-gray-900 dark:text-white'
+                : 'border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-white/60 dark:hover:bg-white/5'
             }`}
           >
             {item.label}
           </button>
         ))}
       </div>
+      <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-[#0a0a0a] opacity-80" />
     </div>
   )
 }
@@ -520,32 +521,14 @@ export default function SettingsPage() {
   };
 
   return (
-    <>
+    <div className="max-w-4xl mx-auto pb-12">
       <div>
         {/* Header */}
-        <div className="mb-8 mt-2">
-          <h1 className="text-[24px] font-black text-[var(--color-text-primary)] tracking-tight">Settings</h1>
-          <p className="text-[14px] text-[var(--color-text-secondary)] mt-1">Manage your account and platform preferences</p>
-        </div>
-
-        <div className="lg:hidden mb-5 overflow-x-auto">
-          <div className="flex gap-2 min-w-max">
-            {TABS.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 rounded-[var(--radius-md)] border px-3 py-2 text-[13px] font-medium ${
-                    isActive ? "border-[var(--color-brand)] bg-[var(--color-bg-elevated)] text-[var(--color-text-primary)]" : "border-[var(--color-border-default)] text-[var(--color-text-secondary)]"
-                  }`}
-                >
-                  <Icon size={15} /> {tab.label}
-                </button>
-              )
-            })}
-          </div>
+        <div className="mb-6">
+          <h1 className="page-title text-gray-900 dark:text-white">
+            {TABS.find(t => t.id === activeTab)?.label || 'Settings'}
+          </h1>
+          <p className="body-md text-gray-500 dark:text-white/50 mt-1">Manage your account and platform preferences</p>
         </div>
 
         {/* Content */}
@@ -869,22 +852,13 @@ export default function SettingsPage() {
                   </Section>
 
                   <Section title="Secondary services" description="Payment and infrastructure services used by Membba.">
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <button onClick={() => setIntegrationTab('payments')} className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-gray-50 p-4 text-left hover:bg-white dark:border-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.05]">
-                        <div>
-                          <p className="text-[14px] font-black text-gray-900 dark:text-white">Paystack</p>
-                          <p className="mt-1 text-[12px] text-gray-500 dark:text-white/35">Payment processor for subscriptions and saved cards.</p>
-                        </div>
-                        <StatusChip status="ready">Configured</StatusChip>
-                      </button>
-                      <div className="flex items-center justify-between gap-4 rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-left dark:border-white/10 dark:bg-white/[0.02]">
-                        <div>
-                          <p className="text-[14px] font-black text-gray-900 dark:text-white">Storage & files</p>
-                          <p className="mt-1 text-[12px] text-gray-500 dark:text-white/35">Avatar bucket is managed through Supabase Storage.</p>
-                        </div>
-                        <StatusChip status="idle">Supabase</StatusChip>
+                    <button onClick={() => setIntegrationTab('payments')} className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-gray-50 p-4 text-left hover:bg-white dark:border-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.05] w-full transition">
+                      <div>
+                        <p className="text-[14px] font-black text-gray-900 dark:text-white">Paystack</p>
+                        <p className="mt-1 text-[12px] text-gray-500 dark:text-white/40">Payment processor for subscriptions and saved cards.</p>
                       </div>
-                    </div>
+                      <StatusChip status="ready">Configured</StatusChip>
+                    </button>
                   </Section>
                 </div>
               )}
@@ -944,21 +918,27 @@ export default function SettingsPage() {
               {/* WhatsApp */}
               {integrationTab === 'advanced' && (
               <Section
-                title="WhatsApp advanced automation"
-                description="Optional Baileys connection for group add/remove, group metadata, and invite rotation. Basic WhatsApp delivery still runs through the official Meta API."
-                eyebrow="Beta channel"
+                title="WhatsApp Bot & Group Automation"
+                description="Optional connection for automatic group add/remove, member access management, and group link inspection. Basic WhatsApp delivery runs via the official Meta API."
+                eyebrow="Device Connection"
               >
                 <div className="mb-5 rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-white/[0.03]">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <p className="text-[14px] font-black text-gray-950 dark:text-white">Baileys linked device</p>
+                      <p className="text-[14px] font-black text-gray-950 dark:text-white">WhatsApp Bot (Device Link)</p>
                       <p className="mt-1 text-[12px] leading-relaxed text-gray-500 dark:text-white/40">
-                        QR scanning is now the recommended path when you have a second screen. Pairing code remains available for mobile-only setup.
+                        Scan QR code on desktop or request a pairing code on mobile to link your WhatsApp account for automated group management.
                       </p>
                     </div>
-                    <StatusChip status={waStatus === 'connected' ? 'ready' : waStatus === 'pairing_failed' || waStatus === 'logged_out' ? 'danger' : 'idle'}>
-                      {waStatus === 'connected' ? 'Connected' : waStatus.replace(/_/g, ' ')}
-                    </StatusChip>
+                    <span className={`inline-flex items-center whitespace-nowrap rounded-full border px-3 py-1 text-[12px] font-bold ${
+                      waStatus === 'connected'
+                        ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                        : waStatus === 'pairing_failed' || waStatus === 'logged_out'
+                          ? 'border-red-500/20 bg-red-500/10 text-red-500'
+                          : 'border-gray-200 bg-gray-50 text-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-white/45'
+                    }`}>
+                      {waStatus === 'connected' ? 'Device Linked · Bot Active' : waStatus.replace(/_/g, ' ')}
+                    </span>
                   </div>
                 </div>
 
@@ -966,13 +946,13 @@ export default function SettingsPage() {
                   <div className="mb-5">
                     {isMobileDevice && (
                       <div className="mb-3 rounded-2xl border border-[#25D366]/20 bg-[#25D366]/10 p-3 text-[13px] leading-relaxed text-gray-700 dark:text-white/70">
-                        Mobile detected — pairing code is selected because you can’t scan a QR code shown on the same phone. If you have another device available, QR is more reliable.
+                        Mobile detected — pairing code is selected because you cannot scan a QR code on the same screen. If you have a laptop or second device, QR is recommended.
                       </div>
                     )}
                     <div className="grid gap-3 sm:grid-cols-2">
                       {[
-                        { id: "qr", title: "Scan QR", note: "Recommended on desktop or when another phone can scan." },
-                        { id: "pairing_code", title: "Pairing code", note: "Backup for mobile-only setup. Use digits with country code." },
+                        { id: "qr", title: "Scan QR Code", note: "Recommended on desktop or when another phone is available." },
+                        { id: "pairing_code", title: "Pairing Code", note: "Backup for mobile setup. Enter phone number with country code." },
                       ].map(m => (
                         <button key={m.id} onClick={() => setConnectMethod(m.id)}
                           className={`rounded-2xl border p-4 text-left transition ${
@@ -982,7 +962,7 @@ export default function SettingsPage() {
                           }`}>
                           <div className="flex items-center justify-between gap-3">
                             <p className={`text-[14px] font-black ${connectMethod === m.id ? 'text-[#25D366]' : 'text-gray-900 dark:text-white'}`}>{m.title}</p>
-                            {m.id === 'qr' && <span className="rounded-full bg-[#c8f135]/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-[#c8f135]">Recommended</span>}
+                            {m.id === 'qr' && <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">Recommended</span>}
                           </div>
                           <p className="mt-1 text-[12px] leading-relaxed text-gray-500 dark:text-white/35">{m.note}</p>
                         </button>
@@ -994,7 +974,7 @@ export default function SettingsPage() {
                           placeholder="e.g. 2348012345678 (country code, no +)"
                           className={`${inputCls}`} />
                         <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 text-[12px] leading-relaxed text-gray-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-white/45">
-                          After getting the code: WhatsApp → Linked Devices → Link with phone number → paste the code. If WhatsApp rejects it, reset and use QR.
+                          After getting the code: Open WhatsApp → Linked Devices → Link with phone number → paste the code.
                         </div>
                       </div>
                     )}
@@ -1002,42 +982,40 @@ export default function SettingsPage() {
                 )}
 
                 {waStatus === "connected" && (
-                  <div className="mb-5 rounded-2xl border border-[#25D366]/20 bg-[#25D366]/5 p-4">
+                  <div className="mb-5 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 dark:border-emerald-500/20">
                     <div className="mb-4 flex items-start justify-between gap-4">
                       <div>
-                        <p className="text-[13px] font-black text-gray-950 dark:text-white">Advanced test center</p>
-                        <p className="mt-1 text-[12px] leading-relaxed text-gray-500 dark:text-white/40">Confirm the QR-linked device can send messages and inspect group invite links before relying on automation.</p>
+                        <p className="text-[14px] font-black text-gray-950 dark:text-white">Bot Connection Test Center</p>
+                        <p className="mt-1 text-[12px] leading-relaxed text-gray-500 dark:text-white/40">Verify your linked WhatsApp device can send messages and inspect group invite links.</p>
                       </div>
-                      <StatusChip status="ready">QR linked</StatusChip>
                     </div>
 
                     <div className="grid gap-3 lg:grid-cols-2">
                       <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-black/20">
-                        <p className="text-[12px] font-black uppercase tracking-widest text-gray-400">Test DM</p>
+                        <p className="text-[12px] font-bold uppercase tracking-widest text-gray-500 dark:text-white/50">Send Test DM</p>
                         <div className="mt-3 space-y-2">
                           <input value={waTest.to} onChange={e => setWaTest(t => ({ ...t, to: e.target.value }))} placeholder="2348012345678" className={inputCls} />
                           <input value={waTest.text} onChange={e => setWaTest(t => ({ ...t, text: e.target.value }))} placeholder="Test message" className={inputCls} />
                           <button onClick={sendBaileysTestMessage} disabled={sendingWaTest} className="btn-primary w-full justify-center disabled:opacity-50">
-                            {sendingWaTest ? 'Sending…' : 'Send Baileys test'}
+                            {sendingWaTest ? 'Sending…' : 'Send Test Message'}
                           </button>
                         </div>
                       </div>
 
                       <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-black/20">
-                        <p className="text-[12px] font-black uppercase tracking-widest text-gray-400">Inspect group invite</p>
+                        <p className="text-[12px] font-bold uppercase tracking-widest text-gray-500 dark:text-white/50">Inspect Group Invite Link</p>
                         <div className="mt-3 space-y-2">
                           <input value={inviteTestLink} onChange={e => setInviteTestLink(e.target.value)} placeholder="https://chat.whatsapp.com/..." className={inputCls} />
                           <button onClick={testInviteLink} disabled={testingInvite} className="btn-secondary w-full justify-center disabled:opacity-50">
-                            {testingInvite ? 'Checking…' : 'Check invite link'}
+                            {testingInvite ? 'Checking…' : 'Check Invite Link'}
                           </button>
                           {inviteTestResult && (
-                            <div className={`rounded-xl border p-3 text-[12px] leading-relaxed ${inviteTestResult.ok ? 'border-[#c8f135]/20 bg-[#c8f135]/10 text-gray-700 dark:text-white/70' : 'border-red-500/20 bg-red-500/10 text-red-500'}`}>
+                            <div className={`rounded-xl border p-3 text-[12px] leading-relaxed ${inviteTestResult.ok ? 'border-emerald-500/20 bg-emerald-500/10 text-gray-700 dark:text-white/70' : 'border-red-500/20 bg-red-500/10 text-red-500'}`}>
                               {inviteTestResult.ok ? (
                                 <>
-                                  <p><span className="font-black">Group:</span> {inviteTestResult.group_name || 'Valid invite link'}</p>
+                                  <p><span className="font-bold">Group:</span> {inviteTestResult.group_name || 'Valid invite link'}</p>
                                   {inviteTestResult.group_id && <p className="font-mono break-all">{inviteTestResult.group_id}</p>}
                                   {inviteTestResult.participants_count && <p>{inviteTestResult.participants_count} participants</p>}
-                                  {inviteTestResult.inspect_error && <p className="text-amber-500">Inspection note: {inviteTestResult.inspect_error}</p>}
                                 </>
                               ) : inviteTestResult.message}
                             </div>
@@ -1139,6 +1117,6 @@ export default function SettingsPage() {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

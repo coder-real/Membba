@@ -40,41 +40,41 @@ export default function DashboardPage() {
 
   const totalMembers = stats.activeMembers + stats.expiredMembers
   const statCards = [
-    { label: 'TOTAL REVENUE',   value: `₦${stats.totalRevenue.toLocaleString()}`, sub: 'All time earnings', trend: stats.totalRevenue > 0 ? 'Live from successful payments' : 'No payments yet', trendColor: stats.totalRevenue > 0 ? 'text-[#9FFF57]' : 'text-black dark:text-white/40' },
-    { label: 'ACTIVE MEMBERS',  value: stats.activeMembers, sub: 'Current subscribers', trend: totalMembers > 0 ? `${totalMembers} total members` : 'No subscribers yet', trendColor: stats.activeMembers > 0 ? 'text-[#9FFF57]' : 'text-black dark:text-white/40' },
-    { label: 'COMMUNITIES',     value: stats.communities, sub: 'Active groups', trend: stats.communities > 0 ? 'Ready to accept members' : 'Create your first community', trendColor: stats.communities > 0 ? 'text-[#9FFF57]' : 'text-black dark:text-white/40' },
-    { label: 'EXPIRED MEMBERS', value: stats.expiredMembers, sub: 'Need renewal', trend: stats.expiredMembers > 0 ? 'Follow up recommended' : 'No expired members', trendColor: stats.expiredMembers > 0 ? 'text-[#f0883e]' : 'text-black dark:text-white/40' },
+    { label: 'TOTAL REVENUE',   value: `₦${stats.totalRevenue.toLocaleString()}`, sub: 'All time earnings', trend: stats.totalRevenue > 0 ? 'Live from successful payments' : 'No payments yet', trendColor: stats.totalRevenue > 0 ? 'text-[#c8f135]' : 'text-gray-500 dark:text-white/40' },
+    { label: 'ACTIVE MEMBERS',  value: stats.activeMembers, sub: 'Current subscribers', trend: totalMembers > 0 ? `${totalMembers} total members` : 'No subscribers yet', trendColor: stats.activeMembers > 0 ? 'text-[#c8f135]' : 'text-gray-500 dark:text-white/40' },
+    { label: 'COMMUNITIES',     value: stats.communities, sub: 'Active groups', trend: stats.communities > 0 ? 'Ready to accept members' : 'Create your first community', trendColor: stats.communities > 0 ? 'text-[#c8f135]' : 'text-gray-500 dark:text-white/40' },
+    { label: 'EXPIRED MEMBERS', value: stats.expiredMembers, sub: 'Need renewal', trend: stats.expiredMembers > 0 ? 'Follow up recommended' : 'No expired members', trendColor: stats.expiredMembers > 0 ? 'text-amber-500' : 'text-gray-500 dark:text-white/40' },
   ]
 
   return (
     <>
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-7 mb-6 mt-2">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-[28px] font-black text-black dark:text-white tracking-tight leading-tight">Dashboard</h1>
-          <p className="text-[14px] text-black dark:text-white/50 mt-1.5">
+          <h1 className="page-title text-gray-900 dark:text-white">Dashboard</h1>
+          <p className="body-md text-gray-500 dark:text-white/50 mt-1">
             Here's what's happening across your communities.
           </p>
         </div>
         <Link
           to="/dashboard/communities/new"
-          className="bg-[#9FFF57] hover:bg-[#b0ff6e] text-black px-4 py-2 rounded font-bold text-[14px] transition-colors shadow-sm"
+          className="btn-primary"
         >
           New Community
         </Link>
       </div>
 
-      {/* Stat Cards - Discord palette #111 */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        {statCards.map((card, i) => (
-          <div key={card.label} className="bg-white dark:bg-[#111] rounded-[8px] p-7 flex flex-col justify-between shadow-sm min-h-[100px] hover:bg-white/[0.02] transition-colors border-l-2 border-transparent hover:border-[#9FFF57]/50 border-t border-r border-b border-gray-200 dark:border-white/10">
-            <p className="text-[14px] font-bold text-gray-600 dark:text-[#b5bac1] uppercase tracking-wide mb-1">{card.label}</p>
+      {/* Stat Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {statCards.map((card) => (
+          <div key={card.label} className="bg-white dark:bg-[#111] rounded-none p-5 sm:p-6 flex flex-col justify-between shadow-sm hover:border-[#c8f135]/50 transition-colors border border-gray-200 dark:border-white/10">
+            <p className="table-header text-gray-500 dark:text-white/50 uppercase mb-3 text-[11px] sm:text-[12px] font-extrabold tracking-wider">{card.label}</p>
             {loading ? (
-              <Skeleton width="w-24" height="h-7" />
+              <Skeleton width="w-24" height="h-10" />
             ) : (
               <div className="flex flex-col">
-                <p className="text-[24px] font-black text-black dark:text-white leading-none">{card.value}</p>
-                <p className={`text-[14px] font-medium mt-2 ${card.trendColor}`}>{card.trend}</p>
+                <p className="font-sans text-[34px] sm:text-[44px] font-black text-gray-900 dark:text-white leading-none tracking-tight">{card.value}</p>
+                <p className={`text-[13px] font-bold mt-3 ${card.trendColor}`}>{card.trend}</p>
               </div>
             )}
           </div>
@@ -82,55 +82,55 @@ export default function DashboardPage() {
       </div>
 
       {/* Split Layout: Chart & Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         { /* Chart Column */ }
-        <div className="lg:col-span-2 bg-white dark:bg-[#111] rounded-[8px] p-7 shadow-sm min-h-[300px] flex flex-col justify-between border border-gray-200 dark:border-white/10">
+        <div className="lg:col-span-2 bg-white dark:bg-[#111] rounded-none p-6 shadow-sm min-h-[300px] flex flex-col justify-between border border-gray-200 dark:border-white/10">
           <div>
-            <h2 className="text-[14px] font-bold text-gray-900 dark:text-[#f2f3f5] mb-0.5">Revenue over time</h2>
-            <p className="text-[14px] text-gray-600 dark:text-[#b5bac1]">Last 30 days - All communities</p>
+            <h2 className="section-title text-gray-900 dark:text-white mb-0.5 text-[18px] font-black">Revenue over time</h2>
+            <p className="body-md text-gray-500 dark:text-white/50 text-[14px]">Last 30 days — All communities</p>
           </div>
-          <div className="flex-1 w-full mt-8 relative flex items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50 dark:border-white/10 dark:bg-white/[0.02]">
+          <div className="flex-1 w-full mt-6 relative flex items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50 dark:border-white/10 dark:bg-white/[0.02] p-6">
             {loading ? (
               <Skeleton width="w-3/4" height="h-24" />
             ) : stats.totalRevenue > 0 ? (
-              <div className="w-full px-6">
+              <div className="w-full">
                 <div className="mb-4 flex items-end justify-between">
-                  <p className="text-[26px] font-black text-black dark:text-white">₦{stats.totalRevenue.toLocaleString()}</p>
-                  <p className="text-[13px] font-bold text-[#9FFF57]">Total collected</p>
+                  <p className="font-sans text-[38px] sm:text-[48px] font-black text-gray-900 dark:text-white tracking-tight leading-none">₦{stats.totalRevenue.toLocaleString()}</p>
+                  <p className="text-[14px] font-black text-[#c8f135]">Total collected</p>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-white/10"><div className="h-full w-full rounded-full bg-[#9FFF57]" /></div>
-                <p className="mt-3 text-[13px] text-gray-500 dark:text-white/35">Detailed revenue charts will appear as more payments come in.</p>
+                <div className="h-2.5 overflow-hidden rounded-full bg-gray-200 dark:bg-white/10"><div className="h-full w-full rounded-full bg-[#c8f135]" /></div>
+                <p className="mt-3 text-[13px] text-gray-500 dark:text-white/40">Detailed revenue charts will accumulate as more payments come in.</p>
               </div>
             ) : (
-              <div className="px-6 text-center">
-                <p className="text-[15px] font-black text-gray-900 dark:text-white">No revenue yet</p>
-                <p className="mt-1 text-[13px] text-gray-500 dark:text-white/35">Revenue will appear here after your first successful payment.</p>
+              <div className="text-center">
+                <p className="section-title text-gray-900 dark:text-white text-[18px] font-bold">No revenue yet</p>
+                <p className="mt-1 body-md text-gray-500 dark:text-white/40 text-[14px]">Revenue will appear here after your first successful payment.</p>
               </div>
             )}
           </div>
         </div>
 
         { /* Activity Column */ }
-        <div className="bg-white dark:bg-[#111] rounded-[8px] p-7 shadow-sm border border-gray-200 dark:border-white/10">
-          <h2 className="text-[14px] font-bold text-gray-900 dark:text-[#f2f3f5] mb-4">Recent activity</h2>
+        <div className="bg-white dark:bg-[#111] rounded-none p-6 shadow-sm border border-gray-200 dark:border-white/10">
+          <h2 className="section-title text-gray-900 dark:text-white mb-4 text-[18px] font-black">Recent activity</h2>
           {loading ? (
              <div className="space-y-4">
                 {[1,2,3,4].map(k => <Skeleton key={k} width="w-full" height="h-4" />)}
              </div>
           ) : recentPayments.length === 0 ? (
-             <p className="text-[14px] text-gray-500 dark:text-[#96989d]">No recent activity yet.</p>
+             <p className="body-md text-gray-500 dark:text-white/40 text-[14px]">No recent activity yet.</p>
           ) : (
             <div className="space-y-4">
-              {recentPayments.map((p, i) => (
+              {recentPayments.map((p) => (
                 <div key={p.id} className="flex items-start justify-between gap-3 text-[14px]">
                   <div className="flex items-start gap-2.5 min-w-0">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#9FFF57] mt-1.5 flex-shrink-0" />
+                    <div className="w-2 h-2 rounded-full bg-[#c8f135] mt-1.5 flex-shrink-0" />
                     <p className="text-gray-800 dark:text-[#dbdee1] leading-snug">
-                      <span className="font-semibold">{p.email}</span>{' '}
-                      <span className="text-gray-500 dark:text-[#96989d]">paid ₦{p.amount?.toLocaleString()} for {p.communities?.name}</span>
+                      <span className="font-sans font-bold text-gray-900 dark:text-white">{p.email}</span>{' '}
+                      <span className="body-md text-gray-500 dark:text-white/50">paid ₦{p.amount?.toLocaleString()} for {p.communities?.name}</span>
                     </p>
                   </div>
-                  <span className="text-gray-500 dark:text-[#72767d] whitespace-nowrap text-[14px]">
+                  <span className="text-gray-400 dark:text-white/30 whitespace-nowrap text-[13px] font-mono">
                     {new Date(p.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                   </span>
                 </div>
@@ -141,65 +141,65 @@ export default function DashboardPage() {
       </div>
 
       {/* Additional Analytics Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
         {/* Member Status Breakdown */}
-        <div className="bg-white dark:bg-[#111] rounded-[8px] p-7 shadow-sm border border-gray-200 dark:border-white/10">
-          <h2 className="text-[14px] font-bold text-gray-900 dark:text-[#f2f3f5] mb-6">Member Status</h2>
+        <div className="bg-white dark:bg-[#111] rounded-none p-6 shadow-sm border border-gray-200 dark:border-white/10">
+          <h2 className="section-title text-gray-900 dark:text-white mb-6 text-[18px] font-black">Member Status</h2>
           <div className="space-y-4">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[13px] text-gray-600 dark:text-[#b5bac1]">Active Subscriptions</span>
-                <span className="text-[14px] font-bold text-[#9FFF57]">{loading ? '—' : stats.activeMembers}</span>
+                <span className="body-md text-gray-600 dark:text-white/60 text-[14px]">Active Subscriptions</span>
+                <span className="font-sans text-[20px] font-black text-[#c8f135]">{loading ? '—' : stats.activeMembers}</span>
               </div>
-              <div className="w-full bg-white/[0.05] rounded-full h-1.5 overflow-hidden">
-                <div className="bg-[#9FFF57] h-full" style={{ width: stats.activeMembers > 0 ? '100%' : '0%' }} />
+              <div className="w-full bg-gray-100 dark:bg-white/[0.05] rounded-full h-2 overflow-hidden">
+                <div className="bg-[#c8f135] h-full" style={{ width: stats.activeMembers > 0 ? '100%' : '0%' }} />
               </div>
             </div>
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[13px] text-gray-600 dark:text-[#b5bac1]">Expired Subscriptions</span>
-                <span className="text-[14px] font-bold text-[#ff6b6b]">{loading ? '—' : stats.expiredMembers}</span>
+                <span className="body-md text-gray-600 dark:text-white/60 text-[14px]">Expired Subscriptions</span>
+                <span className="font-sans text-[20px] font-black text-amber-500">{loading ? '—' : stats.expiredMembers}</span>
               </div>
-              <div className="w-full bg-white/[0.05] rounded-full h-1.5 overflow-hidden">
-                <div className="bg-[#ff6b6b] h-full" style={{ width: stats.expiredMembers > 0 ? (stats.expiredMembers / (stats.activeMembers + stats.expiredMembers) * 100) : '0%' }} />
+              <div className="w-full bg-gray-100 dark:bg-white/[0.05] rounded-full h-2 overflow-hidden">
+                <div className="bg-amber-500 h-full" style={{ width: stats.expiredMembers > 0 ? (stats.expiredMembers / (stats.activeMembers + stats.expiredMembers) * 100) : '0%' }} />
               </div>
             </div>
-            <div className="pt-3 border-t border-gray-200 dark:border-white/10 text-[12px] text-gray-500 dark:text-[#96989d]">
+            <div className="pt-3 border-t border-gray-100 dark:border-white/10 text-[13px] text-gray-500 dark:text-white/40 font-bold">
               <p>Total: {loading ? '—' : stats.activeMembers + stats.expiredMembers} members</p>
             </div>
           </div>
         </div>
 
         {/* Communities Overview */}
-        <div className="bg-white dark:bg-[#111] rounded-[8px] p-7 shadow-sm border border-gray-200 dark:border-white/10">
-          <h2 className="text-[14px] font-bold text-gray-900 dark:text-[#f2f3f5] mb-6">Communities</h2>
+        <div className="bg-white dark:bg-[#111] rounded-none p-6 shadow-sm border border-gray-200 dark:border-white/10">
+          <h2 className="section-title text-gray-900 dark:text-white mb-6 text-[18px] font-black">Communities</h2>
           <div className="flex items-center justify-between mb-6">
             <div>
-              <p className="text-[11px] text-gray-500 dark:text-[#72767d] uppercase tracking-wide mb-1">Total Communities</p>
-              <p className="text-[28px] font-black text-black dark:text-white">{loading ? '—' : stats.communities}</p>
+              <p className="table-header text-gray-400 dark:text-white/40 uppercase mb-1 text-[11px] font-extrabold tracking-wider">Total Communities</p>
+              <p className="font-sans text-[34px] sm:text-[40px] font-black text-gray-900 dark:text-white leading-none mt-1">{loading ? '—' : stats.communities}</p>
             </div>
-            <div className="w-20 h-20 rounded-full border-4 border-[#9FFF57]/20 flex items-center justify-center">
-              <span className="text-[14px] font-bold text-[#9FFF57]">{stats.communities > 0 ? '100%' : '0%'}</span>
+            <div className="w-16 h-16 rounded-full border-4 border-[#c8f135]/30 flex items-center justify-center">
+              <span className="font-sans text-[16px] font-black text-[#c8f135]">{stats.communities > 0 ? '100%' : '0%'}</span>
             </div>
           </div>
-          <div className="text-[12px] text-gray-500 dark:text-[#96989d]">
+          <div className="text-[13px] text-gray-500 dark:text-white/40">
             <p>Active communities managing memberships</p>
           </div>
         </div>
 
         {/* Revenue Metrics */}
-        <div className="bg-white dark:bg-[#111] rounded-[8px] p-7 shadow-sm border border-gray-200 dark:border-white/10">
-          <h2 className="text-[14px] font-bold text-gray-900 dark:text-[#f2f3f5] mb-6">Revenue Metrics</h2>
+        <div className="bg-white dark:bg-[#111] rounded-none p-6 shadow-sm border border-gray-200 dark:border-white/10">
+          <h2 className="section-title text-gray-900 dark:text-white mb-6 text-[18px] font-black">Revenue Metrics</h2>
           <div className="space-y-4">
             <div>
-              <p className="text-[11px] text-gray-500 dark:text-[#72767d] uppercase tracking-wide mb-2">Avg. Revenue Per Member</p>
-              <p className="text-[20px] font-bold text-[#9FFF57]">
+              <p className="table-header text-gray-400 dark:text-white/40 uppercase mb-2 text-[11px] font-extrabold tracking-wider">Avg. Revenue Per Member</p>
+              <p className="font-sans text-[24px] sm:text-[28px] font-black text-[#c8f135]">
                 {loading ? '—' : stats.activeMembers > 0 ? `₦${Math.round(stats.totalRevenue / stats.activeMembers).toLocaleString()}` : '—'}
               </p>
             </div>
-            <div className="pt-3 border-t border-gray-200 dark:border-white/10">
-              <p className="text-[11px] text-gray-500 dark:text-[#72767d] uppercase tracking-wide mb-2">Conversion Rate</p>
-              <p className="text-[20px] font-bold text-[#f0883e]">
+            <div className="pt-3 border-t border-gray-100 dark:border-white/10">
+              <p className="table-header text-gray-400 dark:text-white/40 uppercase mb-2 text-[11px] font-extrabold tracking-wider">Conversion Rate</p>
+              <p className="font-sans text-[24px] sm:text-[28px] font-black text-amber-500">
                 {loading ? '—' : (stats.activeMembers + stats.expiredMembers) > 0 ? `${Math.round((stats.activeMembers / (stats.activeMembers + stats.expiredMembers)) * 100)}%` : '—'}
               </p>
             </div>
