@@ -8,6 +8,7 @@ import Avatar from '../components/Avatar'
 import Skeleton from '../components/ui/Skeleton'
 import WhatsAppModeBadge from '../components/WhatsAppModeBadge'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
+import CopyableField from '../components/ui/CopyableField'
 import toast from 'react-hot-toast'
 
 const TABS = ['all', 'active', 'expired', 'cancelled']
@@ -349,7 +350,10 @@ export default function MembersPage() {
               )}
               <DetailRow label="Started" value={new Date(selected.started_at).toLocaleString()} />
               <DetailRow label="Expires" value={new Date(selected.expires_at).toLocaleString()} />
-              <DetailRow label="Payment ref" value={selected.paystack_reference} mono />
+              <div className="py-2 border-b border-gray-100 dark:border-white/5">
+                <span className="mb-2 block text-[12px] font-bold uppercase tracking-widest text-gray-400">Payment ref</span>
+                <CopyableField value={selected.paystack_reference} label="Copy payment reference" className="w-full" />
+              </div>
               <DetailRow label="Subscription ID" value={selected.id} mono />
             </div>
 
@@ -365,9 +369,9 @@ export default function MembersPage() {
               {detailLoading ? <p className="text-sm text-gray-500">Loading…</p> : memberPayments.length ? memberPayments.map(p => (
                 <div key={p.id} className="rounded-none border border-gray-200 p-3 mb-2 dark:border-white/10">
                   <div className="flex items-center justify-between gap-2"><p className="text-sm font-bold">₦{Number(p.amount || 0).toLocaleString()}</p><span className="text-xs text-gray-500 capitalize">{p.status}</span></div>
-                  <div className="mt-1 flex items-center justify-between gap-2">
-                    <p className="font-mono text-xs text-gray-400 break-all">{p.paystack_reference}</p>
-                    <a href={`/dashboard/payments?reference=${encodeURIComponent(p.paystack_reference)}`} className="text-xs font-bold text-[#c8f135] hover:underline">Open</a>
+                  <div className="mt-2 space-y-2">
+                    <CopyableField value={p.paystack_reference} label="Copy payment reference" className="w-full" />
+                    <a href={`/dashboard/payments?reference=${encodeURIComponent(p.paystack_reference)}`} className="text-xs font-bold text-[#c8f135] hover:underline">Open payment</a>
                   </div>
                   <p className="text-xs text-gray-400 mt-1">{new Date(p.created_at).toLocaleString()}</p>
                   {p.status === 'pending' && (

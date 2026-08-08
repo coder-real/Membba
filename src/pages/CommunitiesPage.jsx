@@ -10,6 +10,7 @@ import { HiOutlineLink, HiOutlinePencilSquare, HiOutlineTrash, HiOutlinePlusCirc
 import Skeleton from '../components/ui/Skeleton'
 import WhatsAppModeBadge from '../components/WhatsAppModeBadge'
 import API_BASE from '../lib/api'
+import CopyableField from '../components/ui/CopyableField'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
 
 const formatDuration = (minutes) => {
@@ -271,9 +272,9 @@ export default function CommunitiesPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3.5">
-                        <button onClick={() => copyLink(c.slug)} className="max-w-[210px] truncate data-mono text-[12px] text-gray-500 hover:text-[#c8f135] dark:text-white/40 dark:hover:text-[#c8f135] transition-colors" title={joinLink(c.slug)}>
-                          {joinLink(c.slug)}
-                        </button>
+                        <div className="w-[240px]">
+                          <CopyableField value={joinLink(c.slug)} label="Copy join link" />
+                        </div>
                       </td>
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-2">
@@ -315,7 +316,7 @@ export default function CommunitiesPage() {
                     {isWhatsApp && <WhatsAppModeBadge mode={c.whatsapp_setup_mode || 'basic'} size="xs" />}
                     {activePlans.length ? <span className="rounded-full bg-gray-100 px-2.5 py-0.5 label-xs text-gray-600 dark:bg-white/5 dark:text-white/50">{activePlans.length} plan{activePlans.length !== 1 ? 's' : ''}</span> : <span className="rounded-full bg-red-500/10 px-2.5 py-0.5 label-xs text-red-400">No plans</span>}
                   </div>
-                  <button onClick={() => copyLink(c.slug)} className="mb-3 block w-full truncate rounded-[6px] bg-gray-50 px-3 py-2 text-left data-mono text-[12px] text-gray-500 dark:bg-white/[0.03] dark:text-white/40">{joinLink(c.slug)}</button>
+                  <CopyableField value={joinLink(c.slug)} label="Copy join link" className="mb-3 w-full" />
                   <div className="flex flex-wrap gap-2">
                     {isTelegram && <button onClick={() => openQRModal(c)} className="rounded-[6px] border border-gray-200 px-3 py-1.5 text-[12px] font-bold text-gray-600 dark:border-white/10 dark:text-white/50">QR Code</button>}
                     <Link to={`/dashboard/communities/${c.id}/edit`} className="rounded-[6px] border border-gray-200 px-3 py-1.5 text-[12px] font-bold text-gray-600 dark:border-white/10 dark:text-white/50">Edit</Link>

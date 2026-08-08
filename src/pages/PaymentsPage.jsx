@@ -8,6 +8,7 @@ import API_BASE from '../lib/api'
 import Avatar from '../components/Avatar'
 import Skeleton from '../components/ui/Skeleton'
 import WhatsAppModeBadge from '../components/WhatsAppModeBadge'
+import CopyableField from '../components/ui/CopyableField'
 
 export default function PaymentsPage() {
   const { user } = useAuth()
@@ -209,9 +210,7 @@ export default function PaymentsPage() {
                       </td>
                       <td className="px-4 py-2.5 body-md text-gray-800 dark:text-[#dbdee1]">{p.plans?.name || 'Standard'}</td>
                       <td className="px-4 py-2.5">
-                        <button onClick={() => copyReference(p.paystack_reference)} className="data-mono text-[13px] text-gray-500 hover:text-[#c8f135] dark:text-[#96989d] transition-colors" title="Copy reference">
-                          {p.paystack_reference}
-                        </button>
+                        <CopyableField value={p.paystack_reference} label="Copy reference" className="w-[190px]" />
                       </td>
                       <td className="px-4 py-2.5 financial text-[#c8f135]">₦{p.amount?.toLocaleString()}</td>
                       <td className="px-4 py-2.5"><Pill status={p.status} /></td>
@@ -258,9 +257,7 @@ export default function PaymentsPage() {
                     <p className="text-[14px] text-gray-600 dark:text-[#b5bac1]">
                       {new Date(p.created_at).toLocaleDateString()} — <span className="font-bold text-[#c8f135]">₦{p.amount?.toLocaleString()}</span>
                     </p>
-                    <button onClick={() => copyReference(p.paystack_reference)} className="text-left font-mono text-[12px] text-gray-400 hover:text-[#c8f135]">
-                      {p.paystack_reference}
-                    </button>
+                    <CopyableField value={p.paystack_reference} label="Copy reference" className="w-full" />
                     <div className="mt-2 flex flex-wrap gap-2">
                       <button onClick={() => openMember(p)} className="w-fit rounded-[6px] border border-gray-200 px-3 py-1.5 text-[12px] font-bold text-gray-600 dark:border-white/10 dark:text-white/50">Open member</button>
                       {p.status === 'pending' && (
