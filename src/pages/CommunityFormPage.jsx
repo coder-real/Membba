@@ -484,7 +484,7 @@ export default function CommunityFormPage() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {!isEditing && (
-              <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3.5 py-1.5 data-mono text-[12px] text-gray-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/60">
+              <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3.5 py-1.5 data-mono text-[12px] text-gray-600 dark:border-[#303030] dark:bg-white/[0.04] dark:text-white/60">
                 <span className="w-2 h-2 rounded-full bg-[#c8f135] animate-pulse" />
                 {draftSavedAt ? `Draft saved ${new Date(draftSavedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Draft autosaves'}
               </span>
@@ -501,9 +501,9 @@ export default function CommunityFormPage() {
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-[16px] border border-gray-200 bg-white shadow-sm dark:border-white/10 dark:bg-[#111]">
+        <div className="overflow-hidden rounded-[16px] border border-gray-200 bg-white shadow-sm dark:border-[#303030] dark:bg-[#181818]">
           <div className="grid grid-cols-1 lg:grid-cols-[270px_minmax(0,1fr)]">
-            <aside className="border-b border-gray-100 bg-gray-50/50 px-6 py-6 dark:border-white/5 dark:bg-[#0d0d0d] lg:border-b-0 lg:border-r lg:px-6 lg:py-7">
+            <aside className="border-b border-gray-100 bg-gray-50/50 px-6 py-6 dark:border-[#303030] dark:bg-[#0d0d0d] lg:border-b-0 lg:border-r lg:px-6 lg:py-7">
               <p className="mb-2 table-header text-[#c8f135]">{String(currentStep).padStart(2, '0')} OF 04</p>
               <h2 className="section-title text-gray-900 dark:text-white">
                 {stepItems.find(s => s.num === currentStep)?.label}
@@ -562,7 +562,7 @@ export default function CommunityFormPage() {
 
           {/* Step 1: Platform Selection */}
           <div className={currentStep === 1 ? 'block animate-in fade-in slide-in-from-right-4 duration-300 space-y-6' : 'hidden'}>
-            <div className="bg-white dark:bg-[#111] border border-white/[0.07] rounded-xl p-4 sm:p-5 space-y-4">
+            <div className="bg-white dark:bg-[#181818] border border-white/[0.07] rounded-xl p-4 sm:p-5 space-y-4">
               <div>
                 <h2 className="text-[18px] font-black text-black dark:text-white">Choose your platform</h2>
                 <p className="text-[14px] text-black dark:text-white/40 mt-1">Select where your community will be hosted.</p>
@@ -588,7 +588,7 @@ export default function CommunityFormPage() {
                   className={`group relative overflow-hidden text-left rounded-xl border p-4 sm:p-5 transition-all duration-300 ${
                     form.platform === 'telegram'
                       ? 'border-[#229ED9] bg-[#229ED9]/[0.07] shadow-[0_0_30px_rgba(34,158,217,0.12)]'
-                      : 'border-gray-200 dark:border-white/10 bg-white/[0.02] opacity-60 hover:opacity-80 hover:border-white/[0.12]'
+                      : 'border-gray-200 dark:border-[#303030] bg-white/[0.02] opacity-60 hover:opacity-80 hover:border-white/[0.12]'
                   }`}
                 >
                   {/* watermark logo */}
@@ -623,7 +623,7 @@ export default function CommunityFormPage() {
                   className={`group relative overflow-hidden text-left rounded-xl border p-4 sm:p-5 transition-all duration-300 ${
                     form.platform === 'whatsapp'
                       ? 'border-[#25D366] bg-[#25D366]/[0.07] shadow-[0_0_30px_rgba(37,211,102,0.10)]'
-                      : 'border-gray-200 dark:border-white/10 bg-white/[0.02] opacity-60 hover:opacity-80 hover:border-white/[0.12]'
+                      : 'border-gray-200 dark:border-[#303030] bg-white/[0.02] opacity-60 hover:opacity-80 hover:border-white/[0.12]'
                   }`}
                 >
                   {/* watermark logo */}
@@ -659,7 +659,7 @@ export default function CommunityFormPage() {
           <div className={currentStep === 2 ? 'block animate-in fade-in slide-in-from-right-4 duration-300 space-y-6' : 'hidden'}>
             
             {/* Community Details */}
-            <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-none p-5 space-y-4">
+            <div className="bg-white dark:bg-[#181818] border border-gray-200 dark:border-[#303030] rounded-none p-5 space-y-4">
               <h2 className="section-title text-gray-900 dark:text-white">Community Profile</h2>
 
               <div className="flex flex-col gap-4">
@@ -667,7 +667,7 @@ export default function CommunityFormPage() {
                   <label className="block label-xs font-bold text-gray-700 dark:text-white/60 mb-2 uppercase tracking-widest">Community Name *</label>
                   <input
                     type="text" name="name" required={currentStep === 2} value={form.name} onChange={handleFormChange}
-                    className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-none px-3.5 py-2.5 data-primary text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:outline-none focus:border-[#c8f135] transition-colors"
+                    className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#303030] rounded-none px-3.5 py-2.5 data-primary text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:outline-none focus:border-[#c8f135] transition-colors"
                     placeholder="e.g. Crypto Inner Circle"
                   />
                   {form.name && !isEditing && (
@@ -681,7 +681,7 @@ export default function CommunityFormPage() {
                   <label className="block label-xs font-bold text-gray-700 dark:text-white/60 mb-2 uppercase tracking-widest">Description</label>
                   <textarea
                     name="description" value={form.description} onChange={handleFormChange} rows={3}
-                    className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-none px-3.5 py-2.5 body-md text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:outline-none focus:border-[#c8f135] transition-colors resize-none"
+                    className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#303030] rounded-none px-3.5 py-2.5 body-md text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:outline-none focus:border-[#c8f135] transition-colors resize-none"
                     placeholder="What will members get access to?"
                   />
                 </div>
@@ -843,7 +843,7 @@ Adds group automation with linked device. Beta.
                       value={form.whatsapp_group_invite_link}
                       onChange={handleFormChange}
                       onBlur={() => { if (form.whatsapp_group_invite_link && !waInviteCheck) verifyWhatsAppInviteLink() }}
-                      className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-none px-3.5 py-2.5 data-mono text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:outline-none focus:border-[#c8f135] transition-colors"
+                      className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#303030] rounded-none px-3.5 py-2.5 data-mono text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:outline-none focus:border-[#c8f135] transition-colors"
                       placeholder="https://chat.whatsapp.com/xxxxxxxxxx"
                     />
                     <button
@@ -875,7 +875,7 @@ Adds group automation with linked device. Beta.
 
                 {/* ── Advanced: compact single-row action — only shown when advanced mode selected ── */}
                 {form.whatsapp_setup_mode === 'advanced' && (
-                  <div className="flex flex-col gap-3 border border-gray-200 bg-gray-50 px-4 py-3 dark:border-white/10 dark:bg-white/[0.03] sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-3 border border-gray-200 bg-gray-50 px-4 py-3 dark:border-[#303030] dark:bg-[#181818] sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-2.5 min-w-0">
                       {waGroupId ? (
                         <>
@@ -915,7 +915,7 @@ Adds group automation with linked device. Beta.
 
             {/* Existing Plans (edit mode) */}
           {isEditing && existingPlans.length > 0 && (
-            <div className="bg-white dark:bg-[#111] border border-white/[0.07] rounded-xl overflow-hidden">
+            <div className="bg-white dark:bg-[#181818] border border-white/[0.07] rounded-xl overflow-hidden">
               {/* Header row */}
               <div className="hidden gap-0 border-b sm:grid sm:grid-cols-[1fr_120px_130px_80px] border-white/[0.07] px-6 py-3 bg-white/[0.02]">
                 <span className="text-[14px] font-bold text-black dark:text-white/30 uppercase tracking-widest">Plan Name</span>
@@ -927,7 +927,7 @@ Adds group automation with linked device. Beta.
                 <div
                   key={p.id}
                   className={`grid grid-cols-1 gap-2 px-5 py-4 sm:grid-cols-[1fr_120px_130px_80px] sm:items-center sm:gap-0 sm:px-6 group transition-colors hover:bg-white/[0.025] ${
-                    idx < existingPlans.length - 1 ? 'border-b border-gray-200 dark:border-white/10' : ''
+                    idx < existingPlans.length - 1 ? 'border-b border-gray-200 dark:border-[#303030]' : ''
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -951,7 +951,7 @@ Adds group automation with linked device. Beta.
           )}
 
           {/* Plan Builder */}
-          <div className="bg-white dark:bg-[#111] border border-white/[0.07] rounded-xl overflow-hidden">
+          <div className="bg-white dark:bg-[#181818] border border-white/[0.07] rounded-xl overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between px-5 sm:px-7 pt-6 pb-4">
               <div>
@@ -988,7 +988,7 @@ Adds group automation with linked device. Beta.
                           value={plan.name}
                           onChange={e => handlePlanChange(i, e)}
                           placeholder="e.g. Monthly Access"
-                          className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-none px-3.5 py-2.5 data-primary text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:outline-none focus:border-[#c8f135] transition-colors"
+                          className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#303030] rounded-none px-3.5 py-2.5 data-primary text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:outline-none focus:border-[#c8f135] transition-colors"
                         />
                       </div>
                       {plans.length > 1 && (
@@ -1008,8 +1008,8 @@ Adds group automation with linked device. Beta.
                     {/* Price + Duration grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                       {/* Price */}
-                      <div className="flex items-center gap-0 bg-white/[0.03] border border-gray-200 dark:border-white/10 rounded-xl overflow-hidden focus-within:border-white/20 transition-colors">
-                        <span className="px-4 py-3.5 text-[15px] font-bold text-black dark:text-white/40 border-r border-gray-200 dark:border-white/10 flex-shrink-0 select-none">₦</span>
+                      <div className="flex items-center gap-0 bg-white/[0.03] border border-gray-200 dark:border-[#303030] rounded-xl overflow-hidden focus-within:border-white/20 transition-colors">
+                        <span className="px-4 py-3.5 text-[15px] font-bold text-black dark:text-white/40 border-r border-gray-200 dark:border-[#303030] flex-shrink-0 select-none">₦</span>
                         <input
                           type="number"
                           name="price"
@@ -1092,7 +1092,7 @@ Adds group automation with linked device. Beta.
             <button
               type="button"
               onClick={addPlanRow}
-              className="w-full flex items-center gap-3 px-5 sm:px-7 py-5 border-t border-dashed border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/40 hover:text-gray-900 dark:hover:text-white/70 hover:bg-white/[0.025] transition-all group"
+              className="w-full flex items-center gap-3 px-5 sm:px-7 py-5 border-t border-dashed border-gray-200 dark:border-[#303030] text-gray-500 dark:text-white/40 hover:text-gray-900 dark:hover:text-white/70 hover:bg-white/[0.025] transition-all group"
             >
               <span className="w-5 h-5 rounded-md border border-current flex items-center justify-center text-[14px] leading-none group-hover:border-[#c8f135]/50 group-hover:text-[#c8f135]/70 transition-colors">+</span>
               <span className="text-[14px] font-medium">Add a plan</span>
@@ -1100,7 +1100,7 @@ Adds group automation with linked device. Beta.
           </div>
 
           {/* Invite Link & Message Automation Settings */}
-          <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-none p-5 space-y-5 overflow-visible">
+          <div className="bg-white dark:bg-[#181818] border border-gray-200 dark:border-[#303030] rounded-none p-5 space-y-5 overflow-visible">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h2 className="section-title text-gray-900 dark:text-white">Invite Settings</h2>
@@ -1164,24 +1164,24 @@ Auto-delete invite message
 
           {/* Step 4: Review & Automations */}
           <div className={currentStep === 4 ? 'block animate-in fade-in slide-in-from-right-4 duration-300 space-y-6' : 'hidden overflow-visible'}>
-            <div className="bg-white dark:bg-[#111] border border-white/[0.07] rounded-xl p-4 sm:p-5 overflow-visible">
+            <div className="bg-white dark:bg-[#181818] border border-white/[0.07] rounded-xl p-4 sm:p-5 overflow-visible">
               <div className="mb-6">
                 <p className="text-[12px] font-black uppercase tracking-[0.2em] text-[#c8f135] mb-2">Final review</p>
                 <h2 className="text-[19px] font-black text-black dark:text-white">Confirm before saving</h2>
                 <p className="mt-1 text-[14px] leading-relaxed text-black/45 dark:text-white/40">Nothing is locked. Use Back or tap completed steps to make changes before you create the community.</p>
               </div>
               <div className="mb-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-[#303030] dark:bg-[#181818]">
                   <p className="text-[11px] font-black uppercase tracking-widest text-gray-400">Community</p>
                   <p className="mt-1 truncate text-[14px] font-black text-black dark:text-white">{form.name || 'Untitled'}</p>
                   <p className="mt-0.5 text-[12px] capitalize text-gray-500 dark:text-white/35">{form.platform}</p>
                 </div>
-                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-[#303030] dark:bg-[#181818]">
                   <p className="text-[11px] font-black uppercase tracking-widest text-gray-400">Access</p>
                   <p className="mt-1 truncate text-[14px] font-black text-black dark:text-white">{form.platform === 'whatsapp' ? (form.whatsapp_setup_mode === 'advanced' ? 'Advanced beta' : 'Basic access') : 'Telegram bot'}</p>
                   <p className="mt-0.5 text-[12px] text-gray-500 dark:text-white/35">{form.platform === 'whatsapp' ? (waGroupId ? 'Group verified' : 'Invite link ready') : (form.telegram_chat_id ? 'Group connected' : 'Setup needed')}</p>
                 </div>
-                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-[#303030] dark:bg-[#181818]">
                   <p className="text-[11px] font-black uppercase tracking-widest text-gray-400">Plans</p>
                   <p className="mt-1 text-[14px] font-black text-black dark:text-white">{[...existingPlans, ...plans.filter(p => p.name || p.price || p.duration)].length || 0}</p>
                   <p className="mt-0.5 text-[12px] text-gray-500 dark:text-white/35">paid access option(s)</p>
@@ -1195,11 +1195,11 @@ Auto-delete invite message
                 <label className="flex items-center gap-3 cursor-pointer flex-shrink-0">
                   <span className="data-mono text-[13px] font-bold text-gray-700 dark:text-white/60">{form.welcome_message_enabled ? 'ON' : 'OFF'}</span>
                   <input type="checkbox" name="welcome_message_enabled" checked={form.welcome_message_enabled} onChange={e => handleFormChange({target: {name: 'welcome_message_enabled', value: e.target.checked}})} className="sr-only peer" />
-                  <div className="w-11 h-6 bg-gray-200 dark:bg-white/[0.08] border border-gray-300 dark:border-white/10 rounded-full peer peer-checked:bg-[#c8f135]/20 peer-checked:border-[#c8f135] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white peer-checked:after:bg-[#c8f135] after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-[20px] relative"></div>
+                  <div className="w-11 h-6 bg-gray-200 dark:bg-white/[0.08] border border-gray-300 dark:border-[#303030] rounded-full peer peer-checked:bg-[#c8f135]/20 peer-checked:border-[#c8f135] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white peer-checked:after:bg-[#c8f135] after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-[20px] relative"></div>
                 </label>
               </div>
 
-              <div className={form.welcome_message_enabled ? 'mt-6 pt-6 border-t border-gray-100 dark:border-white/5' : 'hidden'}>
+              <div className={form.welcome_message_enabled ? 'mt-6 pt-6 border-t border-gray-100 dark:border-[#303030]' : 'hidden'}>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div>
                     <label className="block label-xs font-bold text-gray-700 dark:text-white/60 mb-2 uppercase tracking-widest">Message Template</label>
@@ -1209,7 +1209,7 @@ Auto-delete invite message
                       value={form.welcome_message} 
                       onChange={handleFormChange} 
                       placeholder="Welcome {name}..." 
-                      className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-[8px] px-3.5 py-2.5 body-md text-gray-900 dark:text-white focus:border-[#c8f135] outline-none resize-none leading-relaxed" 
+                      className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#303030] rounded-[8px] px-3.5 py-2.5 body-md text-gray-900 dark:text-white focus:border-[#c8f135] outline-none resize-none leading-relaxed" 
                     />
                     <div className="mt-3">
                       <p className="label-xs text-gray-500 dark:text-white/40 mb-2">Tap to insert template variables:</p>
@@ -1229,12 +1229,12 @@ Auto-delete invite message
                       </div>
                     </div>
                   </div>
-                  <div className="bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-[8px] p-5 shadow-inner">
+                  <div className="bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#303030] rounded-[8px] p-5 shadow-inner">
                     <div className="flex items-center justify-between mb-3">
                       <p className="table-header text-gray-500 dark:text-white/40">Live Preview</p>
                       <span className="rounded-full bg-[#c8f135]/10 px-2 py-0.5 table-header text-[#c8f135] text-[10px]">DM Simulation</span>
                     </div>
-                    <div className="rounded-[8px] bg-white dark:bg-[#141414] p-4 border border-gray-200 dark:border-white/10">
+                    <div className="rounded-[8px] bg-white dark:bg-[#181818] p-4 border border-gray-200 dark:border-[#303030]">
                       <p className="body-md text-gray-900 dark:text-white/90 whitespace-pre-wrap leading-relaxed">
                         {form.welcome_message
                           .replace(/{name}/g, "JohnDoe")
@@ -1254,7 +1254,7 @@ Auto-delete invite message
           </div>{/* end Step 4 */}
 
           {/* ─── Wizard Bottom Action Bar ─── */}
-          <div className="sticky bottom-0 z-20 -mx-4 flex items-center justify-between gap-3 border-t border-gray-200 bg-white/95 px-5 py-4 backdrop-blur dark:border-white/10 dark:bg-[#0a0a0a]/95 sm:static sm:mx-0 sm:mt-8 sm:px-0 sm:pt-8">
+          <div className="sticky bottom-0 z-20 -mx-4 flex items-center justify-between gap-3 border-t border-gray-200 bg-white/95 px-5 py-4 backdrop-blur dark:border-[#303030] dark:bg-[#0a0a0a]/95 sm:static sm:mx-0 sm:mt-8 sm:px-0 sm:pt-8">
             <button
               type="button"
               onClick={handlePrev}
@@ -1339,7 +1339,7 @@ Auto-delete invite message
         onSecondary={() => { navigator.clipboard.writeText(`${window.location.origin}/join/${successState?.slug}`); toast.success('Join link copied') }}
       >
         {successState?.slug && (
-          <div className="rounded-none border border-gray-200 bg-gray-50 p-3 dark:border-white/10 dark:bg-black/20">
+          <div className="rounded-none border border-gray-200 bg-gray-50 p-3 dark:border-[#303030] dark:bg-black/20">
             <p className="mb-1 text-[11px] font-black uppercase tracking-widest text-gray-400">Join link</p>
             <p className="break-all font-mono text-[12px] text-gray-700 dark:text-white/70">{window.location.origin}/join/{successState.slug}</p>
           </div>
@@ -1349,7 +1349,7 @@ Auto-delete invite message
       {/* TSK-105/TSK-106: Test Setup Modal with sequential fading */}
       {setupModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-white dark:bg-[#111] border border-white/[0.1] rounded-2xl p-7 w-full max-w-md shadow-2xl relative">
+          <div className="bg-white dark:bg-[#181818] border border-white/[0.1] rounded-2xl p-7 w-full max-w-md shadow-2xl relative">
             <button
               onClick={() => setSetupModal(null)}
               className="absolute top-7 right-4 text-black dark:text-white/40 hover:text-black dark:text-white transition-colors"
@@ -1395,7 +1395,7 @@ Auto-delete invite message
       {/* TSK-106: Connect via Telegram Bot Modal */}
       {connectQr && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-white dark:bg-[#111] border border-white/[0.1] rounded-2xl p-8 w-full max-w-sm text-center shadow-2xl relative">
+          <div className="bg-white dark:bg-[#181818] border border-white/[0.1] rounded-2xl p-8 w-full max-w-sm text-center shadow-2xl relative">
             <button
               onClick={() => setConnectQr(null)}
               className="absolute top-7 right-4 text-black dark:text-white/40 hover:text-black dark:text-white transition-colors"

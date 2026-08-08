@@ -22,15 +22,15 @@
   /* ─── Backgrounds ─── */
   --color-bg-app: #0a0a0a;
   --color-bg-sidebar: #0f0f0f;
-  --color-bg-surface: #141414;
-  --color-bg-elevated: #1a1a1a;
+  --color-bg-surface: #181818;
+  --color-bg-elevated: #181818;
   --color-bg-input: #161616;
   --color-bg-overlay: rgba(0, 0, 0, 0.6);
 
   /* ─── Borders ─── */
-  --color-border-subtle: rgba(156, 163, 175, 0.10);
-  --color-border-default: rgba(156, 163, 175, 0.14);
-  --color-border-strong: rgba(156, 163, 175, 0.22);
+  --color-border-subtle: #303030;
+  --color-border-default: #303030;
+  --color-border-strong: #3a3a3a;
   --color-border-brand: rgba(200, 241, 53, 0.40);
 
   /* ─── Text ─── */
@@ -159,11 +159,11 @@ html.light {
 }
 
 /* Dark-mode hardcoded border softening */
-html.dark .border-white\/5 { border-color: rgba(156, 163, 175, 0.07) !important; }
-html.dark .border-white\/10 { border-color: rgba(156, 163, 175, 0.10) !important; }
-html.dark .border-white\/20 { border-color: rgba(156, 163, 175, 0.16) !important; }
+html.dark .border-white\/5 { border-color: #303030 !important; }
+html.dark .border-white\/10 { border-color: #303030 !important; }
+html.dark .border-white\/20 { border-color: #3a3a3a !important; }
 html.dark .divide-white\/\[0\.04\] > :not([hidden]) ~ :not([hidden]),
-html.dark .divide-white\/\[0\.05\] > :not([hidden]) ~ :not([hidden]) { border-color: rgba(156, 163, 175, 0.08) !important; }
+html.dark .divide-white\/\[0\.05\] > :not([hidden]) ~ :not([hidden]) { border-color: #303030 !important; }
 
 @layer base {
   *, *::before, *::after { box-sizing: border-box; }
