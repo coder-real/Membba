@@ -28,6 +28,12 @@ export default {
           dark: 'var(--color-brand-dark)',
           muted: 'var(--color-brand-muted)',
         },
+        border: {
+          subtle: 'var(--color-border-subtle)',
+          default: 'var(--color-border-default)',
+          strong: 'var(--color-border-strong)',
+          faint: 'var(--color-border-faint)',
+        },
         success: 'var(--color-success)',
         warning: 'var(--color-warning)',
         danger: 'var(--color-danger)',

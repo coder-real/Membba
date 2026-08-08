@@ -31,6 +31,7 @@
   --color-border-subtle: #303030;
   --color-border-default: #303030;
   --color-border-strong: #3a3a3a;
+  --color-border-faint: #1a1a1a;
   --color-border-brand: rgba(200, 241, 53, 0.40);
 
   /* ─── Text ─── */
@@ -135,6 +136,7 @@ html.light {
   --color-border-subtle: rgba(15, 23, 42, 0.08);
   --color-border-default: rgba(15, 23, 42, 0.14);
   --color-border-strong: rgba(15, 23, 42, 0.24);
+  --color-border-faint: rgba(15, 23, 42, 0.03);
   --color-border-brand: rgba(82, 102, 0, 0.35);
 
   --color-text-primary: #111827;
