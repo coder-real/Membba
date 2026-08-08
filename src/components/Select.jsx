@@ -119,13 +119,13 @@ export default function Select({ value, onChange, options = [], placeholder = 'S
         onClick={() => !disabled && setOpen(o => !o)}
         className={`
           w-full flex items-center justify-between gap-3
-          bg-white dark:bg-[#0d0d0d] border rounded-xl px-4 py-3
+          bg-gray-50 dark:bg-[#0a0a0a] border rounded-none px-3.5 py-2.5
           text-[14px] text-left transition-all duration-150 outline-none
           ${disabled
             ? 'border-gray-200 dark:border-white/10 text-black dark:text-white/25 cursor-not-allowed'
             : open
-              ? 'border-white/25 text-black dark:text-white ring-1 ring-white/10'
-              : 'border-white/[0.1] text-black dark:text-white hover:border-white/20'
+              ? 'border-[#c8f135] text-black dark:text-white ring-1 ring-[#c8f135]/15'
+              : 'border-gray-200 dark:border-[#303030] text-black dark:text-white hover:border-[#c8f135]/50'
           }
         `}
       >

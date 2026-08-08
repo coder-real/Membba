@@ -41,6 +41,9 @@ const formatDuration = (minutes) => {
 }
 
 const emptyPlan = { name: '', description: '', price: '', duration: '' }
+const wizardLabelCls = 'block label-xs font-bold text-gray-700 dark:text-white/60 mb-2 uppercase tracking-widest'
+const wizardInputCls = 'w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#303030] rounded-none px-3.5 py-2.5 data-primary text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:outline-none focus:border-[#c8f135] transition-colors'
+const wizardMonoInputCls = `${wizardInputCls} font-mono`
 
 export default function CommunityFormPage() {
   const { user } = useAuth()
@@ -664,10 +667,10 @@ export default function CommunityFormPage() {
 
               <div className="flex flex-col gap-4">
                 <div>
-                  <label className="block label-xs font-bold text-gray-700 dark:text-white/60 mb-2 uppercase tracking-widest">Community Name *</label>
+                  <label className={wizardLabelCls}>Community Name *</label>
                   <input
                     type="text" name="name" required={currentStep === 2} value={form.name} onChange={handleFormChange}
-                    className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#303030] rounded-none px-3.5 py-2.5 data-primary text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:outline-none focus:border-[#c8f135] transition-colors"
+                    className={wizardInputCls}
                     placeholder="e.g. Crypto Inner Circle"
                   />
                   {form.name && !isEditing && (
@@ -678,10 +681,10 @@ export default function CommunityFormPage() {
                 </div>
 
                 <div>
-                  <label className="block label-xs font-bold text-gray-700 dark:text-white/60 mb-2 uppercase tracking-widest">Description</label>
+                  <label className={wizardLabelCls}>Description</label>
                   <textarea
                     name="description" value={form.description} onChange={handleFormChange} rows={3}
-                    className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#303030] rounded-none px-3.5 py-2.5 body-md text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:outline-none focus:border-[#c8f135] transition-colors resize-none"
+                    className={wizardInputCls}
                     placeholder="What will members get access to?"
                   />
                 </div>
@@ -742,7 +745,7 @@ export default function CommunityFormPage() {
                           </p>
                           {telegramDeepLink && (
                             <div className="mt-3 flex gap-2">
-                              <input readOnly value={telegramDeepLink} className="flex-1 min-w-0 rounded-lg border border-white/[0.08] bg-[#0a0a0a] px-2 py-2 font-mono text-[11px] text-white/50" />
+                              <input readOnly value={telegramDeepLink} className={`${wizardMonoInputCls} min-w-0 flex-1 text-[11px]`} />
                               <button type="button" onClick={() => { navigator.clipboard.writeText(telegramDeepLink); toast.success('Telegram link copied') }} className="rounded-lg bg-[#229ED9] px-3 py-2 text-[12px] font-bold text-white">Copy</button>
                             </div>
                           )}
@@ -771,7 +774,7 @@ export default function CommunityFormPage() {
                         name="telegram_chat_id"
                         value={form.telegram_chat_id || ''}
                         onChange={handleFormChange}
-                        className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-[#229ED9]/20 rounded-xl px-4 py-3 text-[14px] text-black dark:text-white placeholder-white/20 focus:outline-none focus:border-[#229ED9]/50 focus:ring-1 focus:ring-[#229ED9]/15 transition-colors font-mono"
+                        className={wizardMonoInputCls}
                         placeholder="e.g. -1001234567890"
                       />
                     </div>
@@ -832,7 +835,7 @@ Adds group automation with linked device. Beta.
 
                 {/* ── Group Invite Link ── */}
                 <div>
-                  <label className="label-xs font-bold text-gray-700 dark:text-white/50 mb-2 uppercase tracking-widest flex items-center gap-1.5">
+                  <label className={`${wizardLabelCls} flex items-center gap-1.5`}>
                     Group Invite Link *
                     <Tooltip content="Members receive this invite after payment." />
                   </label>
@@ -843,7 +846,7 @@ Adds group automation with linked device. Beta.
                       value={form.whatsapp_group_invite_link}
                       onChange={handleFormChange}
                       onBlur={() => { if (form.whatsapp_group_invite_link && !waInviteCheck) verifyWhatsAppInviteLink() }}
-                      className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#303030] rounded-none px-3.5 py-2.5 data-mono text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:outline-none focus:border-[#c8f135] transition-colors"
+                      className={wizardMonoInputCls}
                       placeholder="https://chat.whatsapp.com/xxxxxxxxxx"
                     />
                     <button
@@ -981,14 +984,14 @@ Adds group automation with linked device. Beta.
                     {/* Top row: name + trash */}
                     <div className="flex items-start justify-between gap-4 mb-5">
                       <div className="flex-1">
-                        <label className="block label-xs font-bold text-gray-700 dark:text-white/60 mb-2 uppercase tracking-widest">Plan Name *</label>
+                        <label className={wizardLabelCls}>Plan Name *</label>
                         <input
                           type="text"
                           name="name"
                           value={plan.name}
                           onChange={e => handlePlanChange(i, e)}
                           placeholder="e.g. Monthly Access"
-                          className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#303030] rounded-none px-3.5 py-2.5 data-primary text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:outline-none focus:border-[#c8f135] transition-colors"
+                          className={wizardInputCls}
                         />
                       </div>
                       {plans.length > 1 && (
@@ -1008,8 +1011,8 @@ Adds group automation with linked device. Beta.
                     {/* Price + Duration grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                       {/* Price */}
-                      <div className="flex items-center gap-0 bg-white/[0.03] border border-gray-200 dark:border-[#303030] rounded-xl overflow-hidden focus-within:border-white/20 transition-colors">
-                        <span className="px-4 py-3.5 text-[15px] font-bold text-black dark:text-white/40 border-r border-gray-200 dark:border-[#303030] flex-shrink-0 select-none">₦</span>
+                      <div className="flex items-center gap-0 overflow-hidden border border-gray-200 bg-gray-50 transition-colors focus-within:border-[#c8f135] dark:border-[#303030] dark:bg-[#0a0a0a]">
+                        <span className="flex-shrink-0 select-none border-r border-gray-200 px-3.5 py-2.5 text-[14px] font-bold text-gray-500 dark:border-[#303030] dark:text-white/40">₦</span>
                         <input
                           type="number"
                           name="price"
@@ -1017,7 +1020,7 @@ Adds group automation with linked device. Beta.
                           value={plan.price}
                           onChange={e => handlePlanChange(i, e)}
                           placeholder="5,000"
-                          className="flex-1 bg-transparent px-3.5 py-3.5 text-[15px] font-semibold text-black dark:text-white placeholder-white/20 outline-none [appearance:textfield]"
+                          className="min-w-0 flex-1 bg-transparent px-3.5 py-2.5 data-primary text-gray-900 outline-none placeholder-gray-400 [appearance:textfield] dark:text-white dark:placeholder-white/20"
                         />
                       </div>
 
@@ -1044,7 +1047,7 @@ Adds group automation with linked device. Beta.
                             onChange={e => handlePlanChange(i, e)}
                             placeholder="e.g. 2 minutes, 45 days"
                             autoFocus
-                            className="w-full bg-white/[0.03] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-black dark:text-white placeholder-white/20 outline-none focus:border-[#c8f135]/40 transition-colors font-mono"
+                            className={wizardMonoInputCls}
                           />
                         ) : null}
                         {plan.duration && parsedMins && (
@@ -1064,7 +1067,7 @@ Adds group automation with linked device. Beta.
 
                     {/* Description */}
                     <div className="mt-5">
-                      <label className="block text-[14px] font-semibold text-black dark:text-white/40 uppercase tracking-widest mb-2">
+                      <label className={wizardLabelCls}>
                         Description <span className="text-black dark:text-white/20">(optional)</span>
                       </label>
                       <div className="relative">
@@ -1075,7 +1078,7 @@ Adds group automation with linked device. Beta.
                           placeholder="Describe what members get access to with this plan…"
                           maxLength={200}
                           rows={3}
-                          className="w-full bg-white/[0.03] border border-white/[0.1] rounded-xl px-4 py-3 text-[14px] text-black dark:text-white placeholder-white/30 outline-none focus:border-[#c8f135]/40 focus:ring-1 focus:ring-[#c8f135]/15 transition-colors resize-none"
+                          className={`${wizardInputCls} resize-none`}
                         />
                         <div className="flex items-center justify-between mt-1.5 px-1">
                           <p className="text-[14px] text-black dark:text-white/30">Helps members understand what they're subscribing to</p>
@@ -1112,7 +1115,7 @@ Adds group automation with linked device. Beta.
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {/* Invite link expiry */}
               <div>
-                <label className="label-xs font-bold text-gray-700 dark:text-white/60 mb-2 uppercase tracking-widest flex items-center gap-1.5">
+                <label className={`${wizardLabelCls} flex items-center gap-1.5`}>
 Invite link lifetime
                   <Tooltip content="Controls how long a generated invite link remains valid. Shorter links reduce sharing abuse." />
                 </label>
@@ -1136,7 +1139,7 @@ Invite link lifetime
 
               {/* Auto-delete DM */}
               <div>
-                <label className="label-xs font-bold text-gray-700 dark:text-white/60 mb-2 uppercase tracking-widest flex items-center gap-1.5">
+                <label className={`${wizardLabelCls} flex items-center gap-1.5`}>
 Auto-delete invite message
                   <Tooltip content="Optional privacy cleanup. Membba can delete invite messages after a delay so links do not stay visible forever." />
                 </label>
@@ -1202,14 +1205,14 @@ Auto-delete invite message
               <div className={form.welcome_message_enabled ? 'mt-6 pt-6 border-t border-gray-100 dark:border-[#303030]' : 'hidden'}>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div>
-                    <label className="block label-xs font-bold text-gray-700 dark:text-white/60 mb-2 uppercase tracking-widest">Message Template</label>
+                    <label className={wizardLabelCls}>Message Template</label>
                     <textarea 
                       rows={6} 
                       name="welcome_message" 
                       value={form.welcome_message} 
                       onChange={handleFormChange} 
                       placeholder="Welcome {name}..." 
-                      className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#303030] rounded-[8px] px-3.5 py-2.5 body-md text-gray-900 dark:text-white focus:border-[#c8f135] outline-none resize-none leading-relaxed" 
+                      className={wizardInputCls} 
                     />
                     <div className="mt-3">
                       <p className="label-xs text-gray-500 dark:text-white/40 mb-2">Tap to insert template variables:</p>
