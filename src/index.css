@@ -28,9 +28,9 @@
   --color-bg-overlay: rgba(0, 0, 0, 0.6);
 
   /* ─── Borders ─── */
-  --color-border-subtle: rgba(255, 255, 255, 0.06);
-  --color-border-default: rgba(255, 255, 255, 0.10);
-  --color-border-strong: rgba(255, 255, 255, 0.18);
+  --color-border-subtle: rgba(156, 163, 175, 0.10);
+  --color-border-default: rgba(156, 163, 175, 0.14);
+  --color-border-strong: rgba(156, 163, 175, 0.22);
   --color-border-brand: rgba(200, 241, 53, 0.40);
 
   /* ─── Text ─── */
@@ -120,7 +120,7 @@
 
   /* ─── Elevation ─── */
   --shadow-inset-brand: inset 0px 0px 0px 1px rgba(200, 241, 53, 0.15);
-  --shadow-inset-white: inset 0px 0px 0px 1px rgba(255, 255, 255, 0.08);
+  --shadow-inset-white: inset 0px 0px 0px 1px rgba(156, 163, 175, 0.10);
   --shadow-card: 0px 1px 3px rgba(0, 0, 0, 0.4);
 }
 
@@ -157,6 +157,13 @@ html.light {
   --color-info: #2563eb;
   --color-info-muted: rgba(37, 99, 235, 0.10);
 }
+
+/* Dark-mode hardcoded border softening */
+html.dark .border-white\/5 { border-color: rgba(156, 163, 175, 0.07) !important; }
+html.dark .border-white\/10 { border-color: rgba(156, 163, 175, 0.10) !important; }
+html.dark .border-white\/20 { border-color: rgba(156, 163, 175, 0.16) !important; }
+html.dark .divide-white\/\[0\.04\] > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-white\/\[0\.05\] > :not([hidden]) ~ :not([hidden]) { border-color: rgba(156, 163, 175, 0.08) !important; }
 
 @layer base {
   *, *::before, *::after { box-sizing: border-box; }

@@ -328,11 +328,19 @@ export default function DashboardLayout({ children, pageTitle }) {
           {/* Drawer Scrollable Navigation */}
           <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-bg-app">
             {/* Quick Actions Bar */}
-            <div className="flex items-center justify-end border border-gray-200 bg-white p-3 dark:border-border-subtle dark:bg-bg-elevated">
+            <div className="flex items-center justify-between gap-3 border border-gray-200 bg-white p-3 dark:border-border-subtle dark:bg-bg-elevated">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`inline-flex items-center gap-1.5 border px-2.5 py-1 text-[11px] font-bold ${channelStatus.telegram ? 'border-[#229ED9]/25 bg-[#229ED9]/10 text-[#229ED9]' : 'border-border-default bg-bg-surface text-text-muted'}`}>
+                  <FaTg size={12} /> Telegram {channelStatus.telegram ? 'on' : 'off'}
+                </span>
+                <span className={`inline-flex items-center gap-1.5 border px-2.5 py-1 text-[11px] font-bold ${channelStatus.whatsapp ? 'border-[#25D366]/25 bg-[#25D366]/10 text-[#25D366]' : 'border-border-default bg-bg-surface text-text-muted'}`}>
+                  <FaWa size={12} /> WhatsApp {channelStatus.whatsapp ? 'on' : 'off'}
+                </span>
+              </div>
               <Link
                 to="/dashboard/communities/new"
                 onClick={() => setMobileOpen(false)}
-                className="btn-primary text-[13px] px-3.5 py-1.5 inline-flex items-center gap-1.5 font-bold rounded-none"
+                className="btn-primary shrink-0 text-[13px] px-3.5 py-1.5 inline-flex items-center gap-1.5 font-bold rounded-none"
               >
                 <Sparkles size={14} /> + New Community
               </Link>
