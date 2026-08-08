@@ -4,6 +4,20 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes successRipple {
+  0% { transform: scale(0.72); opacity: 0.38; }
+  70% { transform: scale(1.65); opacity: 0; }
+  100% { transform: scale(1.65); opacity: 0; }
+}
+
+.success-ripple {
+  animation: successRipple 1.8s ease-out infinite;
+}
+
+.success-ripple-delay {
+  animation-delay: 0.55s;
+}
+
 :root {
   /* ─── Backgrounds ─── */
   --color-bg-app: #0a0a0a;
@@ -108,6 +122,40 @@
   --shadow-inset-brand: inset 0px 0px 0px 1px rgba(200, 241, 53, 0.15);
   --shadow-inset-white: inset 0px 0px 0px 1px rgba(255, 255, 255, 0.08);
   --shadow-card: 0px 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+html.light {
+  --color-bg-app: #f6f7f2;
+  --color-bg-sidebar: #ffffff;
+  --color-bg-surface: #ffffff;
+  --color-bg-elevated: #f0f2ea;
+  --color-bg-input: #ffffff;
+  --color-bg-overlay: rgba(15, 23, 42, 0.45);
+
+  --color-border-subtle: rgba(15, 23, 42, 0.08);
+  --color-border-default: rgba(15, 23, 42, 0.14);
+  --color-border-strong: rgba(15, 23, 42, 0.24);
+  --color-border-brand: rgba(82, 102, 0, 0.35);
+
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-muted: #6b7280;
+  --color-text-disabled: #9ca3af;
+  --color-text-on-brand: #0a0a0a;
+
+  --color-brand: #5f7f00;
+  --color-brand-dark: #3f5400;
+  --color-brand-muted: rgba(95, 127, 0, 0.10);
+  --color-brand-border: rgba(95, 127, 0, 0.30);
+
+  --color-success: #047857;
+  --color-success-muted: rgba(4, 120, 87, 0.10);
+  --color-warning: #b45309;
+  --color-warning-muted: rgba(180, 83, 9, 0.10);
+  --color-danger: #dc2626;
+  --color-danger-muted: rgba(220, 38, 38, 0.10);
+  --color-info: #2563eb;
+  --color-info-muted: rgba(37, 99, 235, 0.10);
 }
 
 @layer base {

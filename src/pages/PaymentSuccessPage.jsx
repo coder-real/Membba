@@ -25,6 +25,31 @@ function CopyButton({ value, label = 'Copy' }) {
   )
 }
 
+function PaymentSuccessIcon() {
+  const [imageFailed, setImageFailed] = useState(false)
+  return (
+    <div className="relative mb-7 flex h-20 w-20 items-center justify-center">
+      <span className="success-ripple absolute inset-0 rounded-full border border-[#c8f135]/30 bg-[#c8f135]/15" />
+      <span className="success-ripple success-ripple-delay absolute inset-0 rounded-full border border-[#c8f135]/20 bg-[#c8f135]/10" />
+      <div className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full border border-[#c8f135]/25 bg-[#c8f135]/10 shadow-[0_0_34px_rgba(200,241,53,0.18)]">
+        {!imageFailed && (
+          <img
+            src="/success_icon.svg"
+            alt="Payment successful"
+            className="h-9 w-9 object-contain"
+            onError={() => setImageFailed(true)}
+          />
+        )}
+        {imageFailed && (
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#c8f135" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function PaymentSuccessPage() {
   const [searchParams] = useSearchParams()
   const reference = searchParams.get('reference')
@@ -39,6 +64,14 @@ export default function PaymentSuccessPage() {
   const [retrying, setRetrying]         = useState(false)
 
   useEffect(() => { if (reference) verifyPayment(); else setStatus('failed') }, [reference])
+
+  useEffect(() => {
+    if (status !== 'success' || platform !== 'whatsapp' || !inviteLink) return
+    const timer = setTimeout(() => {
+      try { window.location.assign(inviteLink) } catch { /* user can still tap the join button */ }
+    }, 2200)
+    return () => clearTimeout(timer)
+  }, [status, platform, inviteLink])
 
   const verifyPayment = async ({ silent = false } = {}) => {
     if (!reference) return setStatus('failed')
@@ -109,11 +142,7 @@ export default function PaymentSuccessPage() {
       <div className="max-w-xl mx-auto px-6 py-14">
         {status === 'success' && (
           <div>
-            <div className="w-16 h-16 rounded-2xl bg-[#c8f135]/10 border border-[#c8f135]/20 flex items-center justify-center mb-7">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c8f135" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            </div>
+            <PaymentSuccessIcon />
 
             <p className="text-[14px] font-bold tracking-[0.15em] uppercase text-[#c8f135]/60 mb-2">Payment Confirmed</p>
             <h1 className="text-[28px] font-black text-black dark:text-white leading-tight mb-3">

@@ -74,7 +74,7 @@ function SystemStatusBar({ readiness }) {
 // ─── Automation Row Card ───────────────────────────────────────
 function AutomationRow({ icon: Icon, iconBg, iconColor, title, description, active, onToggle, disabled, onConfigure }) {
   return (
-    <div className={`flex items-center gap-4 bg-white dark:bg-[#111] border px-5 py-5 transition-all
+    <div className={`flex flex-col items-start gap-4 bg-white dark:bg-[#111] border px-5 py-5 transition-all sm:flex-row sm:items-center
       ${active ? 'border-gray-200 dark:border-white/10' : 'border-gray-100 dark:border-white/5 opacity-75'}`}>
       {/* Icon */}
       <div className={`w-10 h-10 flex items-center justify-center flex-shrink-0 ${iconBg}`}>
@@ -91,8 +91,8 @@ function AutomationRow({ icon: Icon, iconBg, iconColor, title, description, acti
       </div>
 
       {/* Action area */}
-      <div className="flex items-center gap-3 flex-shrink-0">
-        <div className="h-8 w-px bg-gray-200 dark:bg-white/10" />
+      <div className="flex w-full items-center justify-between gap-3 border-t border-gray-200 pt-4 dark:border-white/10 sm:w-auto sm:justify-start sm:border-t-0 sm:pt-0 sm:flex-shrink-0">
+        <div className="hidden h-8 w-px bg-gray-200 dark:bg-white/10 sm:block" />
         <button
           type="button"
           onClick={onConfigure}

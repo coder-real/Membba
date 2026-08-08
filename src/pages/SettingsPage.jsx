@@ -16,6 +16,7 @@ import {
   HiOutlineArrowPath,
 } from "react-icons/hi2";
 import { FaTelegram, FaWhatsapp } from "react-icons/fa";
+import SuccessDialog from '../components/ui/SuccessDialog';
 
 const TABS = [
   { id: "account",       label: "My Account",     icon: HiOutlineUser },
@@ -87,8 +88,8 @@ function IntegrationNav({ active, onSelect }) {
   ]
 
   return (
-    <div className="relative mb-5 overflow-hidden">
-      <div className="flex min-w-max gap-2 overflow-x-auto pb-1 no-scrollbar">
+    <div className="relative mb-5 -mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div className="flex w-max min-w-full gap-2">
         {items.map(item => (
           <button
             key={item.id}
@@ -105,7 +106,7 @@ function IntegrationNav({ active, onSelect }) {
           </button>
         ))}
       </div>
-      <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-[#0a0a0a] opacity-80" />
+      <div className="pointer-events-none sticky right-0 top-0 bottom-0 float-right -mt-10 h-10 w-8 bg-gradient-to-l from-white dark:from-[#0a0a0a] opacity-80" />
     </div>
   )
 }
@@ -181,6 +182,7 @@ export default function SettingsPage() {
   const [showQRModal, setShowQRModal]     = useState(false);
   const [restarting, setRestarting]       = useState(false);
   const [copiedPairing, setCopiedPairing] = useState(false);
+  const [waConnectedSuccess, setWaConnectedSuccess] = useState(false);
   const pollRef            = useRef(null);
   const statusIntervalRef  = useRef(null);
   const statusBackoffRef   = useRef(6000);
@@ -382,7 +384,7 @@ export default function SettingsPage() {
       setWaError(data.error || null);
       setWaDebug(data.debug || null);
       setWaStatus(data.status);
-      if (data.status === "connected") { setShowQRModal(false); clearInterval(pollRef.current); toast.success("WhatsApp connected! ✅"); }
+      if (data.status === "connected") { setShowQRModal(false); clearInterval(pollRef.current); setWaConnectedSuccess(true); }
     } catch {
       const next = Math.min(qrBackoffRef.current * 2, 32000);
       qrBackoffRef.current = next;
@@ -1069,54 +1071,88 @@ export default function SettingsPage() {
 
       {/* ── QR / Pairing Modal ── */}
       {showQRModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-          <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-[16px] p-8 w-full max-w-sm text-center shadow-2xl relative">
-            <button onClick={closeQRModal} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 dark:hover:text-white transition">✕</button>
-            <h3 className="text-[18px] font-black text-gray-900 dark:text-white mb-4">Connect WhatsApp</h3>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 px-4 pb-4 backdrop-blur-sm sm:items-center sm:pb-0" onClick={closeQRModal}>
+          <div className="w-full max-w-md border border-gray-200 bg-white p-5 text-left shadow-2xl dark:border-white/10 dark:bg-[#111]" onClick={e => e.stopPropagation()}>
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center border border-[#25D366]/25 bg-[#25D366]/10 text-[#25D366]">
+                  <FaWhatsapp size={24} />
+                </div>
+                <div>
+                  <p className="mb-1 text-[11px] font-black uppercase tracking-[0.16em] text-[#25D366]">Advanced WhatsApp</p>
+                  <h3 className="text-[18px] font-black text-gray-900 dark:text-white">Connect linked device</h3>
+                  <p className="mt-1 text-[13px] leading-relaxed text-gray-500 dark:text-white/45">Use WhatsApp Linked Devices to connect the bot number for advanced group automation.</p>
+                </div>
+              </div>
+              <button onClick={closeQRModal} className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-white">✕</button>
+            </div>
 
             {waStatus === "connected" ? (
-              <div className="py-8"><p className="text-[40px] mb-3">✅</p><p className="text-[16px] font-bold text-[#c8f135]">Connected!</p></div>
-            ) : waPairingCode ? (
-              <div className="py-4">
-                <p className="text-[13px] text-gray-500 dark:text-white/40 mb-4">WhatsApp → Linked Devices → Link with phone number → enter code:</p>
-                <p className="text-[40px] font-black tracking-[0.15em] text-black dark:text-white">{waPairingCode}</p>
-                {waStatus !== "needs_pairing_code" && (
-                  <div className="mt-3 rounded-xl border border-amber-400/20 bg-amber-400/10 p-3 text-[12px] leading-relaxed text-amber-700 dark:text-amber-300">
-                    Connection is refreshing in the background. Keep this code open and try it in WhatsApp. If it fails, reset and request a new code.
-                  </div>
-                )}
-                <div className="mt-5 grid grid-cols-1 gap-2">
-                  <button onClick={copyPairingCode} className="btn-primary w-full justify-center">{copiedPairing ? 'Copied' : 'Copy Code'}</button>
-                  <button onClick={openWhatsAppApp} className="btn-secondary w-full justify-center">Open WhatsApp</button>
-                  <button onClick={handleResetAndReconnectWhatsApp} disabled={restarting} className="btn-secondary w-full justify-center">{restarting ? 'Requesting…' : 'Reset and get new code'}</button>
-                </div>
-                <p className="mt-4 text-[12px] leading-relaxed text-gray-500 dark:text-white/35">If WhatsApp does not open directly, open it manually and go to Linked Devices.</p>
+              <div className="border border-[#25D366]/20 bg-[#25D366]/10 p-4 text-[#25D366]">
+                <p className="font-black">Connected successfully</p>
+                <p className="mt-1 text-[13px] text-gray-600 dark:text-white/60">The linked device is ready for advanced group automation.</p>
               </div>
-            ) : (waStatus === "pairing_failed" || waStatus === "logged_out") ? (
-              <div className="py-6">
-                <p className="text-[34px] mb-3">⚠️</p>
-                <p className="text-[16px] font-bold text-red-400">WhatsApp connection needs reset</p>
-                <p className="mt-2 text-[13px] leading-relaxed text-gray-500 dark:text-white/45">{waError || 'The saved WhatsApp session is stale or logged out. Reset it, then request a new pairing code.'}</p>
-                <div className="mt-5 grid gap-2">
-                  <button onClick={handleResetAndReconnectWhatsApp} disabled={restarting} className="btn-primary w-full justify-center">{restarting ? 'Requesting…' : 'Reset and get new code'}</button>
-                  <button onClick={closeQRModal} className="btn-secondary w-full justify-center">Close</button>
+            ) : waPairingCode ? (
+              <div>
+                <div className="border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-black/20">
+                  <p className="text-[12px] font-bold uppercase tracking-widest text-gray-400">Pairing code</p>
+                  <p className="mt-2 text-center font-mono text-[38px] font-black tracking-[0.18em] text-gray-900 dark:text-white">{waPairingCode}</p>
+                  <p className="mt-3 text-[13px] leading-relaxed text-gray-500 dark:text-white/45">Open WhatsApp → Linked Devices → Link with phone number → enter this code.</p>
+                </div>
+                <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                  <button onClick={copyPairingCode} className="btn-primary justify-center">{copiedPairing ? 'Copied' : 'Copy code'}</button>
+                  <button onClick={openWhatsAppApp} className="btn-secondary justify-center">Open WhatsApp</button>
+                  <button onClick={handleResetAndReconnectWhatsApp} disabled={restarting} className="btn-secondary justify-center">{restarting ? 'Requesting…' : 'New code'}</button>
+                </div>
+              </div>
+            ) : (waStatus === "pairing_failed" || waStatus === "logged_out" || waStatus === "connection_replaced") ? (
+              <div>
+                <div className="border border-amber-400/20 bg-amber-400/10 p-4 text-amber-700 dark:text-amber-300">
+                  <p className="font-black">Connection needs attention</p>
+                  <p className="mt-1 text-[13px] leading-relaxed">{waError || 'The saved WhatsApp session is stale, replaced, or logged out. Reset and reconnect.'}</p>
+                </div>
+                <div className="mt-4 flex gap-2">
+                  <button onClick={handleResetAndReconnectWhatsApp} disabled={restarting} className="btn-primary justify-center">{restarting ? 'Requesting…' : 'Reset and reconnect'}</button>
+                  <button onClick={closeQRModal} className="btn-secondary justify-center">Close</button>
                 </div>
               </div>
             ) : waQR ? (
-              <>
-                <p className="text-[13px] text-gray-500 dark:text-white/40 mb-4">Scan with WhatsApp → Linked Devices → Link a Device</p>
-                <img src={waQR} alt="WhatsApp QR" className="w-56 h-56 mx-auto rounded-[12px] border border-gray-200 dark:border-white/10" />
-              </>
+              <div>
+                <div className="grid gap-4 sm:grid-cols-[220px_1fr] sm:items-center">
+                  <div className="border border-gray-200 bg-white p-3 dark:border-white/10 dark:bg-white">
+                    <img src={waQR} alt="WhatsApp QR" className="h-48 w-48 mx-auto" />
+                  </div>
+                  <div className="space-y-3 text-[13px] text-gray-600 dark:text-white/55">
+                    <p className="font-bold text-gray-900 dark:text-white">Scan this QR code</p>
+                    <p>1. Open WhatsApp on the bot phone.</p>
+                    <p>2. Go to Linked Devices.</p>
+                    <p>3. Tap Link a Device and scan this QR.</p>
+                    <p className="text-gray-400 dark:text-white/35">QR codes expire quickly. This panel refreshes while the connection starts.</p>
+                  </div>
+                </div>
+              </div>
             ) : (
-              <div className="py-10 flex flex-col items-center gap-3">
+              <div className="flex flex-col items-center gap-3 py-10 text-center">
                 <HiOutlineArrowPath size={32} className="animate-spin text-[#25D366]" />
-                <p className="text-gray-500 dark:text-white/40 text-[14px]">Starting connection…</p>
-                <p className="mt-1 max-w-xs text-center text-[12px] text-gray-500 dark:text-white/25">If this takes more than 20 seconds, close this and use Reset WhatsApp session before trying again.</p>
+                <p className="text-[14px] font-bold text-gray-700 dark:text-white/70">Starting connection…</p>
+                <p className="max-w-xs text-[12px] text-gray-500 dark:text-white/35">If this takes more than 20 seconds, close this and reset the WhatsApp session before trying again.</p>
               </div>
             )}
           </div>
         </div>
       )}
+
+      <SuccessDialog
+        open={waConnectedSuccess}
+        title="WhatsApp connected"
+        description="The linked WhatsApp device is ready for advanced group automation. You can now verify groups and test invite delivery."
+        icon={<FaWhatsapp size={24} />}
+        primaryLabel="Done"
+        secondaryLabel="Open advanced settings"
+        onClose={() => setWaConnectedSuccess(false)}
+        onPrimary={() => setWaConnectedSuccess(false)}
+        onSecondary={() => { setWaConnectedSuccess(false); setIntegrationTab('advanced') }}
+      />
     </div>
   );
 }

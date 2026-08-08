@@ -19,6 +19,7 @@ const groq = process.env.GROQ_API_KEY
 const MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile'
 const HISTORY_LIMIT = 10
 const MAX_TOKENS = 420
+const AI_REPLY_TIMEOUT_MS = Number(process.env.AI_REPLY_TIMEOUT_MS || 22000)
 
 const INTENTS = {
   GREETING: 'greeting',
@@ -38,6 +39,15 @@ const INTENTS = {
 // Membba keeps control of the product logic and safety rules.
 function detectIntent(text, member) {
   const t = (text || '').toLowerCase()
+  const trimmed = t.trim()
+
+  if (/^(hi|hello|hey|good morning|good afternoon|good evening|yo|sup|what'?s good)\b/.test(trimmed)) return INTENTS.GREETING
+
+  // If an unknown member sends a phone/email/reference, treat it as an identity/payment follow-up,
+  // not a generic unknown-member dead end.
+  if (!member && (/\d{8,15}/.test(t) || /[^\s@]+@[^\s@]+\.[^\s@]+/.test(t) || /\b(reference|receipt|paid|payment)\b/.test(t))) {
+    return INTENTS.PAYMENT_ISSUE
+  }
 
   if (!member) return INTENTS.UNKNOWN_MEMBER
 
@@ -48,8 +58,6 @@ function detectIntent(text, member) {
   if (/\b(renew|renewal|subscribe again|resubscribe|pay again|extend|expired)\b/.test(t)) return INTENTS.RENEWAL
   if (/\b(status|active|expire|expires|expiry|valid|when.*end|how long)\b/.test(t)) return INTENTS.SUBSCRIPTION_STATUS
   if (/\b(removed|kicked|blocked|can't enter|cant enter|lost access|no access)\b/.test(t)) return INTENTS.ACCESS_REMOVED
-  if (/^(hi|hello|hey|good morning|good afternoon|good evening|yo|sup|what'?s good)\b/.test(t.trim())) return INTENTS.GREETING
-
   return INTENTS.GENERAL_SUPPORT
 }
 
@@ -186,6 +194,17 @@ function buildHumanDraft(intent, member, actionPlan) {
   const expiry = member?.expires_at
     ? new Date(member.expires_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
     : null
+
+  if (member?.matched_by?.startsWith('provided_')) {
+    if (member.status === 'active') {
+      return `Thanks — I found your active subscription for ${group}${expiry ? `, valid until ${expiry}` : ''}. What do you need help with?`
+    }
+    if (['expired', 'cancelled'].includes(member.status)) {
+      return url
+        ? `Thanks — I found your subscription for ${group}, but it isn’t active right now. You can renew here: ${url}.`
+        : `Thanks — I found your subscription for ${group}, but it isn’t active right now. I’ll flag this for the admin to check.`
+    }
+  }
 
   if (!member) {
     return `I can’t find a subscription linked to this WhatsApp number yet. If you paid with another number or email, send it here so it can be matched.`
@@ -340,41 +359,149 @@ STYLE RULES:
 11. If admin action is needed, say it plainly: "I’ll flag this for the admin to check." Do not overpromise.`
 }
 
+function withTimeout(promise, ms, label = 'operation') {
+  let timer
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
+  })
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer))
+}
+
 // ── Pull member context from Supabase ────────────────────────────────────────
-async function getMemberContext(phone) {
-  const { data } = await supabase
-    .from('subscriptions')
-    .select(`
-      status,
-      created_at,
-      expires_at,
-      plans (
-        name
-      ),
-      communities (
-        name,
-        slug
-      )
-    `)
-    .eq('whatsapp_phone', phone)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
+function phoneVariants(raw) {
+  const digits = String(raw || '').replace(/\D/g, '')
+  const variants = new Set()
+  if (digits) variants.add(digits)
+  if (digits.startsWith('0') && digits.length >= 10) variants.add(`234${digits.slice(1)}`)
+  if (digits.startsWith('234') && digits.length >= 13) variants.add(`0${digits.slice(3)}`)
+  if (digits.length === 10) variants.add(`234${digits}`)
+  return [...variants].filter(Boolean)
+}
 
-  if (!data) return null
-
+function extractIdentityFromMessage(text) {
+  const raw = String(text || '')
+  const phoneMatch = raw.match(/(?:\+?234|0)?\d[\d\s().-]{7,}\d/)
+  const emailMatch = raw.match(/[^\s@]+@[^\s@]+\.[^\s@]+/)
   return {
+    phone: phoneMatch ? phoneMatch[0].replace(/\D/g, '') : null,
+    email: emailMatch ? emailMatch[0].toLowerCase() : null,
+  }
+}
+
+async function buildMemberContextFromRow(data, matchedBy = 'phone') {
+  if (!data) return null
+  return {
+    id: data.id,
+    email: data.email || null,
+    phone: data.whatsapp_phone || null,
     status: data.status,
     plan_name: data.plans?.name || null,
     created_at: data.created_at,
     expires_at: data.expires_at,
+    community_id: data.communities?.id || data.community_id || null,
     community_name: data.communities?.name || null,
     community_slug: data.communities?.slug || null,
     renewal_url: data.communities?.slug
       ? `${process.env.CLIENT_URL || 'http://localhost:5173'}/join/${data.communities.slug}`
       : null,
+    matched_by: matchedBy,
   }
 }
+
+async function getMemberContext(phone, text = '') {
+  const variants = phoneVariants(phone)
+
+  let query = supabase
+    .from('subscriptions')
+    .select(`
+      id,
+      email,
+      whatsapp_phone,
+      community_id,
+      status,
+      created_at,
+      expires_at,
+      plans ( name ),
+      communities ( id, name, slug )
+    `)
+    .order('created_at', { ascending: false })
+    .limit(1)
+
+  if (variants.length) query = query.in('whatsapp_phone', variants)
+  else query = query.eq('whatsapp_phone', phone)
+
+  let { data } = await query.maybeSingle()
+
+  if (!data && variants.length) {
+    const last10 = variants[0].slice(-10)
+    const result = await supabase
+      .from('subscriptions')
+      .select(`
+        id,
+        email,
+        whatsapp_phone,
+        community_id,
+        status,
+        created_at,
+        expires_at,
+        plans ( name ),
+        communities ( id, name, slug )
+      `)
+      .ilike('whatsapp_phone', `%${last10}`)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    data = result.data
+  }
+
+  if (!data && text) {
+    const identity = extractIdentityFromMessage(text)
+    if (identity.phone) {
+      const providedVariants = phoneVariants(identity.phone)
+      const result = await supabase
+        .from('subscriptions')
+        .select(`
+          id,
+          email,
+          whatsapp_phone,
+          community_id,
+          status,
+          created_at,
+          expires_at,
+          plans ( name ),
+          communities ( id, name, slug )
+        `)
+        .in('whatsapp_phone', providedVariants)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (result.data) return buildMemberContextFromRow(result.data, 'provided_phone')
+    }
+    if (identity.email) {
+      const result = await supabase
+        .from('subscriptions')
+        .select(`
+          id,
+          email,
+          whatsapp_phone,
+          community_id,
+          status,
+          created_at,
+          expires_at,
+          plans ( name ),
+          communities ( id, name, slug )
+        `)
+        .eq('email', identity.email)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (result.data) return buildMemberContextFromRow(result.data, 'provided_email')
+    }
+  }
+
+  return buildMemberContextFromRow(data, 'phone')
+}
+
 
 // ── Pull last N conversation turns from Supabase ─────────────────────────────
 async function getHistory(phone) {
@@ -402,12 +529,16 @@ async function callGroq(systemPrompt, history, userMessage) {
   ]
 
   const create = async (msgs, temperature = 0.62) => {
-    const completion = await groq.chat.completions.create({
-      model: MODEL,
-      messages: msgs,
-      max_tokens: MAX_TOKENS,
-      temperature,
-    })
+    const completion = await withTimeout(
+      groq.chat.completions.create({
+        model: MODEL,
+        messages: msgs,
+        max_tokens: MAX_TOKENS,
+        temperature,
+      }),
+      AI_REPLY_TIMEOUT_MS,
+      'AI reply'
+    )
     return cleanReply(completion.choices[0]?.message?.content?.trim() || '')
   }
 
@@ -495,19 +626,52 @@ async function maybeEscalate({ phone, text, reply, confident, intent, actionPlan
 export async function getAIReplyDetailed(phone, text) {
   try {
     const [member, history] = await Promise.all([
-      getMemberContext(phone),
+      getMemberContext(phone, text),
       getHistory(phone),
     ])
 
     const intent = detectIntent(text, member)
     const actionPlan = buildActionPlan(intent, member)
+
+    // Fast deterministic path for greetings and identity follow-ups. These should not wait
+    // on Groq, and they should never accuse a newly-paid member of having no subscription.
+    if (intent === INTENTS.GREETING || member?.matched_by?.startsWith('provided_')) {
+      const reply = buildHumanDraft(intent, member, actionPlan)
+      try {
+        await saveMessage(phone, 'user', text)
+        await saveMessage(phone, 'assistant', reply)
+      } catch (err) {
+        console.error('[ai] failed to save conversation:', err.message)
+      }
+      const escalation = await maybeEscalate({ phone, text, reply, confident: true, intent, actionPlan })
+      return {
+        reply,
+        intent,
+        action: actionPlan,
+        escalation,
+        confident: true,
+        member: member
+          ? {
+              status: member.status,
+              plan_name: member.plan_name,
+              community_name: member.community_name,
+              community_slug: member.community_slug,
+              renewal_url: member.renewal_url,
+              expires_at: member.expires_at,
+            }
+          : null,
+      }
+    }
+
     const systemPrompt = buildSystemPrompt(member, intent, actionPlan)
     const { reply, confident } = await callGroq(systemPrompt, history, text)
 
-    Promise.all([
-      saveMessage(phone, 'user', text),
-      saveMessage(phone, 'assistant', reply),
-    ]).catch(err => console.error('[ai] failed to save conversation:', err.message))
+    try {
+      await saveMessage(phone, 'user', text)
+      await saveMessage(phone, 'assistant', reply)
+    } catch (err) {
+      console.error('[ai] failed to save conversation:', err.message)
+    }
 
     const escalation = await maybeEscalate({ phone, text, reply, confident, intent, actionPlan })
 

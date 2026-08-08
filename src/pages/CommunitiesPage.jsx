@@ -10,6 +10,7 @@ import { HiOutlineLink, HiOutlinePencilSquare, HiOutlineTrash, HiOutlinePlusCirc
 import Skeleton from '../components/ui/Skeleton'
 import WhatsAppModeBadge from '../components/WhatsAppModeBadge'
 import API_BASE from '../lib/api'
+import ConfirmDialog from '../components/ui/ConfirmDialog'
 
 const formatDuration = (minutes) => {
   if (!minutes) return '—'
@@ -27,6 +28,8 @@ export default function CommunitiesPage() {
   const [botStatus, setBotStatus] = useState({})
   const [qrModal, setQrModal] = useState(null)
   const [tab, setTab] = useState('all')
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleting, setDeleting] = useState(false)
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
 
@@ -69,8 +72,10 @@ export default function CommunitiesPage() {
   }
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this community? This cannot be undone.')) return
+    setDeleting(true)
     const { error } = await supabase.from('communities').delete().eq('id', id)
+    setDeleting(false)
+    setDeleteTarget(null)
     if (error) toast.error(error.message)
     else { toast.success('Community deleted'); fetchCommunities() }
   }
@@ -274,7 +279,7 @@ export default function CommunitiesPage() {
                         <div className="flex items-center gap-2">
                           {isTelegram && <button onClick={() => openQRModal(c)} className="rounded-[6px] border border-gray-200 px-2.5 py-1 text-[12px] font-bold text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-white/60 dark:hover:bg-white/5">QR</button>}
                           <Link to={`/dashboard/communities/${c.id}/edit`} className="rounded-[6px] border border-gray-200 px-2.5 py-1 text-[12px] font-bold text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-white/60 dark:hover:bg-white/5">Edit</Link>
-                          <button onClick={() => handleDelete(c.id)} className="rounded-[6px] border border-red-500/20 px-2.5 py-1 text-[12px] font-bold text-red-400 hover:bg-red-500/10">Delete</button>
+                          <button onClick={() => setDeleteTarget(c)} className="rounded-[6px] border border-red-500/20 px-2.5 py-1 text-[12px] font-bold text-red-400 hover:bg-red-500/10">Delete</button>
                         </div>
                       </td>
                     </tr>
@@ -314,7 +319,7 @@ export default function CommunitiesPage() {
                   <div className="flex flex-wrap gap-2">
                     {isTelegram && <button onClick={() => openQRModal(c)} className="rounded-[6px] border border-gray-200 px-3 py-1.5 text-[12px] font-bold text-gray-600 dark:border-white/10 dark:text-white/50">QR Code</button>}
                     <Link to={`/dashboard/communities/${c.id}/edit`} className="rounded-[6px] border border-gray-200 px-3 py-1.5 text-[12px] font-bold text-gray-600 dark:border-white/10 dark:text-white/50">Edit</Link>
-                    <button onClick={() => handleDelete(c.id)} className="rounded-[6px] border border-red-500/20 px-3 py-1.5 text-[12px] font-bold text-red-400">Delete</button>
+                    <button onClick={() => setDeleteTarget(c)} className="rounded-[6px] border border-red-500/20 px-3 py-1.5 text-[12px] font-bold text-red-400">Delete</button>
                   </div>
                 </div>
               )
@@ -326,6 +331,16 @@ export default function CommunitiesPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete this community?"
+        description={deleteTarget?.name ? `This will delete ${deleteTarget.name}. This cannot be undone.` : 'This cannot be undone.'}
+        confirmLabel="Delete community"
+        loading={deleting}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => handleDelete(deleteTarget.id)}
+      />
 
       {/* QR Modal */}
       {qrModal && (

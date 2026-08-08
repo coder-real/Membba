@@ -11,6 +11,8 @@ import telegramLogo from '../assets/icons8-telegram.svg'
 import whatsappLogo from '../assets/icons8-whatsapp.svg'
 import API_BASE from '../lib/api'
 import Tooltip from '../components/Tooltip'
+import ConfirmDialog from '../components/ui/ConfirmDialog'
+import SuccessDialog from '../components/ui/SuccessDialog'
 
 const generateSlug = (name) =>
   name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
@@ -83,7 +85,7 @@ export default function CommunityFormPage() {
       }
     }
     if (currentStep === 3) {
-      const hasValidPlan = [...plans, ...existingPlans].some(p => p.name?.trim() && p.price && p.duration)
+      const hasValidPlan = [...plans, ...existingPlans].some(p => p.name?.trim() && p.price && (p.duration || p.duration_minutes))
       if (!hasValidPlan) {
         toast.error('Add at least one complete plan (name, price, duration)')
         return
@@ -104,6 +106,9 @@ export default function CommunityFormPage() {
   const [waInviteCheck, setWaInviteCheck] = useState(null)
   const [checkingWaInvite, setCheckingWaInvite] = useState(false)
   const [setupModal, setSetupModal] = useState(null) // null | { loading: true } | { allPass, checks }
+  const [confirmSubmit, setConfirmSubmit] = useState(false)
+  const [confirmPlanDelete, setConfirmPlanDelete] = useState(null)
+  const [successState, setSuccessState] = useState(null)
   const [connectQr, setConnectQr] = useState(null)
   const [telegramLinking, setTelegramLinking] = useState(false)
   const [telegramAdvanced, setTelegramAdvanced] = useState(false)
@@ -301,7 +306,6 @@ export default function CommunityFormPage() {
   const removePlanRow = (index) => setPlans(prev => prev.filter((_, i) => i !== index))
 
   const handleDeleteExistingPlan = async (planId) => {
-    if (!confirm('Delete this plan? Existing subscribers keep access until expiry.')) return
     const { error } = await supabase.from('plans').update({ is_active: false }).eq('id', planId)
     if (error) return toast.error(error.message)
     setExistingPlans(prev => prev.filter(p => p.id !== planId))
@@ -365,8 +369,12 @@ export default function CommunityFormPage() {
     }
   }
 
-  const handleSubmit = async e => {
+  const handleSubmit = e => {
     e.preventDefault()
+  }
+
+  const performSubmit = async () => {
+    setConfirmSubmit(false)
     setLoading(true)
 
     const parsedPlans = []
@@ -450,8 +458,7 @@ export default function CommunityFormPage() {
 
     setLoading(false)
     clearDraft()
-    toast.success(isEditing ? 'Community updated!' : 'Community created!')
-    navigate('/dashboard/communities')
+    setSuccessState({ communityId, name: form.name, slug: isEditing ? slug : generateSlug(form.name), editing: isEditing })
   }
 
   const slug = generateSlug(form.name)
@@ -546,7 +553,7 @@ export default function CommunityFormPage() {
 
             <section className="min-w-0 bg-gray-50/70 px-4 py-5 dark:bg-[#0a0a0a] sm:px-7 sm:py-8 lg:px-8">
               <form
-                onSubmit={handleSubmit}
+                onSubmit={(e) => e.preventDefault()}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') e.preventDefault()
                 }}
@@ -932,7 +939,7 @@ export default function CommunityFormPage() {
                   <div className="flex justify-end">
                     <button
                       type="button"
-                      onClick={() => handleDeleteExistingPlan(p.id)}
+                      onClick={() => setConfirmPlanDelete(p.id)}
                       className="sm:opacity-0 sm:group-hover:opacity-100 text-[14px] text-red-400/70 hover:text-red-400 transition-all font-medium px-2 py-1 rounded-lg hover:bg-red-400/10"
                     >
                       Remove
@@ -1092,6 +1099,64 @@ export default function CommunityFormPage() {
             </button>
           </div>
 
+          {/* Invite Link & Message Automation Settings */}
+          <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-[12px] p-5 space-y-5 overflow-visible">
+            <div>
+              <h2 className="section-title text-gray-900 dark:text-white">Invite Link Settings</h2>
+              <p className="body-md text-gray-500 dark:text-white/40 mt-1">Configure how your community invite links and bot interactions behave.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* Invite link expiry */}
+              <div>
+                <label className="label-xs font-bold text-gray-700 dark:text-white/60 mb-2 uppercase tracking-widest flex items-center gap-1.5">
+                  Invite Link Expires After
+                  <Tooltip content="Controls how long a generated invite link remains valid. Shorter links reduce sharing abuse." />
+                </label>
+                <Select
+                  value={form.invite_link_ttl_minutes}
+                  onChange={val => handleFormChange({ target: { name: 'invite_link_ttl_minutes', value: val } })}
+                  options={[
+                    { value: 0,    label: 'Never — link lasts forever' },
+                    { value: 15,   label: '15 minutes' },
+                    { value: 30,   label: '30 minutes' },
+                    { value: 60,   label: '1 hour (recommended)' },
+                    { value: 360,  label: '6 hours' },
+                    { value: 1440, label: '24 hours' },
+                    { value: 4320, label: '3 days' },
+                  ]}
+                />
+                <p className="label-xs text-gray-500 dark:text-white/40 mt-2 leading-relaxed">
+                  After this time, the invite link becomes invalid even if unused.
+                </p>
+              </div>
+
+              {/* Auto-delete DM */}
+              <div>
+                <label className="label-xs font-bold text-gray-700 dark:text-white/60 mb-2 uppercase tracking-widest flex items-center gap-1.5">
+                  Delete Bot Messages After
+                  <Tooltip content="Optional privacy cleanup. Membba can delete invite messages after a delay so links do not stay visible forever." />
+                </label>
+                <Select
+                  value={form.msg_auto_delete_seconds}
+                  onChange={val => handleFormChange({ target: { name: 'msg_auto_delete_seconds', value: val } })}
+                  options={[
+                    { value: 0,    label: 'Never — keep messages' },
+                    { value: 60,   label: '1 minute' },
+                    { value: 120,  label: '2 minutes (recommended)' },
+                    { value: 300,  label: '5 minutes' },
+                    { value: 600,  label: '10 minutes' },
+                    { value: 1800, label: '30 minutes' },
+                    { value: 3600, label: '1 hour' },
+                  ]}
+                />
+                <p className="label-xs text-gray-500 dark:text-white/40 mt-2 leading-relaxed">
+                  The bot will delete its invite DMs after this delay. Keeps things tidy.
+                </p>
+              </div>
+            </div>
+          </div>
+
           </div>{/* end Step 3 */}
 
           {/* Step 4: Review & Automations */}
@@ -1181,63 +1246,7 @@ export default function CommunityFormPage() {
               </div>
             </div>
 
-          {/* Invite Link & Message Automation Settings */}
-          <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-[12px] p-5 space-y-5 overflow-visible">
-            <div>
-              <h2 className="section-title text-gray-900 dark:text-white">Invite Link Settings</h2>
-              <p className="body-md text-gray-500 dark:text-white/40 mt-1">Configure how your community invite links and bot interactions behave.</p>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* Invite link expiry */}
-              <div>
-                <label className="label-xs font-bold text-gray-700 dark:text-white/60 mb-2 uppercase tracking-widest flex items-center gap-1.5">
-                  Invite Link Expires After
-                  <Tooltip content="Controls how long a generated invite link remains valid. Shorter links reduce sharing abuse." />
-                </label>
-                <Select
-                  value={form.invite_link_ttl_minutes}
-                  onChange={val => handleFormChange({ target: { name: 'invite_link_ttl_minutes', value: val } })}
-                  options={[
-                    { value: 0,    label: 'Never — link lasts forever' },
-                    { value: 15,   label: '15 minutes' },
-                    { value: 30,   label: '30 minutes' },
-                    { value: 60,   label: '1 hour (recommended)' },
-                    { value: 360,  label: '6 hours' },
-                    { value: 1440, label: '24 hours' },
-                    { value: 4320, label: '3 days' },
-                  ]}
-                />
-                <p className="label-xs text-gray-500 dark:text-white/40 mt-2 leading-relaxed">
-                  After this time, the invite link becomes invalid even if unused.
-                </p>
-              </div>
-
-              {/* Auto-delete DM */}
-              <div>
-                <label className="label-xs font-bold text-gray-700 dark:text-white/60 mb-2 uppercase tracking-widest flex items-center gap-1.5">
-                  Delete Bot Messages After
-                  <Tooltip content="Optional privacy cleanup. Membba can delete invite messages after a delay so links do not stay visible forever." />
-                </label>
-                <Select
-                  value={form.msg_auto_delete_seconds}
-                  onChange={val => handleFormChange({ target: { name: 'msg_auto_delete_seconds', value: val } })}
-                  options={[
-                    { value: 0,    label: 'Never — keep messages' },
-                    { value: 60,   label: '1 minute' },
-                    { value: 120,  label: '2 minutes (recommended)' },
-                    { value: 300,  label: '5 minutes' },
-                    { value: 600,  label: '10 minutes' },
-                    { value: 1800, label: '30 minutes' },
-                    { value: 3600, label: '1 hour' },
-                  ]}
-                />
-                <p className="label-xs text-gray-500 dark:text-white/40 mt-2 leading-relaxed">
-                  The bot will delete its invite DMs after this delay. Keeps things tidy.
-                </p>
-              </div>
-            </div>
-          </div>
 
           </div>{/* end Step 4 */}
 
@@ -1278,11 +1287,12 @@ export default function CommunityFormPage() {
                 </button>
               ) : (
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={() => setConfirmSubmit(true)}
                   disabled={loading}
                   className="btn-primary disabled:opacity-50"
                 >
-                  {loading ? 'Saving...' : isEditing ? 'Save Changes ✓' : 'Create Community ✓'}
+                  {loading ? 'Saving...' : isEditing ? 'Save Changes ✓' : 'Finish & Create ✓'}
                 </button>
               )}
             </div>
@@ -1292,6 +1302,46 @@ export default function CommunityFormPage() {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmSubmit}
+        title={isEditing ? 'Save these community changes?' : 'Create this community?'}
+        description="Please confirm that the platform, group setup, plans, and automation settings are correct. You can still go back and edit any step before continuing."
+        confirmLabel={isEditing ? 'Yes, save changes' : 'Yes, create community'}
+        cancelLabel="Go back"
+        tone="brand"
+        loading={loading}
+        onCancel={() => setConfirmSubmit(false)}
+        onConfirm={performSubmit}
+      />
+
+      <ConfirmDialog
+        open={Boolean(confirmPlanDelete)}
+        title="Remove this plan?"
+        description="Existing subscribers keep access until their current expiry, but new members will no longer see this plan."
+        confirmLabel="Remove plan"
+        loading={loading}
+        onCancel={() => setConfirmPlanDelete(null)}
+        onConfirm={async () => { const id = confirmPlanDelete; setConfirmPlanDelete(null); await handleDeleteExistingPlan(id) }}
+      />
+
+      <SuccessDialog
+        open={Boolean(successState)}
+        title={successState?.editing ? 'Community updated' : 'Community created'}
+        description={successState?.name ? `${successState.name} is ready. Share the join link with members or keep editing setup when needed.` : ''}
+        primaryLabel="Back to communities"
+        secondaryLabel="Copy join link"
+        onClose={() => { setSuccessState(null); navigate('/dashboard/communities') }}
+        onPrimary={() => { setSuccessState(null); navigate('/dashboard/communities') }}
+        onSecondary={() => { navigator.clipboard.writeText(`${window.location.origin}/join/${successState?.slug}`); toast.success('Join link copied') }}
+      >
+        {successState?.slug && (
+          <div className="rounded-none border border-gray-200 bg-gray-50 p-3 dark:border-white/10 dark:bg-black/20">
+            <p className="mb-1 text-[11px] font-black uppercase tracking-widest text-gray-400">Join link</p>
+            <p className="break-all font-mono text-[12px] text-gray-700 dark:text-white/70">{window.location.origin}/join/{successState.slug}</p>
+          </div>
+        )}
+      </SuccessDialog>
 
       {/* TSK-105/TSK-106: Test Setup Modal with sequential fading */}
       {setupModal && (

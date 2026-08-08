@@ -257,14 +257,35 @@ export default function AIInboxPage() {
                       </div>
 
                       <div className="space-y-3">
-                        <div className="rounded-[12px] bg-gray-50 p-4 dark:bg-white/[0.03]">
-                          <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-gray-400">Member said</p>
-                          <p className="text-[14px] leading-relaxed text-gray-900 dark:text-white">{item.message}</p>
-                        </div>
-                        <div className="rounded-[12px] border border-[#c8f135]/15 bg-[#c8f135]/5 p-4">
-                          <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-[#c8f135]">AI replied</p>
-                          <p className="text-[14px] leading-relaxed text-gray-800 dark:text-white/80">{item.ai_reply}</p>
-                        </div>
+                        {item.conversation?.length ? (
+                          <div className="rounded-[12px] border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                              <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Conversation thread</p>
+                              <span className="text-[11px] font-mono text-gray-400">last {item.conversation.length}</span>
+                            </div>
+                            <div className="space-y-2">
+                              {item.conversation.map((msg, idx) => (
+                                <div key={`${msg.created_at}-${idx}`} className={`flex ${msg.role === 'assistant' ? 'justify-end' : 'justify-start'}`}>
+                                  <div className={`max-w-[86%] rounded-[10px] border px-3 py-2 text-[13px] leading-relaxed ${msg.role === 'assistant' ? 'border-[#c8f135]/20 bg-[#c8f135]/10 text-gray-900 dark:text-white' : 'border-gray-200 bg-white text-gray-900 dark:border-white/10 dark:bg-black/20 dark:text-white/85'}`}>
+                                    <p className="mb-1 text-[10px] font-black uppercase tracking-widest opacity-60">{msg.role === 'assistant' ? 'Membba AI' : 'Member'}</p>
+                                    <p>{msg.content}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="rounded-[12px] bg-gray-50 p-4 dark:bg-white/[0.03]">
+                              <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-gray-400">Member said</p>
+                              <p className="text-[14px] leading-relaxed text-gray-900 dark:text-white">{item.message}</p>
+                            </div>
+                            <div className="rounded-[12px] border border-[#c8f135]/15 bg-[#c8f135]/5 p-4">
+                              <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-[#c8f135]">AI replied</p>
+                              <p className="text-[14px] leading-relaxed text-gray-800 dark:text-white/80">{item.ai_reply}</p>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
 

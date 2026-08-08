@@ -33,6 +33,16 @@ async function getCreatorCommunityIds(creatorId) {
   return (data || []).map(c => c.id)
 }
 
+function phoneVariants(raw) {
+  const digits = String(raw || '').replace(/\D/g, '')
+  const variants = new Set()
+  if (digits) variants.add(digits)
+  if (digits.startsWith('0') && digits.length >= 10) variants.add(`234${digits.slice(1)}`)
+  if (digits.startsWith('234') && digits.length >= 13) variants.add(`0${digits.slice(3)}`)
+  if (digits.length === 10) variants.add(`234${digits}`)
+  return [...variants].filter(Boolean)
+}
+
 async function getLatestSubscriptionForPhone(phone, communityIds, onlyActive = false) {
   let query = supabase
     .from('subscriptions')
@@ -172,12 +182,16 @@ router.get('/escalations', async (req, res) => {
     if (subErr) throw subErr
 
     const byPhone = new Map()
+    const phoneSet = new Set()
     for (const sub of subs || []) {
       if (!sub.whatsapp_phone) continue
-      if (!byPhone.has(sub.whatsapp_phone)) byPhone.set(sub.whatsapp_phone, sub)
+      for (const variant of phoneVariants(sub.whatsapp_phone)) {
+        phoneSet.add(variant)
+        if (!byPhone.has(variant)) byPhone.set(variant, sub)
+      }
     }
 
-    const phones = [...byPhone.keys()]
+    const phones = [...phoneSet]
     if (!phones.length) return res.json([])
 
     let query = supabase
@@ -192,10 +206,31 @@ router.get('/escalations', async (req, res) => {
     const { data, error } = await query
     if (error) throw error
 
-    const enriched = (data || []).map(e => ({
-      ...e,
-      subscription: byPhone.get(e.phone) || null,
-    }))
+    const escalationPhones = [...new Set((data || []).map(e => e.phone).filter(Boolean))]
+    let conversationsByPhone = new Map()
+    if (escalationPhones.length) {
+      const { data: convoRows, error: convoErr } = await supabase
+        .from('member_conversations')
+        .select('phone, role, content, created_at')
+        .in('phone', escalationPhones)
+        .order('created_at', { ascending: true })
+        .limit(500)
+      if (convoErr) throw convoErr
+      for (const row of convoRows || []) {
+        const list = conversationsByPhone.get(row.phone) || []
+        list.push(row)
+        conversationsByPhone.set(row.phone, list)
+      }
+    }
+
+    const enriched = (data || []).map(e => {
+      const conversation = (conversationsByPhone.get(e.phone) || []).slice(-12)
+      return {
+        ...e,
+        subscription: byPhone.get(e.phone) || null,
+        conversation,
+      }
+    })
 
     res.json(enriched)
   } catch (err) {

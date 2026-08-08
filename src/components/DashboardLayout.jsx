@@ -88,7 +88,7 @@ function BotStatus({ online }) {
   return (
     <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5" title={online ? 'WhatsApp Bot Active' : 'WhatsApp Bot Offline'}>
       <span className={`w-2 h-2 rounded-full ${online ? 'bg-[#c8f135]' : 'bg-red-500'}`} />
-      <span className={`text-[13px] font-bold ${online ? 'text-gray-700 dark:text-white/80' : 'text-red-400'}`}>
+      <span className={`hidden text-[13px] font-bold sm:inline ${online ? 'text-gray-700 dark:text-white/80' : 'text-red-400'}`}>
         {online ? 'Bot Active' : 'Offline'}
       </span>
     </div>
@@ -105,7 +105,7 @@ function ChannelStatusBar({ telegramOnline, whatsappOnline, metaOnline, navigate
     <button
       type="button"
       onClick={() => navigate('/dashboard/settings?tab=integrations')}
-      className="hidden items-center gap-2 rounded-full border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-3 py-1 md:flex"
+      className="flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-2 py-1 dark:border-white/10 dark:bg-white/5 md:gap-2 md:px-3"
       title="Messaging channel status"
     >
       {items.map(item => {
@@ -469,9 +469,10 @@ export default function DashboardLayout({ children, pageTitle }) {
               <Menu size={22} />
             </button>
             <div className="flex items-center gap-2 text-[16px] font-bold text-white/60">
+              <img src="/green.svg" alt="Membba" className="h-6 lg:hidden" />
               <span className="text-white font-black">membba</span>
-              <span className="text-white/25">/</span>
-              <span className="text-[#c8f135]">{pageName}</span>
+              <span className="hidden text-white/25 lg:inline">/</span>
+              <span className="hidden text-[#c8f135] lg:inline">{pageName}</span>
               <span className="ml-2 hidden border border-white/10 bg-white/5 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-white/60 sm:inline-flex">Creator Hub</span>
             </div>
           </div>

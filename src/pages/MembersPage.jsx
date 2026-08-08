@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import Avatar from '../components/Avatar'
 import Skeleton from '../components/ui/Skeleton'
 import WhatsAppModeBadge from '../components/WhatsAppModeBadge'
+import ConfirmDialog from '../components/ui/ConfirmDialog'
 import toast from 'react-hot-toast'
 
 const TABS = ['all', 'active', 'expired', 'cancelled']
@@ -19,6 +20,7 @@ export default function MembersPage() {
   const [tab, setTab] = useState('all')
   const [query, setQuery] = useState('')
   const [removing, setRemoving] = useState(null)
+  const [removeTarget, setRemoveTarget] = useState(null)
   const [resending, setResending] = useState(null)
   const [selected, setSelected] = useState(null)
   const [memberPayments, setMemberPayments] = useState([])
@@ -270,7 +272,7 @@ export default function MembersPage() {
                       <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center gap-2">
                           <button onClick={() => setSelected(s)} className="label-xs px-2.5 py-1 rounded-[4px] font-bold text-[#c8f135] hover:bg-[#c8f135]/10 transition-colors">View</button>
-                          {s.status === 'active' && <button onClick={() => handleRemove(s)} disabled={removing === s.id} className="label-xs px-2.5 py-1 rounded-[4px] font-bold text-red-400 hover:bg-red-500/10 disabled:opacity-40 transition-colors">{removing === s.id ? '…' : 'Remove'}</button>}
+                          {s.status === 'active' && <button onClick={() => setRemoveTarget(s)} disabled={removing === s.id} className="label-xs px-2.5 py-1 rounded-[4px] font-bold text-red-400 hover:bg-red-500/10 disabled:opacity-40 transition-colors">{removing === s.id ? '…' : 'Remove'}</button>}
                         </div>
                       </td>
                     </tr>
@@ -300,6 +302,16 @@ export default function MembersPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={Boolean(removeTarget)}
+        title="Remove this member?"
+        description={removeTarget?.email ? `${removeTarget.email} will lose access and their subscription will be cancelled.` : 'This member will lose access.'}
+        confirmLabel="Remove member"
+        loading={removing === removeTarget?.id}
+        onCancel={() => setRemoveTarget(null)}
+        onConfirm={async () => { const target = removeTarget; setRemoveTarget(null); await handleRemove(target) }}
+      />
 
       {selected && (
         <div className="fixed inset-0 z-50 flex items-end lg:items-stretch lg:justify-end bg-black/60 backdrop-blur-sm transition-opacity" onClick={() => setSelected(null)}>
@@ -345,7 +357,7 @@ export default function MembersPage() {
               <button onClick={() => copyRenewalLink(selected)} className="rounded-none border border-gray-200 px-4 py-3 text-[13px] font-bold text-gray-700 hover:bg-gray-50 dark:border-white/10 dark:text-white/60 dark:hover:bg-white/5">Copy renewal link</button>
               <button onClick={() => extendSubscription(selected, 30)} disabled={extending === selected.id} className="rounded-none bg-[#c8f135] px-4 py-3 text-[13px] font-black text-black disabled:opacity-50">{extending === selected.id ? 'Extending…' : '+30 days'}</button>
               {selected.status === 'active' && selected.telegram_user_id && !selected.whatsapp_phone && <button onClick={() => handleResend(selected)} disabled={resending === selected.id} className="rounded-none bg-[#229ED9] px-4 py-3 text-[13px] font-black text-white disabled:opacity-50">{resending === selected.id ? 'Sending…' : 'Resend invite'}</button>}
-              {selected.status === 'active' && <button onClick={() => handleRemove(selected)} disabled={removing === selected.id} className="rounded-none border border-red-300 px-4 py-3 text-[13px] font-bold text-red-500 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-500/10">{removing === selected.id ? 'Removing…' : 'Remove member'}</button>}
+              {selected.status === 'active' && <button onClick={() => setRemoveTarget(selected)} disabled={removing === selected.id} className="rounded-none border border-red-300 px-4 py-3 text-[13px] font-bold text-red-500 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-500/10">{removing === selected.id ? 'Removing…' : 'Remove member'}</button>}
             </div>
 
             <section className="mb-6">
