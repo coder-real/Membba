@@ -783,23 +783,23 @@ export default function CommunityFormPage() {
 
           {/* ─── WhatsApp Setup Section ─── */}
           {form.platform === 'whatsapp' && (
-            <div className="rounded-xl border border-[#25D366]/25 bg-[#25D366]/[0.03] relative overflow-hidden">
-              <img src={whatsappLogo} alt="" className="absolute -right-4 -bottom-4 hidden w-28 h-28 sm:block opacity-[0.04] pointer-events-none select-none" />
+            <div className="rounded-xl border border-[#25D366]/20 bg-[#25D366]/[0.025] relative overflow-hidden">
+              <img src={whatsappLogo} alt="" className="absolute -right-4 -bottom-4 hidden w-28 h-28 object-contain sm:block opacity-[0.04] pointer-events-none select-none" />
 
-              <div className="flex items-center gap-3 px-5 py-4 border-b border-[#25D366]/10">
-                <div className="w-9 h-9 rounded-xl bg-[#25D366]/15 flex items-center justify-center">
-                  <img src={whatsappLogo} alt="WhatsApp" className="w-5 h-5" />
+              <div className="flex items-start gap-3 px-4 py-4 sm:px-5 border-b border-[#25D366]/10">
+                <div className="w-9 h-9 shrink-0 rounded-xl bg-[#25D366]/15 flex items-center justify-center overflow-hidden">
+                  <img src={whatsappLogo} alt="WhatsApp" className="h-5 w-5 object-contain" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-[14px] font-black text-black dark:text-white">WhatsApp Setup</p>
-                  <p className="text-[14px] text-[#25D366]/70">Choose a reliable access mode first. Automation can be added later.</p>
+                  <p className="mt-0.5 text-[12px] leading-relaxed text-gray-600 dark:text-white/45">Start with Basic access. Turn on Advanced only when you need group add/remove automation.</p>
                 </div>
               </div>
 
-              <div className="px-5 py-5 space-y-5">
+              <div className="px-4 py-4 sm:px-5 sm:py-5 space-y-4">
                 <div>
-                  <label className="block text-[14px] font-bold text-black dark:text-white/40 mb-3 uppercase tracking-widest">Setup mode</label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <label className="block label-xs font-bold text-gray-700 dark:text-white/60 mb-3 uppercase tracking-widest">Access mode</label>
+                  <div className="grid grid-cols-1 gap-2 sm:gap-3 md:grid-cols-2">
                     <button
                       type="button"
                       onClick={() => setForm(prev => ({ ...prev, whatsapp_setup_mode: 'basic' }))}
@@ -807,10 +807,10 @@ export default function CommunityFormPage() {
                     >
                       <div className="flex items-start justify-between gap-2 mb-1.5">
                         <p className="text-[14px] font-black text-black dark:text-white leading-tight">Basic Access</p>
-                        <span className="shrink-0 rounded-full bg-[#25D366]/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-[#25D366]">Recommended</span>
+                        <span className="shrink-0 rounded-full bg-[#25D366]/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-[#25D366]">Best start</span>
                       </div>
                       <p className="text-[12px] leading-relaxed text-black dark:text-white/45">
-                        Official API for links and notifications. No device pairing.
+Sends invite links after payment. No device pairing.
                       </p>
                     </button>
 
@@ -824,7 +824,7 @@ export default function CommunityFormPage() {
                         <span className="shrink-0 rounded-full bg-amber-400/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-amber-400">Beta</span>
                       </div>
                       <p className={`text-[12px] leading-relaxed ${form.whatsapp_setup_mode === 'advanced' ? 'text-[#c8f135]/70' : 'text-black dark:text-white/45'}`}>
-                        Full group management via linked device. Less stable.
+Adds group automation with linked device. Beta.
                       </p>
                     </button>
                   </div>
@@ -836,21 +836,21 @@ export default function CommunityFormPage() {
                     Group Invite Link *
                     <Tooltip content="Members receive this invite after payment." />
                   </label>
-                  <div className="flex flex-col gap-2 sm:flex-row">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
                     <input
                       type="url"
                       name="whatsapp_group_invite_link"
                       value={form.whatsapp_group_invite_link}
                       onChange={handleFormChange}
                       onBlur={() => { if (form.whatsapp_group_invite_link && !waInviteCheck) verifyWhatsAppInviteLink() }}
-                      className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-[14px] text-black dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:outline-none focus:border-[#c8f135] focus:ring-1 focus:ring-[#c8f135]/15 transition-colors"
+                      className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-none px-3.5 py-2.5 data-mono text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:outline-none focus:border-[#c8f135] transition-colors"
                       placeholder="https://chat.whatsapp.com/xxxxxxxxxx"
                     />
                     <button
                       type="button"
                       onClick={verifyWhatsAppInviteLink}
                       disabled={checkingWaInvite}
-                      className="btn-secondary shrink-0 disabled:opacity-50"
+                      className="btn-secondary shrink-0 justify-center disabled:opacity-50"
                     >
                       {checkingWaInvite ? 'Checking…' : 'Verify'}
                     </button>
@@ -875,7 +875,7 @@ export default function CommunityFormPage() {
 
                 {/* ── Advanced: compact single-row action — only shown when advanced mode selected ── */}
                 {form.whatsapp_setup_mode === 'advanced' && (
-                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/[0.08] bg-white/[0.02] px-4 py-3">
+                  <div className="flex flex-col gap-3 border border-gray-200 bg-gray-50 px-4 py-3 dark:border-white/10 dark:bg-white/[0.03] sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-2.5 min-w-0">
                       {waGroupId ? (
                         <>
@@ -979,17 +979,17 @@ export default function CommunityFormPage() {
                 return (
                   <div key={i} className="px-5 py-6 sm:px-7 group relative hover:bg-white/[0.015] transition-colors">
                     {/* Top row: name + trash */}
-                    <div className="flex items-start justify-between gap-7 mb-5">
+                    <div className="flex items-start justify-between gap-4 mb-5">
                       <div className="flex-1">
+                        <label className="block label-xs font-bold text-gray-700 dark:text-white/60 mb-2 uppercase tracking-widest">Plan Name *</label>
                         <input
                           type="text"
                           name="name"
                           value={plan.name}
                           onChange={e => handlePlanChange(i, e)}
-                          placeholder="Plan name e.g. Monthly Access"
-                          className="w-full bg-transparent text-[17px] font-bold text-black dark:text-white placeholder-white/20 outline-none border-0 focus:outline-none"
+                          placeholder="e.g. Monthly Access"
+                          className="w-full bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 rounded-none px-3.5 py-2.5 data-primary text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/20 focus:outline-none focus:border-[#c8f135] transition-colors"
                         />
-                        <div className="h-px bg-white/[0.07] mt-2 group-focus-within:bg-[#c8f135]/30 transition-colors" />
                       </div>
                       {plans.length > 1 && (
                         <button
@@ -1100,17 +1100,20 @@ export default function CommunityFormPage() {
           </div>
 
           {/* Invite Link & Message Automation Settings */}
-          <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-[12px] p-5 space-y-5 overflow-visible">
-            <div>
-              <h2 className="section-title text-gray-900 dark:text-white">Invite Link Settings</h2>
-              <p className="body-md text-gray-500 dark:text-white/40 mt-1">Configure how your community invite links and bot interactions behave.</p>
+          <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-none p-5 space-y-5 overflow-visible">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 className="section-title text-gray-900 dark:text-white">Invite Settings</h2>
+                <p className="body-md text-gray-500 dark:text-white/40 mt-1">Choose how long invite links and bot messages should stay valid.</p>
+              </div>
+              <span className="label-xs text-gray-500 dark:text-white/35">Recommended defaults are already selected.</span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {/* Invite link expiry */}
               <div>
                 <label className="label-xs font-bold text-gray-700 dark:text-white/60 mb-2 uppercase tracking-widest flex items-center gap-1.5">
-                  Invite Link Expires After
+Invite link lifetime
                   <Tooltip content="Controls how long a generated invite link remains valid. Shorter links reduce sharing abuse." />
                 </label>
                 <Select
@@ -1127,14 +1130,14 @@ export default function CommunityFormPage() {
                   ]}
                 />
                 <p className="label-xs text-gray-500 dark:text-white/40 mt-2 leading-relaxed">
-                  After this time, the invite link becomes invalid even if unused.
+                  Shorter lifetimes reduce link sharing abuse.
                 </p>
               </div>
 
               {/* Auto-delete DM */}
               <div>
                 <label className="label-xs font-bold text-gray-700 dark:text-white/60 mb-2 uppercase tracking-widest flex items-center gap-1.5">
-                  Delete Bot Messages After
+Auto-delete invite message
                   <Tooltip content="Optional privacy cleanup. Membba can delete invite messages after a delay so links do not stay visible forever." />
                 </label>
                 <Select
@@ -1151,7 +1154,7 @@ export default function CommunityFormPage() {
                   ]}
                 />
                 <p className="label-xs text-gray-500 dark:text-white/40 mt-2 leading-relaxed">
-                  The bot will delete its invite DMs after this delay. Keeps things tidy.
+                  Keeps invite messages from staying visible forever.
                 </p>
               </div>
             </div>
