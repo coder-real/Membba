@@ -95,7 +95,7 @@ function BotStatus({ online }) {
   )
 }
 
-function ChannelStatusBar({ telegramOnline, whatsappOnline, metaOnline, navigate }) {
+function ChannelStatusBar({ telegramOnline, whatsappOnline, metaOnline, navigate, className = 'hidden md:flex' }) {
   const items = [
     { id: 'telegram', title: telegramOnline ? 'Telegram bot online' : 'Telegram not connected', online: telegramOnline, color: '#229ED9', Icon: FaTg },
     { id: 'whatsapp', title: whatsappOnline ? 'WhatsApp bot connected' : 'WhatsApp bot offline', online: whatsappOnline, color: '#25D366', Icon: FaWa },
@@ -105,7 +105,7 @@ function ChannelStatusBar({ telegramOnline, whatsappOnline, metaOnline, navigate
     <button
       type="button"
       onClick={() => navigate('/dashboard/settings?tab=integrations')}
-      className="flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-2 py-1 dark:border-white/10 dark:bg-white/5 md:gap-2 md:px-3"
+      className={`${className} items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 dark:border-white/10 dark:bg-white/5`}
       title="Messaging channel status"
     >
       {items.map(item => {
@@ -331,6 +331,7 @@ export default function DashboardLayout({ children, pageTitle }) {
             <div className="flex items-center justify-between bg-[#141414] border border-white/10 p-3 rounded-none">
               <div className="flex items-center gap-2">
                 <BotStatus online={botOnline} />
+                <ChannelStatusBar telegramOnline={channelStatus.telegram} whatsappOnline={channelStatus.whatsapp} metaOnline={channelStatus.meta} navigate={navigate} className="flex" />
               </div>
               <Link
                 to="/dashboard/communities/new"
@@ -463,19 +464,19 @@ export default function DashboardLayout({ children, pageTitle }) {
 
       {/* Main Content Area */}
       <div className={`flex min-h-screen min-w-0 flex-1 flex-col transition-[margin] duration-200 ease-in-out ${subnavOpen ? 'lg:ml-[252px]' : 'lg:ml-[220px]'}`}>
-        <header className="sticky top-0 z-10 flex h-[56px] flex-shrink-0 items-center justify-between border-b border-white/10 bg-[#0d0d0d] px-4 sm:px-6">
+        <header className="sticky top-0 z-10 flex h-[56px] flex-shrink-0 items-center justify-between border-b border-white/10 bg-[#0d0d0d] px-4 sm:px-6 relative">
           <div className="flex items-center gap-3">
             <button onClick={() => setMobileOpen(true)} aria-label="Open menu" className="p-1.5 text-white/70 hover:text-white lg:hidden">
               <Menu size={22} />
             </button>
-            <div className="flex items-center gap-2 text-[16px] font-bold text-white/60">
-              <img src="/green.svg" alt="Membba" className="h-6 lg:hidden" />
+            <div className="hidden items-center gap-2 text-[16px] font-bold text-white/60 lg:flex">
               <span className="text-white font-black">membba</span>
-              <span className="hidden text-white/25 lg:inline">/</span>
-              <span className="hidden text-[#c8f135] lg:inline">{pageName}</span>
-              <span className="ml-2 hidden border border-white/10 bg-white/5 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-white/60 sm:inline-flex">Creator Hub</span>
+              <span className="text-white/25">/</span>
+              <span className="text-[#c8f135]">{pageName}</span>
+              <span className="ml-2 border border-white/10 bg-white/5 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-white/60">Creator Hub</span>
             </div>
           </div>
+          <img src="/green.svg" alt="Membba" className="pointer-events-none absolute left-1/2 h-7 -translate-x-1/2 lg:hidden" />
           <div className="relative flex items-center gap-3" ref={avatarMenuRef}>
             <ChannelStatusBar telegramOnline={channelStatus.telegram} whatsappOnline={channelStatus.whatsapp} metaOnline={channelStatus.meta} navigate={navigate} />
             <BotStatus online={botOnline} />

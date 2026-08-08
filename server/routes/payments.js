@@ -235,9 +235,31 @@ router.get('/verify/:reference', async (req, res) => {
     )
 
     if (!psRes.status || psRes.data.status !== 'success') {
-      await supabase.from('payments').update({ status: 'failed' }).eq('paystack_reference', reference)
-      await logPaymentEvent({ reference, event: 'verify_not_success', status: 'failed', message: psRes.message, payload: psRes.data || {} })
-      return res.json({ success: false, message: psRes.message || 'Payment was not successful' })
+      const paystackStatus = psRes.data?.status || 'unknown'
+      const terminalFailure = ['failed', 'abandoned', 'reversed'].includes(paystackStatus)
+
+      if (terminalFailure) {
+        await supabase.from('payments').update({ status: 'failed' }).eq('paystack_reference', reference)
+      } else {
+        await supabase.from('payments').update({ status: 'pending' }).eq('paystack_reference', reference)
+      }
+
+      await logPaymentEvent({
+        reference,
+        event: terminalFailure ? 'verify_failed' : 'verify_pending',
+        status: terminalFailure ? 'failed' : 'info',
+        message: psRes.message || paystackStatus,
+        payload: psRes.data || {},
+      })
+
+      return res.status(terminalFailure ? 200 : 202).json({
+        success: false,
+        pending: !terminalFailure,
+        payment_status: paystackStatus,
+        message: terminalFailure
+          ? (psRes.message || 'Payment was not successful')
+          : 'Payment is still being confirmed by Paystack. This can take a moment for bank transfers.',
+      })
     }
 
     const { metadata, customer, amount, currency } = psRes.data

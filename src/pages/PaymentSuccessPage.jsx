@@ -62,6 +62,8 @@ export default function PaymentSuccessPage() {
   const [message, setMessage]           = useState('')
   const [showHelp, setShowHelp]         = useState(false)
   const [retrying, setRetrying]         = useState(false)
+  const [pendingVerification, setPendingVerification] = useState(false)
+  const [verifyAttempts, setVerifyAttempts] = useState(0)
 
   useEffect(() => { if (reference) verifyPayment(); else setStatus('failed') }, [reference])
 
@@ -72,6 +74,29 @@ export default function PaymentSuccessPage() {
     }, 2200)
     return () => clearTimeout(timer)
   }, [status, platform, inviteLink])
+
+
+  useEffect(() => {
+    if (!pendingVerification || !reference || status !== 'verifying') return
+    if (verifyAttempts >= 8) {
+      setStatus('failed')
+      setPendingVerification(false)
+      setMessage('Payment is taking longer than expected to confirm. If you were debited, keep this reference and try verification again shortly.')
+      return
+    }
+    const delay = Math.min(3000 + verifyAttempts * 1500, 12000)
+    const timer = setTimeout(() => verifyPayment({ silent: true }), delay)
+    return () => clearTimeout(timer)
+  }, [pendingVerification, verifyAttempts, reference, status])
+
+  useEffect(() => {
+    if (status !== 'success') return
+    const exitTarget = inviteLink || '/'
+    try { window.history.pushState({ membbaPaymentSuccess: true }, '', window.location.href) } catch { return }
+    const onPopState = () => window.location.replace(exitTarget)
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [status, inviteLink])
 
   const verifyPayment = async ({ silent = false } = {}) => {
     if (!reference) return setStatus('failed')
@@ -89,8 +114,15 @@ export default function PaymentSuccessPage() {
         setAlreadyProcessed(Boolean(data.already_processed))
         setMessage(data.message || '')
         if (silent) toast.success(data.already_processed ? 'Already processed' : 'Payment verified')
+      } else if (data.pending) {
+        setStatus('verifying')
+        setPendingVerification(true)
+        setMessage(data.message || 'Payment is still being confirmed by Paystack.')
+        setVerifyAttempts(a => a + 1)
+        if (silent) toast('Payment is still being confirmed. Checking again…')
       } else {
         setStatus('failed')
+        setPendingVerification(false)
         setMessage(data.message || 'Payment could not be verified yet.')
         if (silent) toast.error(data.message || 'Payment could not be verified yet')
       }
@@ -122,7 +154,7 @@ export default function PaymentSuccessPage() {
         </div>
         <p className="text-[14px] font-bold tracking-[0.15em] uppercase text-black dark:text-white/25 mb-3">Processing</p>
         <h1 className="text-[22px] font-black text-black dark:text-white mb-3">Verifying your payment</h1>
-        <p className="text-[14px] text-black dark:text-white/40 leading-relaxed">This usually takes just a moment. Please don’t close this page.</p>
+        <p className="text-[14px] text-black dark:text-white/40 leading-relaxed">{message || 'This usually takes just a moment. Please don’t close this page.'}</p>
       </div>
     </div>
   )
@@ -139,13 +171,13 @@ export default function PaymentSuccessPage() {
         </div>
       </div>
 
-      <div className="max-w-xl mx-auto px-6 py-14">
+      <div className="max-w-xl mx-auto px-5 py-8 sm:px-6 sm:py-14">
         {status === 'success' && (
           <div>
             <PaymentSuccessIcon />
 
             <p className="text-[14px] font-bold tracking-[0.15em] uppercase text-[#c8f135]/60 mb-2">Payment Confirmed</p>
-            <h1 className="text-[28px] font-black text-black dark:text-white leading-tight mb-3">
+            <h1 className="text-[24px] sm:text-[28px] font-black text-black dark:text-white leading-tight mb-3">
               {subscription?.communities?.name
                 ? `You're in, ${subscription.communities.name}!`
                 : "You're all set!"}
@@ -161,28 +193,28 @@ export default function PaymentSuccessPage() {
             )}
 
             {subscription && (
-              <div className="border border-white/[0.07] bg-white dark:bg-[#111] rounded-none px-5 py-4 mb-7 mt-5">
-                <div className="grid grid-cols-2 gap-y-3">
+              <div className="border border-gray-200 dark:border-white/[0.07] bg-white dark:bg-[#111] rounded-none px-4 sm:px-5 py-4 mb-7 mt-5 overflow-hidden">
+                <div className="grid grid-cols-1 gap-y-3 sm:grid-cols-2">
                   {subscription.communities?.name && (
                     <>
                       <span className="text-[14px] text-black dark:text-white/35 font-semibold uppercase tracking-wider">Community</span>
-                      <span className="text-[14px] text-black dark:text-white font-semibold text-right">{subscription.communities.name}</span>
+                      <span className="text-[14px] text-black dark:text-white font-semibold sm:text-right">{subscription.communities.name}</span>
                     </>
                   )}
                   {subscription.expires_at && (
                     <>
                       <span className="text-[14px] text-black dark:text-white/35 font-semibold uppercase tracking-wider">Access until</span>
-                      <span className="text-[14px] text-black dark:text-white font-semibold text-right">
+                      <span className="text-[14px] text-black dark:text-white font-semibold sm:text-right">
                         {new Date(subscription.expires_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </span>
                     </>
                   )}
                   <span className="text-[14px] text-black dark:text-white/35 font-semibold uppercase tracking-wider">Platform</span>
-                  <span className="text-[14px] font-semibold text-right" style={{ color: platColor }}>{platLabel}</span>
+                  <span className="text-[14px] font-semibold sm:text-right" style={{ color: platColor }}>{platLabel}</span>
                   {isWA && (
                     <>
                       <span className="text-[14px] text-black dark:text-white/35 font-semibold uppercase tracking-wider">WhatsApp mode</span>
-                      <span className="text-right"><WhatsAppModeBadge mode={whatsappSetupMode} label="full" /></span>
+                      <span className="sm:text-right"><WhatsAppModeBadge mode={whatsappSetupMode} label="full" /></span>
                     </>
                   )}
                 </div>
@@ -195,7 +227,7 @@ export default function PaymentSuccessPage() {
                   href={inviteLink}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center justify-center gap-3 w-full py-4 rounded-none font-black text-[15px] text-black dark:text-white transition-all active:scale-[0.99]"
+                  className="flex items-center justify-center gap-3 w-full py-3.5 sm:py-4 rounded-none font-black text-[15px] text-black dark:text-white transition-all active:scale-[0.99]"
                   style={{ backgroundColor: platColor }}
                 >
                   <PlatIcon size={20} />

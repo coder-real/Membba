@@ -91,7 +91,16 @@ router.get('/cards/verify/:reference', async (req, res) => {
     )
 
     if (!psRes.status || psRes.data.status !== 'success') {
-      return res.json({ success: false, message: psRes.message || 'Card authorization was not successful' })
+      const paystackStatus = psRes.data?.status || 'unknown'
+      const terminalFailure = ['failed', 'abandoned', 'reversed'].includes(paystackStatus)
+      return res.status(terminalFailure ? 200 : 202).json({
+        success: false,
+        pending: !terminalFailure,
+        payment_status: paystackStatus,
+        message: terminalFailure
+          ? (psRes.message || 'Card authorization was not successful')
+          : 'Card authorization is still being confirmed by Paystack.',
+      })
     }
 
     const meta = psRes.data.metadata || {}
