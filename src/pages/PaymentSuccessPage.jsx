@@ -34,7 +34,7 @@ function PaymentSuccessIcon() {
       <div className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full border border-[#c8f135]/25 bg-[#c8f135]/10 shadow-[0_0_34px_rgba(200,241,53,0.18)]">
         {!imageFailed && (
           <img
-            src="/success_icon.svg"
+            src="/success_green.svg"
             alt="Payment successful"
             className="h-9 w-9 object-contain"
             onError={() => setImageFailed(true)}
