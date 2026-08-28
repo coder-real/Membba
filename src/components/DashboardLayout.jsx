@@ -76,7 +76,7 @@ function UserAvatar({ user }) {
   const name = user?.user_metadata?.name || user?.email || 'Creator'
   const avatar = user?.user_metadata?.avatar_url
   return (
-    <div className="h-9 w-9 overflow-hidden rounded-full border border-gray-200 dark:border-border-subtle bg-gray-100 dark:bg-bg-elevated" title={name}>
+    <div className="h-9 w-9 overflow-hidden rounded-full border border-gray-100 dark:border-border-faint bg-gray-100 dark:bg-bg-elevated" title={name}>
       {avatar
         ? <img src={avatar} alt="Avatar" className="h-full w-full object-cover" />
         : <div className="flex h-full w-full items-center justify-center text-[13px] font-black text-[#c8f135]">{name[0]?.toUpperCase()}</div>}
@@ -86,7 +86,7 @@ function UserAvatar({ user }) {
 
 function BotStatus({ online }) {
   return (
-    <div className="hidden items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 dark:border-border-subtle dark:bg-bg-elevated md:flex" title={online ? 'WhatsApp Bot Active' : 'WhatsApp Bot Offline'}>
+    <div className="hidden items-center gap-2 rounded-full border border-gray-100 bg-gray-50 px-3 py-1 dark:border-border-faint dark:bg-bg-elevated md:flex" title={online ? 'WhatsApp Bot Active' : 'WhatsApp Bot Offline'}>
       <span className={`w-2 h-2 rounded-full ${online ? 'bg-[#c8f135]' : 'bg-red-500'}`} />
       <span className={`hidden text-[13px] font-bold sm:inline ${online ? 'text-gray-700 dark:text-text-primary/80' : 'text-red-400'}`}>
         {online ? 'Bot Active' : 'Offline'}
@@ -105,13 +105,13 @@ function ChannelStatusBar({ telegramOnline, whatsappOnline, metaOnline, navigate
     <button
       type="button"
       onClick={() => navigate('/dashboard/settings?tab=integrations')}
-      className={`${className} items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 dark:border-border-subtle dark:bg-bg-elevated`}
+      className={`${className} items-center gap-2 rounded-full border border-gray-100 bg-gray-50 px-3 py-1 dark:border-border-faint dark:bg-bg-elevated`}
       title="Messaging channel status"
     >
       {items.map(item => {
         const Icon = item.Icon
         return (
-          <span key={item.id} className="relative flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 dark:border-border-subtle bg-white dark:bg-black" title={item.title}>
+          <span key={item.id} className="relative flex h-6 w-6 items-center justify-center rounded-full border border-gray-100 dark:border-border-faint bg-white dark:bg-black" title={item.title}>
             <Icon size={13} style={{ color: item.online ? item.color : 'gray' }} />
             <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full border border-black" style={{ backgroundColor: item.online ? item.color : '#ef4444' }} />
           </span>
@@ -236,7 +236,7 @@ export default function DashboardLayout({ children, pageTitle }) {
 
   // ── Desktop Sidebar Component ─────────────────────────────────────
   const DesktopSidebar = () => (
-    <div className="flex h-full flex-col bg-bg-sidebar py-3 text-text-primary border-r border-border-subtle">
+    <div className="flex h-full flex-col bg-bg-sidebar py-3 text-text-primary border-r border-border-faint">
       <div className={`mb-1 flex items-center px-3 ${subnavOpen ? 'justify-center' : 'gap-2.5'}`}>
         <img src="/green.svg" alt="Membba" className="h-8" />
         <span className={`font-black text-[18px] tracking-tight ${subnavOpen ? 'hidden' : 'inline'}`}>Membba</span>
@@ -275,7 +275,7 @@ export default function DashboardLayout({ children, pageTitle }) {
 
       {/* Desktop Subnav Panel */}
       {subnavOpen && (
-        <aside className="hidden lg:block fixed inset-y-0 left-[52px] z-40 w-[200px] border-r border-border-subtle bg-bg-surface px-3.5 py-4 opacity-100 transition-all duration-200">
+        <aside className="hidden lg:block fixed inset-y-0 left-[52px] z-40 w-[200px] border-r border-border-faint bg-bg-surface px-3.5 py-4 opacity-100 transition-all duration-200">
           <p className="mb-4 px-2 text-[15px] font-black uppercase tracking-wider text-text-primary">{subnavParent.label}</p>
           {subnavParent.sections.map(section => (
             <div key={section.label} className="mb-5">
@@ -309,7 +309,7 @@ export default function DashboardLayout({ children, pageTitle }) {
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden flex flex-col bg-bg-app">
           {/* Top Drawer Header */}
-          <div className="flex h-[52px] items-center justify-between border-b border-border-subtle px-4 bg-bg-surface">
+          <div className="flex h-[52px] items-center justify-between border-b border-border-faint px-4 bg-bg-surface">
             <div className="flex items-center gap-2 font-bold text-[15px] text-text-primary">
               <img src="/green.svg" alt="Membba" className="h-6" />
               <span>membba</span>
@@ -328,7 +328,7 @@ export default function DashboardLayout({ children, pageTitle }) {
           {/* Drawer Scrollable Navigation */}
           <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-bg-app">
             {/* Quick Actions Bar */}
-            <div className="flex items-center justify-between gap-3 border border-gray-200 bg-white p-3 dark:border-border-subtle dark:bg-bg-elevated">
+            <div className="flex items-center justify-between gap-3 border border-gray-100 bg-white p-3 dark:border-border-faint dark:bg-bg-elevated">
               <div className="flex flex-wrap items-center gap-2">
                 <span className={`inline-flex items-center gap-1.5 border px-2.5 py-1 text-[11px] font-bold ${channelStatus.telegram ? 'border-[#229ED9]/25 bg-[#229ED9]/10 text-[#229ED9]' : 'border-border-default bg-bg-surface text-text-muted'}`}>
                   <FaTg size={12} /> Telegram {channelStatus.telegram ? 'on' : 'off'}
@@ -351,7 +351,7 @@ export default function DashboardLayout({ children, pageTitle }) {
               {/* Group 1: Core */}
               <div>
                 <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-text-muted mb-2 px-1">MAIN MENU</p>
-                <div className="space-y-1 border border-border-subtle bg-bg-surface p-1 rounded-none">
+                <div className="space-y-1 border border-border-faint bg-bg-surface p-1 rounded-none">
                   {[
                     { label: 'Dashboard', path: '/dashboard', Icon: House },
                     { label: 'Communities', path: '/dashboard/communities', Icon: Orbit },
@@ -383,7 +383,7 @@ export default function DashboardLayout({ children, pageTitle }) {
               {/* Group 2: AI & Automations */}
               <div>
                 <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-text-muted mb-2 px-1">AUTOMATIONS & AI</p>
-                <div className="space-y-1 border border-border-subtle bg-bg-surface p-1 rounded-none">
+                <div className="space-y-1 border border-border-faint bg-bg-surface p-1 rounded-none">
                   {[
                     { label: 'Automations', path: '/dashboard/automations', Icon: SquareFunction },
                     { label: 'AI Inbox Conversations', path: '/dashboard/ai-inbox', Icon: Inbox },
@@ -413,7 +413,7 @@ export default function DashboardLayout({ children, pageTitle }) {
               {/* Group 3: Settings */}
               <div>
                 <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-text-muted mb-2 px-1">SETTINGS & CONFIG</p>
-                <div className="space-y-1 border border-border-subtle bg-bg-surface p-1 rounded-none">
+                <div className="space-y-1 border border-border-faint bg-bg-surface p-1 rounded-none">
                   {[
                     { label: 'My Account', path: '/dashboard/settings?tab=account', Icon: Settings },
                     { label: 'Billing & Plan', path: '/dashboard/settings?tab=billing', Icon: WalletCards },
@@ -445,7 +445,7 @@ export default function DashboardLayout({ children, pageTitle }) {
           </div>
 
           {/* Drawer Footer Account Area */}
-          <div className="p-4 border-t border-border-subtle bg-bg-surface space-y-3">
+          <div className="p-4 border-t border-border-faint bg-bg-surface space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 min-w-0">
                 <UserAvatar user={user} />
@@ -468,7 +468,7 @@ export default function DashboardLayout({ children, pageTitle }) {
 
       {/* Main Content Area */}
       <div className={`flex min-h-screen min-w-0 flex-1 flex-col transition-[margin] duration-200 ease-in-out ${subnavOpen ? 'lg:ml-[252px]' : 'lg:ml-[220px]'}`}>
-        <header className="sticky top-0 z-10 flex h-[56px] flex-shrink-0 items-center justify-between border-b border-border-subtle bg-bg-sidebar px-4 sm:px-6 relative">
+        <header className="sticky top-0 z-10 flex h-[56px] flex-shrink-0 items-center justify-between border-b border-border-faint bg-bg-sidebar px-4 sm:px-6 relative">
           <div className="flex items-center gap-3">
             <button onClick={() => setMobileOpen(true)} aria-label="Open menu" className="p-1.5 text-text-secondary hover:text-text-primary lg:hidden">
               <Menu size={22} />
@@ -477,7 +477,7 @@ export default function DashboardLayout({ children, pageTitle }) {
               <span className="text-text-primary font-black">membba</span>
               <span className="text-text-muted">/</span>
               <span className="text-[#c8f135]">{pageName}</span>
-              <span className="ml-2 border border-border-subtle bg-bg-elevated px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-text-secondary">Creator Hub</span>
+              <span className="ml-2 border border-border-faint bg-bg-elevated px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-text-secondary">Creator Hub</span>
             </div>
           </div>
           <img src="/green.svg" alt="Membba" className="pointer-events-none absolute left-1/2 h-7 -translate-x-1/2 lg:hidden" />
@@ -489,10 +489,10 @@ export default function DashboardLayout({ children, pageTitle }) {
             </button>
             {avatarOpen && (
               <div
-                className="absolute right-0 top-full mt-2 z-[9999] w-[240px] origin-top-right rounded-none border border-border-subtle p-2 text-[13px] opacity-100 shadow-2xl transition-all duration-150 bg-bg-surface"
+                className="absolute right-0 top-full mt-2 z-[9999] w-[240px] origin-top-right rounded-none border border-border-faint p-2 text-[13px] opacity-100 shadow-2xl transition-all duration-150 bg-bg-surface"
                 style={{ boxShadow: '0 18px 55px rgba(0,0,0,0.85)' }}
               >
-                <div className="border-b border-border-subtle px-3 py-3 text-text-secondary">
+                <div className="border-b border-border-faint px-3 py-3 text-text-secondary">
                   <p className="truncate font-mono text-[12px] text-text-primary">{user?.email}</p>
                 </div>
                 <button onClick={() => { setAvatarOpen(false); navigate('/dashboard/settings?tab=account') }} className="mt-2 flex w-full items-center px-3 py-2 text-left text-text-primary hover:bg-bg-elevated">
@@ -501,7 +501,7 @@ export default function DashboardLayout({ children, pageTitle }) {
                 <button onClick={() => { setAvatarOpen(false); navigate('/dashboard/settings?tab=billing') }} className="flex w-full items-center px-3 py-2 text-left text-text-primary hover:bg-bg-elevated">
                   Upgrade to Pro
                 </button>
-                <div className="my-2 border-t border-border-subtle pt-2">
+                <div className="my-2 border-t border-border-faint pt-2">
                   <p className="px-3 pb-2 text-[10px] font-extrabold uppercase tracking-widest text-text-muted">Theme</p>
                   <div className="space-y-1 pl-3 pr-2">
                     {['system', 'dark', 'light'].map(mode => (
